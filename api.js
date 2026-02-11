@@ -1,128 +1,249 @@
 // ============================================================
-// Budget App — API Client & State Management
+// Budget App — Google Auth + API Client + State
 // ============================================================
 
+// --- GOOGLE AUTH MODULE ---
+const GoogleAuth = {
+  clientId: '824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com',
+  accessToken: null,
+  userEmail: null,
+  userName: null,
+  tokenClient: null,
+
+  init() {
+    return new Promise((resolve) => {
+      // Wait for GIS library to load
+      const check = () => {
+        if (typeof google !== 'undefined' && google.accounts) {
+          this._initGIS(resolve);
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
+    });
+  },
+
+  _initGIS(resolve) {
+    // Initialize the token client for OAuth 2.0
+    this.tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: this.clientId,
+      scope: 'email profile',
+      callback: (response) => {
+        if (response.access_token) {
+          this.accessToken = response.access_token;
+          this._fetchUserInfo().then(() => {
+            this._onSignedIn();
+            resolve(true);
+          });
+        } else {
+          console.error('Token error:', response);
+          this._showError('Sign-in failed. Please try again.');
+          resolve(false);
+        }
+      },
+      error_callback: (err) => {
+        console.error('GIS error:', err);
+        // User closed the popup — not a fatal error
+        resolve(false);
+      }
+    });
+
+    // Render the Google Sign-In button
+    google.accounts.id.initialize({
+      client_id: this.clientId,
+      callback: (response) => this._handleCredentialResponse(response, resolve),
+      auto_select: true, // Auto sign-in if previously authenticated
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-btn'),
+      {
+        theme: 'outline',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        width: 280
+      }
+    );
+
+    // Also prompt One Tap
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // One Tap not available, user will use the button
+      }
+    });
+  },
+
+  _handleCredentialResponse(response, resolve) {
+    if (response.credential) {
+      // Decode the JWT to get user info
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      this.userEmail = payload.email;
+      this.userName = payload.name;
+
+      // Now get an access token for API calls
+      this.tokenClient.requestAccessToken({ hint: payload.email });
+    }
+  },
+
+  async _fetchUserInfo() {
+    if (!this.accessToken) return;
+    try {
+      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { 'Authorization': `Bearer ${this.accessToken}` }
+      });
+      const info = await res.json();
+      this.userEmail = info.email;
+      this.userName = info.name;
+    } catch (e) {
+      console.warn('Could not fetch user info:', e);
+    }
+  },
+
+  _onSignedIn() {
+    // Hide sign-in overlay
+    const overlay = document.getElementById('signin-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // Show user info in sidebar
+    const userInfo = document.getElementById('user-info');
+    if (userInfo) userInfo.textContent = this.userEmail || this.userName || '';
+
+    // Initialize the app
+    initApp();
+  },
+
+  _showError(msg) {
+    const el = document.getElementById('signin-error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+  },
+
+  signOut() {
+    this.accessToken = null;
+    this.userEmail = null;
+    google.accounts.id.disableAutoSelect();
+    // Show sign-in overlay again
+    const overlay = document.getElementById('signin-overlay');
+    if (overlay) overlay.style.display = 'flex';
+  },
+
+  getToken() {
+    return this.accessToken;
+  }
+};
+
+
+// --- API CLIENT ---
 const API = {
-  // Replace with your deployed Apps Script Web App URL
   BASE_URL: 'https://script.google.com/macros/s/AKfycbwU2zx28aD5GWqX3olg8tv3zFtOQ4RMBMGyV0emPAEGaOLZHJYstHcKbqYa--enKisK/exec',
 
   async call(action, data = null) {
+    const token = GoogleAuth.getToken();
+    if (!token) throw new Error('Not authenticated. Please sign in.');
+
     const url = new URL(this.BASE_URL);
     url.searchParams.set('action', action);
 
-    const opts = { redirect: 'follow' };
+    // Include token as parameter for Apps Script (since it can't read Auth headers easily)
+    url.searchParams.set('token', token);
+
+    const opts = { 
+      method: data ? 'POST' : 'GET',
+      redirect: 'follow'
+    };
 
     if (data) {
-      opts.method = 'POST';
       opts.headers = { 'Content-Type': 'text/plain' };
-      opts.body = JSON.stringify(data);
+      opts.body = JSON.stringify({ ...data, _token: token });
     }
 
     try {
       const res = await fetch(url.toString(), opts);
-      const json = await res.json();
+      const text = await res.text();
+      
+      // Apps Script sometimes returns HTML on auth errors
+      if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+        throw new Error('Authentication error. Please sign out and sign in again.');
+      }
+      
+      const json = JSON.parse(text);
       if (json.error) throw new Error(json.error);
       return json;
     } catch (err) {
-      console.error(`API error [${action}]:`, err);
+      if (err.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Check your connection and try again.');
+      }
       throw err;
     }
   },
 
-  // CONFIG
-  getConfig: () => API.call('getConfig'),
+  // Convenience method for GET requests with query params
+  async get(action, params = {}) {
+    const token = GoogleAuth.getToken();
+    if (!token) throw new Error('Not authenticated.');
+
+    const url = new URL(this.BASE_URL);
+    url.searchParams.set('action', action);
+    url.searchParams.set('token', token);
+    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
+
+    const res = await fetch(url.toString(), { redirect: 'follow' });
+    const text = await res.text();
+    if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+      throw new Error('Authentication error.');
+    }
+    const json = JSON.parse(text);
+    if (json.error) throw new Error(json.error);
+    return json;
+  },
+
+  // --- CONFIG ---
+  getConfig: () => API.get('getConfig'),
   addCategory: (cat, sub) => API.call('addCategory', { categoria: cat, subcategoria: sub }),
   deleteCategory: (cat, sub) => API.call('deleteCategory', { categoria: cat, subcategoria: sub }),
   addCuenta: (cuenta) => API.call('addCuenta', { cuenta }),
   addCasa: (casa) => API.call('addCasa', { casa }),
 
-  // GASTOS
-  getGastos: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getGastos');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
-  getPending: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getPendingGastos');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
+  // --- GASTOS ---
+  getGastos: (params = {}) => API.get('getGastos', params),
+  getPending: (params = {}) => API.get('getPendingGastos', params),
   addManualGasto: (data) => API.call('addManualGasto', data),
   updateGasto: (data) => API.call('updateGasto', data),
   bulkUpdateGastos: (data) => API.call('bulkUpdateGastos', data),
 
-  // IMPORT
+  // --- IMPORT ---
   importTransactions: (data) => API.call('importTransactions', data),
 
-  // RULES
-  getRules: () => API.call('getRules'),
+  // --- RULES ---
+  getRules: () => API.get('getRules'),
   addRule: (data) => API.call('addRule', data),
   updateRule: (data) => API.call('updateRule', data),
   deleteRule: (data) => API.call('deleteRule', data),
   testRule: (data) => API.call('testRule', data),
   applyRuleRetroactive: (ruleId) => API.call('applyRuleRetroactive', { ruleId }),
 
-  // INGRESOS
-  getIngresos: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getIngresos');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
+  // --- INGRESOS ---
+  getIngresos: (params = {}) => API.get('getIngresos', params),
   addIngreso: (data) => API.call('addIngreso', data),
   updateIngreso: (data) => API.call('updateIngreso', data),
   deleteIngreso: (data) => API.call('deleteIngreso', data),
 
-  // BALANCES
-  getBalances: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getBalances');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
+  // --- BALANCES ---
+  getBalances: (params = {}) => API.get('getBalances', params),
   updateBalance: (data) => API.call('updateBalance', data),
   calculateCashFlow: (data) => API.call('calculateCashFlow', data),
 
-  // REPORTING
-  getDashboard: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getDashboardData');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
-  getMonthlySummary: (año, mes) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getMonthlySummary');
-    url.searchParams.set('año', año);
-    url.searchParams.set('mes', mes);
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
-  getAnnualSummary: (año) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getAnnualSummary');
-    url.searchParams.set('año', año);
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
-  getCasaSummary: (año, mes) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'getCasaSummary');
-    url.searchParams.set('año', año);
-    if (mes) url.searchParams.set('mes', mes);
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  },
-  exportGastos: (params = {}) => {
-    const url = new URL(API.BASE_URL);
-    url.searchParams.set('action', 'exportGastos');
-    Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
-    return fetch(url.toString(), { redirect: 'follow' }).then(r => r.json());
-  }
+  // --- REPORTING ---
+  getDashboard: (params = {}) => API.get('getDashboardData', params),
+  getMonthlySummary: (año, mes) => API.get('getMonthlySummary', { año, mes }),
+  getAnnualSummary: (año) => API.get('getAnnualSummary', { año }),
+  getCasaSummary: (año, mes) => API.get('getCasaSummary', { año, mes }),
+  exportGastos: (params = {}) => API.get('exportGastos', params)
 };
 
-// ============================================================
-// App State
-// ============================================================
+
+// --- APP STATE ---
 const AppState = {
   config: null,
   currentPage: 'dashboard',
@@ -163,9 +284,8 @@ const AppState = {
   }
 };
 
-// ============================================================
-// Utility functions
-// ============================================================
+
+// --- UTILITIES ---
 const Utils = {
   formatCurrency(amount) {
     return new Intl.NumberFormat('es-ES', {
@@ -196,10 +316,7 @@ const Utils = {
   async fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result.split(',')[1];
-        resolve(base64);
-      };
+      reader.onload = () => resolve(reader.result.split(',')[1]);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
@@ -224,20 +341,17 @@ const Utils = {
 
   buildCategorySelect(config, selectedCat, selectedSub) {
     if (!config) return { catOptions: '', subOptions: '' };
-
     const cats = [...new Set(config.categorias.map(c => c.categoria))];
     let catOptions = '<option value="">— Seleccionar —</option>';
     cats.forEach(c => {
       catOptions += `<option value="${c}" ${c === selectedCat ? 'selected' : ''}>${c}</option>`;
     });
-
     let subOptions = '<option value="">— Seleccionar —</option>';
     if (selectedCat && config.categoriasGrouped[selectedCat]) {
       config.categoriasGrouped[selectedCat].forEach(s => {
         subOptions += `<option value="${s}" ${s === selectedSub ? 'selected' : ''}>${s}</option>`;
       });
     }
-
     return { catOptions, subOptions };
   },
 
@@ -259,3 +373,10 @@ const Utils = {
     return opts;
   }
 };
+
+
+// --- BOOTSTRAP: Wait for GIS then authenticate ---
+document.addEventListener('DOMContentLoaded', () => {
+  AppState.init();
+  GoogleAuth.init();
+});

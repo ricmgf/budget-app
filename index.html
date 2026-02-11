@@ -4,17 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget — Household Finance</title>
+  <meta name="google-client-id" content="824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
 </head>
 <body>
+  <!-- SIGN-IN OVERLAY -->
+  <div id="signin-overlay" style="position:fixed;inset:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:24px">
+    <div style="text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">💰</div>
+      <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">Budget</h1>
+      <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Household Finance Management</p>
+      <div id="google-signin-btn"></div>
+      <p id="signin-error" style="color:var(--danger);font-size:12px;margin-top:12px;display:none"></p>
+    </div>
+  </div>
+
   <!-- ALERT CONTAINER -->
   <div id="alert-container" style="position:fixed;top:16px;right:16px;z-index:2000;width:360px"></div>
 
   <div class="app-layout">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="logo">B</div>
@@ -49,13 +61,13 @@
         </button>
       </nav>
       <div class="sidebar-footer">
-        Budget v1.0 · 2026
+        <div id="user-info" style="margin-bottom:4px;font-size:11px"></div>
+        <span>Budget v1.0</span>
+        <button class="btn btn-ghost btn-sm" onclick="GoogleAuth.signOut()" style="float:right;font-size:10px">Sign Out</button>
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="main-content">
-      <!-- GLOBAL HEADER WITH MONTH SELECTOR -->
       <div class="page-header">
         <h2 id="page-title">Dashboard</h2>
         <div class="page-header-actions">
@@ -67,36 +79,13 @@
         </div>
       </div>
 
-      <!-- PAGES -->
-      <div id="page-dashboard" class="page active">
-        <div id="dashboard-content">
-          <div class="loading-overlay"><div class="spinner"></div> Loading...</div>
-        </div>
-      </div>
-
-      <div id="page-import" class="page">
-        <div id="import-content"></div>
-      </div>
-
-      <div id="page-review" class="page">
-        <div id="review-content"></div>
-      </div>
-
-      <div id="page-rules" class="page">
-        <div id="rules-content"></div>
-      </div>
-
-      <div id="page-reporting" class="page">
-        <div id="reporting-content"></div>
-      </div>
-
-      <div id="page-balances" class="page">
-        <div id="balances-content"></div>
-      </div>
-
-      <div id="page-settings" class="page">
-        <div id="settings-content"></div>
-      </div>
+      <div id="page-dashboard" class="page active"><div id="dashboard-content"><div class="loading-overlay"><div class="spinner"></div> Loading...</div></div></div>
+      <div id="page-import" class="page"><div id="import-content"></div></div>
+      <div id="page-review" class="page"><div id="review-content"></div></div>
+      <div id="page-rules" class="page"><div id="rules-content"></div></div>
+      <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
+      <div id="page-balances" class="page"><div id="balances-content"></div></div>
+      <div id="page-settings" class="page"><div id="settings-content"></div></div>
     </main>
   </div>
 
@@ -115,7 +104,6 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
   <script src="api.js"></script>
   <script src="pages.js"></script>
 </body>
