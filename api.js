@@ -4,7 +4,7 @@
 
 const API = {
   // Replace with your deployed Apps Script Web App URL
-  BASE_URL: 'YOUR_APPS_SCRIPT_WEB_APP_URL',
+  BASE_URL: 'https://script.google.com/macros/s/AKfycbwU2zx28aD5GWqX3olg8tv3zFtOQ4RMBMGyV0emPAEGaOLZHJYstHcKbqYa--enKisK/exec',
 
   async call(action, data = null) {
     const url = new URL(this.BASE_URL);
