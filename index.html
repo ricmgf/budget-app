@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget — Household Finance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+</head>
+<body>
+  <!-- ALERT CONTAINER -->
+  <div id="alert-container" style="position:fixed;top:16px;right:16px;z-index:2000;width:360px"></div>
+
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">B</div>
+        <h1>Budget</h1>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+          <span class="icon">📊</span> Dashboard
+        </button>
+        <button class="nav-item" data-page="import" onclick="navigateTo('import')">
+          <span class="icon">📥</span> Import
+        </button>
+        <button class="nav-item" data-page="review" onclick="navigateTo('review')">
+          <span class="icon">✏️</span> Review
+          <span class="badge hidden" id="pending-badge">0</span>
+        </button>
+        <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">
+          <span class="icon">⚙️</span> Rules
+        </button>
+        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">
+          <span class="icon">📈</span> Reporting
+        </button>
+        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">
+          <span class="icon">🏦</span> Balances
+        </button>
+        <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+          <span class="icon">🔧</span> Settings
+        </button>
+        <div style="flex:1"></div>
+        <button class="nav-item" onclick="showManualEntry()">
+          <span class="icon">➕</span> Add Expense
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        Budget v1.0 · 2026
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- GLOBAL HEADER WITH MONTH SELECTOR -->
+      <div class="page-header">
+        <h2 id="page-title">Dashboard</h2>
+        <div class="page-header-actions">
+          <div class="month-selector">
+            <button class="btn btn-ghost btn-sm" onclick="prevMonth()">◄</button>
+            <span class="current" id="month-display">Febrero 2026</span>
+            <button class="btn btn-ghost btn-sm" onclick="nextMonth()">►</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGES -->
+      <div id="page-dashboard" class="page active">
+        <div id="dashboard-content">
+          <div class="loading-overlay"><div class="spinner"></div> Loading...</div>
+        </div>
+      </div>
+
+      <div id="page-import" class="page">
+        <div id="import-content"></div>
+      </div>
+
+      <div id="page-review" class="page">
+        <div id="review-content"></div>
+      </div>
+
+      <div id="page-rules" class="page">
+        <div id="rules-content"></div>
+      </div>
+
+      <div id="page-reporting" class="page">
+        <div id="reporting-content"></div>
+      </div>
+
+      <div id="page-balances" class="page">
+        <div id="balances-content"></div>
+      </div>
+
+      <div id="page-settings" class="page">
+        <div id="settings-content"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title"></h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/api.js"></script>
+  <script src="js/pages.js"></script>
+</body>
+</html>
