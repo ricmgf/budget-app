@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget — Household Finance</title>
-  <meta name="google-client-id" content="824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -18,7 +17,25 @@
       <div style="font-size:48px;margin-bottom:16px">💰</div>
       <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px">Budget</h1>
       <p style="color:var(--text-secondary);font-size:14px;margin-bottom:24px">Household Finance Management</p>
-      <div id="google-signin-btn"></div>
+
+      <!-- Google Sign-In via HTML data attributes (most robust, avoids popup issues) -->
+      <div id="g_id_onload"
+           data-client_id="824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com"
+           data-context="signin"
+           data-ux_mode="popup"
+           data-callback="handleCredentialResponse"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-shape="rectangular"
+           data-theme="outline"
+           data-text="signin_with"
+           data-size="large"
+           data-logo_alignment="left"
+           data-width="280">
+      </div>
+
       <p id="signin-error" style="color:var(--danger);font-size:12px;margin-top:12px;display:none"></p>
     </div>
   </div>
