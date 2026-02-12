@@ -1,3 +1,7 @@
+// ============================================================
+// Budget App — Google Sheets API & Auth Wrapper
+// ============================================================
+
 var tokenClient = null;
 var gapiInited = false;
 var gisInited = false;
@@ -34,7 +38,7 @@ function handleAuthClick() {
 
 function onSignedIn() {
   document.getElementById('signin-overlay').style.display = 'none';
-  if (typeof initApp === 'function') initApp();
+  initApp();
 }
 
 var SheetsAPI = {
@@ -47,11 +51,18 @@ var SheetsAPI = {
       spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A1`,
       valueInputOption: 'USER_ENTERED', resource: {values: [data]}
     });
+  },
+  updateCell: async (s, row, col, val) => {
+    const range = `${s}!${String.fromCharCode(64 + col)}${row}`;
+    return gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.SPREADSHEET_ID, range: range,
+      valueInputOption: 'USER_ENTERED', resource: {values: [[val]]}
+    });
   }
 };
 
 var DataCache = {
-  _cache: {}, _ts: {}, TTL: 60000,
+  _cache: {}, _ts: {}, TTL: 300000,
   get: function(k) { if(this._cache[k] && (Date.now() - this._ts[k] < this.TTL)) return Promise.resolve(this._cache[k]); return null; },
   set: function(k, d) { this._cache[k] = d; this._ts[k] = Date.now(); }
 };
