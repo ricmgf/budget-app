@@ -5,14 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget App</title>
   
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+  <link rel="icon" type="image/png" href="favicon.png?v=3">
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.ico?v=3">
+  
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
 
   <style>
-    /* UI Layout & Centering Logic */
+    /* 1. Centering the Month Selector */
     .page-header {
       display: grid;
       grid-template-columns: 1fr auto 1fr; 
@@ -30,6 +33,7 @@
     }
     .month-label { font-weight: 700; font-size: 1.1rem; min-width: 150px; text-align: center; }
     
+    /* 2. Sidebar Logo Styling */
     .sidebar-header {
       padding: 24px;
       display: flex;
@@ -40,10 +44,11 @@
     }
     .logo-icon { font-size: 28px; }
     
+    /* 3. Page Display Logic */
     .page { display: none; }
     .page.active { display: block; }
 
-    /* Modern Upload Zone Styling */
+    /* 4. Modern Upload Zone */
     .upload-zone {
       border: 2px dashed var(--border-medium);
       padding: 40px;
