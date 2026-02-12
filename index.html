@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budget — Direct API</title>
+  <title>Budget App</title>
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
   
@@ -12,23 +12,22 @@
   <link rel="stylesheet" href="app.css">
 
   <style>
-    /* Fix to center the month selector */
+    /* Centers the month selector in the header */
     .page-header {
       display: grid;
-      grid-template-columns: 1fr auto 1fr; /* Creates three sections: left, center, right */
+      grid-template-columns: 1fr auto 1fr; 
       align-items: center;
       width: 100%;
+      padding-bottom: var(--sp-6);
     }
     #page-title { grid-column: 1; margin: 0; }
     .month-selector { 
       grid-column: 2; 
       display: flex; 
       align-items: center; 
-      gap: 12px;
-      justify-self: center; /* Forces the selector to the dead center of the screen */
+      gap: 16px;
+      justify-self: center; 
     }
-    
-    /* Clean up sidebar logo */
     .sidebar-header {
       padding: 24px;
       display: flex;
@@ -70,15 +69,12 @@
     <main class="main-content">
       <div class="page-header">
         <h2 id="page-title">Dashboard</h2>
-        
         <div class="month-selector">
-          <button class="btn-icon" onclick="prevMonth()" style="background:none; border:1px solid var(--border-medium); border-radius:6px; cursor:pointer; padding:4px 8px;">◄</button>
-          <span id="month-display" style="font-weight:600; min-width:140px; text-align:center; font-size:16px;"></span>
-          <button class="btn-icon" onclick="nextMonth()" style="background:none; border:1px solid var(--border-medium); border-radius:6px; cursor:pointer; padding:4px 8px;">►</button>
+          <button class="btn-icon" onclick="prevMonth()">◄</button>
+          <span id="month-display" class="month-label"></span>
+          <button class="btn-icon" onclick="nextMonth()">►</button>
         </div>
-        
-        <div style="grid-column: 3;"></div>
-      </div>
+        <div></div> </div>
 
       <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
       <div id="page-import" class="page"><div id="import-content"></div></div>
