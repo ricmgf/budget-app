@@ -4,7 +4,7 @@
 
 var CONFIG = {
   CLIENT_ID: '824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com',
-  API_KEY: '',
+  API_KEY: 'AIzaSyCwrt8rREK0fWIFwGpbsft6Ad8FatQY4Ec',
   DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
   SPREADSHEET_ID: '1Clobogf_4Db6YYfNGPUnzJ83NmT3Q_Kqt_tg8a2wXi8',
