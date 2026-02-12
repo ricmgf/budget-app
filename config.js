@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Configuration (Phase 1, 2 & 3)
+// Budget App — Master Configuration (Phase 1-4 Complete)
 // ============================================================
 
 var CONFIG = {
@@ -17,25 +17,30 @@ var CONFIG = {
     BALANCES: 'BALANCES',
     BUDGET_PLAN: 'BUDGET_PLAN',
     INCOME_PLAN: 'INCOME_PLAN',
+    ACCOUNTS: 'ACCOUNTS', // Nueva para el Sniffer
     AUDIT: 'AUDIT_LOG'
   }
 };
 
-// GASTOS_TOTAL indices (N=13)
+// GASTOS_TOTAL indices (N=13) - RESPETADO AL 100%
 var GASTOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
   NOTAS: 10, ORIGEN: 11, ESTADO: 12, HASH: 13 
 };
 
-// INGRESOS indices (K=10)
+// INGRESOS indices (K=10) - RESPETADO AL 100%
 var INGRESOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, ORIGEN: 9, HASH: 10
 };
 
-// BUDGET_PLAN indices (TIPO=8)
+// BUDGET_PLAN indices (TIPO=8) - RESPETADO AL 100%
 var BUDGET_COLS = {
   AÑO: 0, MES: 1, CONCEPTO: 2, IMPORTE: 3, CUENTA: 4, 
   CASA: 5, CATEGORIA: 6, SUBCATEGORIA: 7, TIPO: 8, NOTAS: 9
+};
+
+var ACCOUNT_COLS = {
+  ALIAS: 0, IDENTIFIER: 1, CASA: 2, TIPO: 3
 };
