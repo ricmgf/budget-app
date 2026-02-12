@@ -4,28 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget App</title>
-  <link rel="icon" type="image/png" href="favicon.png?v=12">
+  <link rel="icon" type="image/png" href="favicon.png?v=13">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
   <style>
     :root {
       --accent: #2563eb;
-      --accent-soft: #eff6ff;
-      --bg-primary: #ffffff;
-      --bg-canvas: #f1f5f9; /* Modern soft gray background */
+      --bg-canvas: #f8fafc;
+      --bg-card: #ffffff;
       --text-primary: #0f172a;
       --text-secondary: #64748b;
       --border-light: #e2e8f0;
       --sidebar-width: 280px;
-      --positive: #10b981;
-      --negative: #ef4444;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --content-gap: 64px; /* The "Elegant Space" variable */
     }
 
-    * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-    
+    * { box-sizing: border-box; }
     body, html { 
       margin: 0; padding: 0; height: 100vh; width: 100vw; 
       font-family: 'DM Sans', sans-serif; 
@@ -33,149 +28,100 @@
       overflow: hidden; 
     }
 
-    .app-layout { display: flex; height: 100%; width: 100%; }
+    .app-layout { 
+      display: flex; 
+      height: 100%; 
+      width: 100%; 
+      gap: 0; /* Managed by internal padding for cleaner scrollbars */
+    }
     
-    /* SIDEBAR: Modern & Minimal */
+    /* SIDEBAR: Professional & Static */
     .sidebar { 
       width: var(--sidebar-width); 
-      background: var(--bg-primary); 
+      background: #ffffff; 
       border-right: 1px solid var(--border-light); 
       display: flex; 
       flex-direction: column; 
       height: 100%; 
       flex-shrink: 0;
-      z-index: 50;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.02);
     }
 
-    .sidebar-header { padding: 40px 32px; display: flex; align-items: center; gap: 14px; }
-    .logo-img { width: 34px; height: 34px; object-fit: contain; }
-    .sidebar-title { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: var(--text-primary); }
+    .sidebar-header { padding: 48px 32px; display: flex; align-items: center; gap: 14px; }
+    .logo-img { width: 32px; height: 32px; }
 
-    .sidebar-nav { padding: 0 16px; }
+    .sidebar-nav { padding: 0 16px; flex: 1; }
     .nav-item { 
-      padding: 12px 16px; 
-      border: none; 
-      background: none; 
-      text-align: left; 
-      font-family: 'DM Sans', sans-serif; 
-      font-size: 15px; 
-      font-weight: 500; 
-      color: var(--text-secondary); 
-      cursor: pointer; 
-      width: 100%; 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      border-radius: 10px;
-      margin-bottom: 4px;
-      transition: all 0.2s ease;
+      padding: 14px 20px; border: none; background: none; text-align: left; 
+      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; 
+      color: var(--text-secondary); cursor: pointer; width: 100%; 
+      display: flex; align-items: center; gap: 12px; border-radius: 12px;
+      margin-bottom: 6px; transition: 0.2s ease;
     }
+    .nav-item:hover { background: #f1f5f9; color: var(--text-primary); }
+    .nav-item.active { background: #eff6ff; color: var(--accent); font-weight: 700; }
 
-    .nav-item:hover { background: var(--bg-secondary); color: var(--text-primary); }
-    .nav-item.active { 
-      color: var(--accent); 
-      background: var(--accent-soft); 
-      font-weight: 700; 
-    }
-
-    /* MAIN CONTENT: The Floating Canvas */
+    /* MAIN CONTENT: The Spacious Viewport */
     .main-content { 
       flex: 1; 
       height: 100%; 
       overflow-y: auto; 
-      padding: 48px 64px; /* Significant padding from the sidebar */
-      position: relative;
+      padding: 64px var(--content-gap); /* Top/Bottom 64px, Sides 64px */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .canvas-container {
-      max-width: 1100px;
-      margin: 0 auto;
+    .view-wrapper {
+      width: 100%;
+      max-width: 1040px; /* Constrains the width for readability */
     }
 
     .page-header { 
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      margin-bottom: 48px; 
-      position: relative; 
-      height: 48px; 
+      margin-bottom: 56px; 
+      position: relative;
     }
 
     .month-selector { 
-      position: absolute; 
-      left: 50%; 
-      transform: translateX(-50%); 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      background: #fff; 
-      padding: 10px 24px; 
-      border-radius: 100px; 
-      border: 1px solid var(--border-light); 
-      box-shadow: var(--shadow-sm);
+      position: absolute; left: 50%; transform: translateX(-50%); 
+      display: flex; align-items: center; gap: 12px; background: #fff; 
+      padding: 10px 24px; border-radius: 100px; border: 1px solid var(--border-light); 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
 
-    .month-label { font-weight: 700; min-width: 150px; text-align: center; font-size: 16px; color: var(--text-primary); }
-    .btn-month { border: none; background: none; cursor: pointer; color: var(--accent); font-size: 18px; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-    .btn-month:hover { background: var(--accent-soft); }
+    .month-label { font-weight: 700; min-width: 140px; text-align: center; }
 
     /* DASHBOARD CARDS */
-    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-bottom: 32px; }
-    .two-col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-bottom: 32px; }
+    .two-col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
     
-    .card { background: #fff; padding: 32px; border-radius: 20px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); }
-    .card h3 { margin: 0 0 12px 0; font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
-    .card h2 { margin: 0; font-size: 30px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.03em; }
+    .card { background: #fff; padding: 36px; border-radius: 24px; border: 1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .card h3 { margin: 0 0 12px 0; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+    .card h2 { margin: 0; font-size: 32px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
     
-    .positive { color: var(--positive); } 
-    .negative { color: var(--negative); }
+    .positive { color: #10b981; } .negative { color: #ef4444; }
 
-    /* SIGN-IN (WORLD CLASS OVERLAY) */
-    #signin-overlay { 
-      position: fixed; inset: 0; background: var(--bg-canvas); 
-      display: flex; align-items: center; justify-content: center; z-index: 99999; 
-    }
-    .signin-card { 
-      background: #fff; padding: 60px; border-radius: 32px; text-align: center; 
-      border: 1px solid var(--border-light); box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.1);
-      max-width: 400px; width: 100%;
-    }
-    #signin-btn { 
-      width: 100%; padding: 18px; background: var(--accent); color: #fff; 
-      border: none; border-radius: 14px; font-weight: 700; cursor: pointer; 
-      margin-top: 32px; font-size: 16px; transition: transform 0.2s;
-    }
-    #signin-btn:active { transform: scale(0.98); }
+    /* LOGIN MODAL */
+    #signin-overlay { position: fixed; inset: 0; background: #f8fafc; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .signin-card { background: #fff; padding: 64px; border-radius: 32px; text-align: center; border: 1px solid var(--border-light); box-shadow: 0 20px 50px rgba(0,0,0,0.05); }
+    #signin-btn { width: 100%; padding: 18px; background: var(--accent); color: #fff; border: none; border-radius: 16px; font-weight: 700; cursor: pointer; margin-top: 32px; font-size: 16px; }
 
-    .page { display: none; } 
-    .page.active { display: block; }
+    .page { display: none; } .page.active { display: block; }
     
+    /* CHIPS & QUEUE */
     .chip-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-    .chip { 
-      padding: 12px 20px; border: 1px solid var(--border-light); border-radius: 100px; 
-      background: #fff; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500;
-      transition: all 0.2s;
-    }
-    .chip:hover { border-color: var(--accent); }
-    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+    .chip { padding: 12px 20px; border: 1px solid var(--border-light); border-radius: 100px; background: #fff; cursor: pointer; font-size: 14px; transition: 0.2s; }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   </style>
 </head>
 <body>
-  <div id="signin-overlay">
-    <div class="signin-card">
-      <img src="favicon.png" style="width:90px; margin-bottom: 20px;">
-      <h1 style="margin:0; font-weight:700; letter-spacing:-0.04em;">Budget Master</h1>
-      <p style="color:var(--text-secondary); margin-top:8px;">Control patrimonial inteligente</p>
-      <button id="signin-btn" style="display:none;" onclick="handleAuthClick()">Entrar con Google</button>
-    </div>
-  </div>
-
+  <div id="signin-overlay"><div class="signin-card"><img src="favicon.png" style="width:80px;"><h1 style="margin:24px 0 8px; font-weight:700;">Budget App</h1><button id="signin-btn" style="display:none;" onclick="handleAuthClick()">Entrar con Google</button></div></div>
   <div class="app-layout">
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <img src="favicon.png" class="logo-img"> 
-        <span class="sidebar-title">Budget</span>
-      </div>
+      <div class="sidebar-header"><img src="favicon.png" class="logo-img"> <span style="font-weight:700; font-size:20px;">Budget</span></div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
         <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
@@ -186,19 +132,13 @@
         <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">🔧 Ajustes</button>
       </nav>
     </aside>
-
     <main class="main-content">
-      <div class="canvas-container">
+      <div class="view-wrapper">
         <header class="page-header">
-          <h2 id="page-title" style="margin:0; font-size:32px; font-weight:700; letter-spacing:-0.04em;">Dashboard</h2>
-          <div class="month-selector">
-            <button class="btn-month" onclick="prevMonth()">◄</button>
-            <span id="month-display" class="month-label"></span>
-            <button class="btn-month" onclick="nextMonth()">►</button>
-          </div>
-          <div style="width:100px;"></div>
+          <h2 id="page-title" style="margin:0; font-size:32px; font-weight:700;">Dashboard</h2>
+          <div class="month-selector"><button style="border:none; background:none; cursor:pointer;" onclick="prevMonth()">◄</button><span id="month-display" class="month-label"></span><button style="border:none; background:none; cursor:pointer;" onclick="nextMonth()">►</button></div>
+          <div style="width:60px;"></div>
         </header>
-
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
         <div id="page-import" class="page"><div id="import-content"></div></div>
         <div id="page-review" class="page"><div id="review-content"></div></div>
@@ -209,11 +149,7 @@
       </div>
     </main>
   </div>
-
-  <script src="config.js"></script>
-  <script src="api.js"></script>
-  <script src="logic.js"></script>
-  <script src="pages.js"></script>
+  <script src="config.js"></script><script src="api.js"></script><script src="logic.js"></script><script src="pages.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGIS()"></script>
   <script src="https://apis.google.com/js/api.js" onload="initGoogleAuth()" async defer></script>
