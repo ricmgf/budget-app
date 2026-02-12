@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Logic Engine (Complete)
+// Budget App — Master Logic Engine (Full Phase 1 & 2)
 // ============================================================
 
 const BudgetLogic = {
@@ -102,11 +102,24 @@ const BudgetLogic = {
     const actI = filter(i, y, m);
     const planG = b.slice(1).filter(r => parseInt(r[0]) == y && parseInt(r[1]) == m);
     const sum = (arr, col) => arr.reduce((a, b) => a + (parseFloat(b[col]) || 0), 0);
+    
     return { 
       totalGastos: sum(actG, 5), 
       totalIngresos: sum(actI, 5), 
       plannedGastos: sum(planG, 3),
-      cashFlow: sum(actI, 5) - sum(actG, 5) 
+      cashFlow: sum(actI, 5) - sum(actG, 5),
+      fundingPlan: this.calculateFundingPlan(actG, actI, planG)
     };
+  },
+
+  calculateFundingPlan(actualGastos, actualIngresos, plannedGastos) {
+    // Logic to determine inter-bank transfers
+    // Group planned vs actual by Account to see which accounts need funding
+    const funding = {};
+    plannedGastos.forEach(p => {
+      const acc = p[4] || 'Principal';
+      funding[acc] = (funding[acc] || 0) + parseFloat(p[3]);
+    });
+    return funding;
   }
 };
