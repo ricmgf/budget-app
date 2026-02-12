@@ -2,51 +2,105 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget App</title>
+  
   <link rel="icon" type="image/png" href="favicon.png?v=5">
+  <link rel="shortcut icon" type="image/png" href="favicon.png?v=5">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
-    .page-header { position: relative; display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; }
-    .month-selector { position: absolute !important; left: 50% !important; transform: translateX(-50%) !important; display: flex !important; gap: 16px; }
-    .sidebar-header { padding: 24px; display: flex; align-items: center; gap: 12px; }
+    .page-header {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      min-height: 60px;
+    }
+    
+    .month-selector { 
+      position: absolute !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 16px !important;
+      margin: 0 !important;
+      z-index: 10;
+    }
+
+    .month-label {
+      font-weight: 700;
+      font-size: 1.1rem;
+      min-width: 150px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 16px;
+    }
     .logo-img { width: 32px; height: 32px; object-fit: contain; }
-    .page { display: none; } .page.active { display: block; }
+
+    .page { display: none; }
+    .page.active { display: block; }
   </style>
 </head>
 <body>
+
   <div id="signin-overlay" style="position:fixed;inset:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
-    <div style="background:var(--bg-secondary); padding:48px; border-radius:24px; text-align:center; width:360px;">
-      <img src="favicon.png" style="width:80px; margin-bottom:24px;">
-      <h1>Budget App</h1>
-      <button id="signin-btn" style="display:none; width:100%; padding:16px; background:var(--accent); color:white; border-radius:12px; cursor:pointer;" onclick="handleAuthClick()">Entrar con Google</button>
+    <div style="background:var(--bg-secondary); padding:48px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.05); text-align:center; width:100%; max-width:360px; border:1px solid var(--border-light);">
+      <img src="favicon.png?v=5" alt="Logo" style="width:80px; height:80px; margin-bottom:24px; object-fit:contain;">
+      <h1 style="font-size:28px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Budget App</h1>
+      <p id="loading-msg" style="color:var(--text-secondary); margin-bottom:32px;">Conectando...</p>
+      <button id="signin-btn" style="display:none; width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; font-size:16px;" onclick="handleAuthClick()">Entrar con Google</button>
     </div>
   </div>
 
   <div class="app-layout">
     <aside class="sidebar">
-      <div class="sidebar-header"><img src="favicon.png" class="logo-img"> <span>Budget</span></div>
+      <div class="sidebar-header">
+        <img src="favicon.png?v=5" alt="Logo" class="logo-img">
+        <span style="font-weight:700; font-size:18px; color:var(--text-primary);">Budget</span>
+      </div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
         <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
         <button class="nav-item" data-page="review" onclick="navigateTo('review')">✏️ Revisar</button>
         <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
+        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
+        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
+        <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">🔧 Ajustes</button>
       </nav>
     </aside>
+
     <main class="main-content">
       <div class="page-header">
         <h2 id="page-title">Dashboard</h2>
         <div class="month-selector">
-          <button onclick="prevMonth()">◄</button>
-          <span id="month-display" style="font-weight:700; min-width:140px; text-align:center;"></span>
-          <button onclick="nextMonth()">►</button>
+          <button class="btn-icon" onclick="prevMonth()">◄</button>
+          <span id="month-display" class="month-label"></span>
+          <button class="btn-icon" onclick="nextMonth()">►</button>
         </div>
+        <div style="width:100px;"></div> 
       </div>
+
       <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
       <div id="page-import" class="page"><div id="import-content"></div></div>
       <div id="page-review" class="page"><div id="review-content"></div></div>
       <div id="page-rules" class="page"><div id="rules-content"></div></div>
+      <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
+      <div id="page-balances" class="page"><div id="balances-content"></div></div>
+      <div id="page-settings" class="page"><div id="settings-content"></div></div>
     </main>
   </div>
 
@@ -54,6 +108,7 @@
   <script src="api.js"></script>
   <script src="logic.js"></script>
   <script src="pages.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGIS()"></script>
   <script src="https://apis.google.com/js/api.js" onload="initGoogleAuth()" async defer></script>
 </body>
