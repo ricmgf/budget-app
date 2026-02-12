@@ -19,15 +19,14 @@ var CONFIG = {
   }
 };
 
-// Expense Columns
+// Column indices for GASTOS_TOTAL (0-based)
 var GASTOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
   NOTAS: 10, ORIGEN: 11, ESTADO: 12, FECHA_IMPORT: 13
 };
 
-// Income Columns (This was the missing piece!)
+// Column indices for INGRESOS (0-based)
 var INGRESOS_COLS = {
-  ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
-  CUENTA: 6, CASA: 7, NOTAS: 10
+  ID: 0, AÑO: 1, MES: 2, CUENTA: 3, CONCEPTO: 4, TIPO: 5, IMPORTE: 6, RECURRENTE: 7, NOTAS: 8
 };
