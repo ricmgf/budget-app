@@ -24,7 +24,7 @@ function initGIS() {
     callback: onTokenResponse
   });
   gisInited = true;
-  console.log('[Auth] GIS token client initialized');
+  console.log('[Auth] GIS initialized');
   maybeEnableSignIn();
 }
 
@@ -42,7 +42,7 @@ function maybeEnableSignIn() {
 }
 
 function handleAuthClick() {
-  tokenClient.requestAccessToken({prompt: 'consent'});
+  tokenClient.requestAccessToken({prompt: gapi.client.getToken() === null ? 'consent' : ''});
 }
 
 function onTokenResponse(resp) {
@@ -53,11 +53,11 @@ function onTokenResponse(resp) {
 
 var SheetsAPI = {
   readSheet: async function(sheetName) {
-    const response = await gapi.client.sheets.spreadsheets.values.get({
+    const resp = await gapi.client.sheets.spreadsheets.values.get({
       spreadsheetId: CONFIG.SPREADSHEET_ID,
       range: `${sheetName}!A:Z`,
     });
-    return response.result.values || [];
+    return resp.result.values || [];
   },
   appendRow: async function(sheetName, rowData) {
     return gapi.client.sheets.spreadsheets.values.append({
@@ -65,6 +65,23 @@ var SheetsAPI = {
       range: `${sheetName}!A1`,
       valueInputOption: 'USER_ENTERED',
       resource: { values: [rowData] }
+    });
+  },
+  updateRow: async function(sheetName, rowIndex, rowData) {
+    return gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.SPREADSHEET_ID,
+      range: `${sheetName}!A${rowIndex}`,
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [rowData] }
+    });
+  },
+  deleteRow: async function(sheetName, rowIndex) {
+    const resp = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: CONFIG.SPREADSHEET_ID });
+    let sheetId = null;
+    resp.result.sheets.forEach(s => { if (s.properties.title === sheetName) sheetId = s.properties.sheetId; });
+    return gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: CONFIG.SPREADSHEET_ID,
+      resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId, dimension: 'ROWS', startIndex: rowIndex-1, endIndex: rowIndex } } }] }
     });
   }
 };
