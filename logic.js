@@ -1,3 +1,7 @@
+// ============================================================
+// Budget App — Master Logic Engine (Complete)
+// ============================================================
+
 const BudgetLogic = {
   async loadConfig() {
     const cached = await DataCache.get('config');
@@ -29,17 +33,14 @@ const BudgetLogic = {
     const ingresos = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const rules = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
     const existingHashes = new Set([...gastos.map(r => r[GASTOS_COLS.HASH]), ...ingresos.map(r => r[INGRESOS_COLS.HASH])]);
-
     let stats = { importedGastos: 0, importedIngresos: 0, skipped: 0 };
 
     for (const row of parsedRows) {
       const amount = parseFloat(row.amount);
       const isIncome = amount > 0;
       const hash = this.generateHash(row.date, amount, row.desc, accountName);
-
       if (existingHashes.has(hash)) { stats.skipped++; continue; }
 
-      // Mapping Logic: 1. Rules -> 2. Historical Lookups
       let match = this.findRuleMatch(row.desc, rules);
       if (!match.category) match = this.findHistoricalMatch(row.desc, isIncome ? ingresos : gastos, isIncome);
 
@@ -95,10 +96,17 @@ const BudgetLogic = {
   async getDashboardData(y, m) {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
+    const b = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_PLAN);
     const filter = (arr, yr, mo) => arr.slice(1).filter(r => parseInt(r[1]) == yr && parseInt(r[2]) == mo);
-    const sum = (arr, col) => arr.reduce((a, b) => a + (parseFloat(b[col]) || 0), 0);
     const actG = filter(g, y, m);
     const actI = filter(i, y, m);
-    return { totalGastos: sum(actG, 5), totalIngresos: sum(actI, 5), cashFlow: sum(actI, 5) - sum(actG, 5) };
+    const planG = b.slice(1).filter(r => parseInt(r[0]) == y && parseInt(r[1]) == m);
+    const sum = (arr, col) => arr.reduce((a, b) => a + (parseFloat(b[col]) || 0), 0);
+    return { 
+      totalGastos: sum(actG, 5), 
+      totalIngresos: sum(actI, 5), 
+      plannedGastos: sum(planG, 3),
+      cashFlow: sum(actI, 5) - sum(actG, 5) 
+    };
   }
 };
