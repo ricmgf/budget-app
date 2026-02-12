@@ -9,10 +9,7 @@ function initGoogleAuth() {
       discoveryDocs: CONFIG.DISCOVERY_DOCS
     }).then(function() {
       gapiInited = true;
-      console.log('[Auth] gapi client initialized');
       maybeEnableSignIn();
-    }).catch(function(err) {
-      console.error('[Auth] gapi init error:', err);
     });
   });
 }
@@ -24,20 +21,15 @@ function initGIS() {
     callback: onTokenResponse
   });
   gisInited = true;
-  console.log('[Auth] GIS initialized');
   maybeEnableSignIn();
 }
 
 function maybeEnableSignIn() {
   if (gapiInited && gisInited) {
     const btn = document.getElementById('signin-btn');
+    if (btn) btn.style.display = 'block';
     const msg = document.getElementById('loading-msg');
-    if (btn && msg) {
-      msg.style.display = 'none';
-      btn.style.display = 'block';
-    } else {
-      setTimeout(maybeEnableSignIn, 100);
-    }
+    if (msg) msg.textContent = 'Servicios listos';
   }
 }
 
@@ -52,45 +44,26 @@ function onTokenResponse(resp) {
 }
 
 var SheetsAPI = {
-  readSheet: async function(sheetName) {
-    const resp = await gapi.client.sheets.spreadsheets.values.get({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      range: `${sheetName}!A:Z`,
-    });
-    return resp.result.values || [];
+  readSheet: async function(s) {
+    const r = await gapi.client.sheets.spreadsheets.values.get({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A:Z`});
+    return r.result.values || [];
   },
-  appendRow: async function(sheetName, rowData) {
-    return gapi.client.sheets.spreadsheets.values.append({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      range: `${sheetName}!A1`,
-      valueInputOption: 'USER_ENTERED',
-      resource: { values: [rowData] }
-    });
+  appendRow: async function(s, data) {
+    return gapi.client.sheets.spreadsheets.values.append({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A1`, valueInputOption: 'USER_ENTERED', resource: {values: [data]}});
   },
-  updateRow: async function(sheetName, rowIndex, rowData) {
-    return gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      range: `${sheetName}!A${rowIndex}`,
-      valueInputOption: 'USER_ENTERED',
-      resource: { values: [rowData] }
-    });
+  updateRow: async function(s, idx, data) {
+    return gapi.client.sheets.spreadsheets.values.update({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A${idx}`, valueInputOption: 'USER_ENTERED', resource: {values: [data]}});
   },
-  deleteRow: async function(sheetName, rowIndex) {
-    const resp = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: CONFIG.SPREADSHEET_ID });
-    let sheetId = null;
-    resp.result.sheets.forEach(s => { if (s.properties.title === sheetName) sheetId = s.properties.sheetId; });
-    return gapi.client.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId, dimension: 'ROWS', startIndex: rowIndex-1, endIndex: rowIndex } } }] }
-    });
+  deleteRow: async function(s, idx) {
+    const res = await gapi.client.sheets.spreadsheets.get({spreadsheetId: CONFIG.SPREADSHEET_ID});
+    let id = null;
+    res.result.sheets.forEach(sh => { if(sh.properties.title === s) id = sh.properties.sheetId; });
+    return gapi.client.sheets.spreadsheets.batchUpdate({spreadsheetId: CONFIG.SPREADSHEET_ID, resource: {requests: [{deleteDimension: {range: {sheetId: id, dimension: 'ROWS', startIndex: idx-1, endIndex: idx}}}]}});
   }
 };
 
 var DataCache = {
-  _cache: {}, _timestamps: {}, TTL: 60000,
-  get: function(key) {
-    if (this._cache[key] && (Date.now() - this._timestamps[key]) < this.TTL) return Promise.resolve(this._cache[key]);
-    return null;
-  },
-  set: function(key, data) { this._cache[key] = data; this._timestamps[key] = Date.now(); }
+  _cache: {}, _ts: {}, TTL: 60000,
+  get: function(k) { if(this._cache[k] && (Date.now() - this._ts[k] < this.TTL)) return Promise.resolve(this._cache[k]); return null; },
+  set: function(k, d) { this._cache[k] = d; this._ts[k] = Date.now(); }
 };
