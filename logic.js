@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Logic Engine (Final Stage 3)
+// Budget App — Master Logic Engine (Production v1.2)
 // ============================================================
 
 const BudgetLogic = {
@@ -33,6 +33,7 @@ const BudgetLogic = {
     const ingresos = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const rules = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
     const existingHashes = new Set([...gastos.map(r => r[GASTOS_COLS.HASH]), ...ingresos.map(r => r[INGRESOS_COLS.HASH])]);
+    
     let stats = { importedGastos: 0, importedIngresos: 0, skipped: 0 };
 
     for (const row of parsedRows) {
@@ -71,8 +72,7 @@ const BudgetLogic = {
   },
 
   async saveRuleAndApply(pattern, category, subcategory, casa) {
-    const newRule = [Date.now(), "Contains", pattern, category, subcategory, casa, "User"];
-    await SheetsAPI.appendRow(CONFIG.SHEETS.RULES, newRule);
+    await SheetsAPI.appendRow(CONFIG.SHEETS.RULES, [Date.now(), "Contains", pattern, category, subcategory, casa, "User"]);
     const data = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     for (let i = 1; i < data.length; i++) {
       if (data[i][GASTOS_COLS.ESTADO] === 'Pendiente' && data[i][GASTOS_COLS.CONCEPTO].toLowerCase().includes(pattern.toLowerCase())) {
@@ -85,14 +85,22 @@ const BudgetLogic = {
 
   findRuleMatch(desc, rules) {
     const d = (desc || '').toLowerCase();
-    for (const r of rules.slice(1)) { if (r[2] && d.includes(r[2].toLowerCase())) return { category: r[3], subcategory: r[4], casa: r[5] }; }
+    for (const r of rules.slice(1)) {
+      if (r[2] && d.includes(r[2].toLowerCase())) return { category: r[3], subcategory: r[4], casa: r[5] };
+    }
     return { category: null };
   },
 
   findHistoricalMatch(desc, history, isIncome) {
     const d = (desc || '').toLowerCase();
     for (const r of history.slice(-500)) {
-      if (r[GASTOS_COLS.CONCEPTO]?.toLowerCase() === d) return { category: r[8], subcategory: isIncome ? null : r[9], casa: r[7] };
+      if (r[GASTOS_COLS.CONCEPTO]?.toLowerCase() === d) {
+        return { 
+          category: r[isIncome ? 8 : 8],
+          subcategory: isIncome ? null : r[9],
+          casa: r[isIncome ? 7 : 7]
+        };
+      }
     }
     return { category: null };
   },
@@ -112,8 +120,10 @@ const BudgetLogic = {
     const planI = ip.slice(1).filter(r => parseInt(r[0]) == y && parseInt(r[1]) == m);
 
     return { 
-      totalGastos: sum(actG, 5), totalIngresos: sum(actI, 5), 
-      plannedGastos: sum(planG, 3), plannedIngresos: sum(planI, 3),
+      totalGastos: sum(actG, 5), 
+      totalIngresos: sum(actI, 5), 
+      plannedGastos: sum(planG, 3),
+      plannedIngresos: sum(planI, 3),
       cashFlow: sum(actI, 5) - sum(actG, 5),
       pendingCount: g.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente').length,
       fundingPlan: this.computeFundingPlan(planG, actG)
@@ -124,12 +134,10 @@ const BudgetLogic = {
     const needs = {};
     planG.forEach(p => {
       const isOneOff = p[BUDGET_COLS.TIPO] === 'One-off';
-      // Match detection for One-off: Is there an actual expense with same Category and similar Amount?
       const isPaid = isOneOff && actG.some(a => 
         a[GASTOS_COLS.CATEGORIA] === p[BUDGET_COLS.CATEGORIA] && 
-        Math.abs(parseFloat(a[GASTOS_COLS.IMPORTE]) - parseFloat(p[BUDGET_COLS.IMPORTE])) < 5
+        Math.abs(parseFloat(a[GASTOS_COLS.IMPORTE]) - parseFloat(p[BUDGET_COLS.IMPORTE])) < 10
       );
-
       if (!isPaid) {
         const acc = p[BUDGET_COLS.CUENTA] || 'Principal';
         needs[acc] = (needs[acc] || 0) + parseFloat(p[BUDGET_COLS.IMPORTE]);
