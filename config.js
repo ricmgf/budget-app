@@ -3,13 +3,11 @@
 // ============================================================
 
 var CONFIG = {
-  // From your On Track app
   CLIENT_ID: '824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com',
   
-  // YOUR REAL API KEY (Extracted from your successful connection logs)
-  API_KEY: 'AIzaSyAfm8u0p_86z8-R30_E988_E988_E988', 
+  // YOUR KEY INTEGRATED
+  API_KEY: 'AIzaSyCwrt8rREK0fWIFwGpbsft6Ad8FatQY4Ec', 
 
-  // Your Budget Spreadsheet ID
   SPREADSHEET_ID: '1Clobogf_4Db6YYfNGPUnzJ83NmT3Q_Kqt_tg8a2wXi8',
 
   DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
