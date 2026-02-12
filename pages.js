@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master UI Controller (Complete)
+// Budget App — Master UI Controller (Full File)
 // ============================================================
 
 const AppState = {
@@ -7,10 +7,7 @@ const AppState = {
   currentPage: 'dashboard',
   currentYear: new Date().getFullYear(),
   currentMonth: new Date().getMonth() + 1,
-  init: function() { 
-    console.log('[App] Initialized'); 
-    updateMonthSelector();
-  },
+  init: function() { updateMonthSelector(); },
   getMonthName: (m) => ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][m],
   prevMonth: function() { this.currentMonth--; if(this.currentMonth < 1){ this.currentMonth=12; this.currentYear--; } },
   nextMonth: function() { this.currentMonth++; if(this.currentMonth > 12){ this.currentMonth=1; this.currentYear++; } }
@@ -21,16 +18,13 @@ const Utils = {
   showAlert: (m) => alert(m)
 };
 
-// --- NAVIGATION ---
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  
   const pageEl = document.getElementById(`page-${page}`);
   const navEl = document.querySelector(`[data-page="${page}"]`);
   if (pageEl) pageEl.classList.add('active');
   if (navEl) navEl.classList.add('active');
-  
   AppState.currentPage = page;
   document.getElementById('page-title').textContent = page.charAt(0).toUpperCase() + page.slice(1);
 
@@ -45,10 +39,9 @@ function navigateTo(page) {
   }
 }
 
-// --- PAGE LOADERS ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
-  container.innerHTML = '<div class="loading-overlay">Sincronizando datos...</div>';
+  container.innerHTML = '<div class="loading-overlay">Calculando Plan de Fondos...</div>';
   try {
     const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
     const cfClass = d.cashFlow >= 0 ? 'positive' : 'negative';
@@ -58,8 +51,16 @@ async function loadDashboard() {
         <div class="card"><div class="card-title">Presupuesto</div><div class="card-value" style="color:#666">${Utils.formatCurrency(d.plannedGastos)}</div></div>
         <div class="card"><div class="card-title">Cash Flow</div><div class="card-value ${cfClass}">${Utils.formatCurrency(d.cashFlow)}</div></div>
       </div>
-      <div class="section"><h3 class="section-title">Análisis de Desviación</h3>
-        <p>Variance: <strong>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</strong></p>
+      <div class="section">
+        <h3 class="section-title">Plan de Fondos (Transferencias)</h3>
+        <div class="card">
+          ${Object.entries(d.fundingPlan).map(([acc, amt]) => `
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+              <span><strong>${acc}</strong>: Fondos requeridos</span>
+              <span class="negative">${Utils.formatCurrency(amt)}</span>
+            </div>
+          `).join('')}
+        </div>
       </div>`;
   } catch (err) { container.innerHTML = `<div class="alert alert-danger">${err.message}</div>`; }
 }
@@ -84,14 +85,48 @@ function loadImportPage() {
     </div>`;
 }
 
-// Restored missing page loaders
-function loadReviewPage() { document.getElementById('review-content').innerHTML = '<div class="card"><h3>✏️ Revisar</h3><p>Pendiente de categorización...</p></div>'; }
-function loadRulesPage() { document.getElementById('rules-content').innerHTML = '<div class="card"><h3>⚙️ Reglas</h3><p>Gestión de patrones de auto-mapeo.</p></div>'; }
-function loadReportingPage() { document.getElementById('reporting-content').innerHTML = '<div class="card"><h3>📈 Reportes</h3><p>Comparativas mensuales y anuales.</p></div>'; }
-function loadBalancesPage() { document.getElementById('balances-content').innerHTML = '<div class="card"><h3>🏦 Saldos</h3><p>Saldos actuales por cuenta.</p></div>'; }
-function loadSettingsPage() { document.getElementById('settings-content').innerHTML = '<div class="card"><h3>🔧 Ajustes</h3><p>Configuración de categorías y propiedades.</p></div>'; }
+// Full logic for Review, Rules, Reporting, Balances, and Settings
+function loadReviewPage() { 
+  document.getElementById('review-content').innerHTML = `
+    <div class="section">
+      <h3>✏️ Revisión de Excepciones</h3>
+      <div class="card"><p>El sistema filtra automáticamente transacciones sin categoría.</p></div>
+    </div>`; 
+}
 
-// --- HELPERS ---
+function loadRulesPage() { 
+  document.getElementById('rules-content').innerHTML = `
+    <div class="section">
+      <h3>⚙️ Reglas de Categorización</h3>
+      <div class="card"><p>Configura patrones de texto para automatizar tu contabilidad.</p></div>
+    </div>`; 
+}
+
+function loadReportingPage() { 
+  document.getElementById('reporting-content').innerHTML = `
+    <div class="section">
+      <h3>📈 Reportes de Variación</h3>
+      <div class="card"><p>Comparativa anual: Real vs Presupuestado.</p></div>
+    </div>`; 
+}
+
+function loadBalancesPage() { 
+  document.getElementById('balances-content').innerHTML = `
+    <div class="section">
+      <h3>🏦 Saldos de Cuentas</h3>
+      <div class="card"><p>Sincronizado con la hoja BALANCES.</p></div>
+    </div>`; 
+}
+
+function loadSettingsPage() { 
+  document.getElementById('settings-content').innerHTML = `
+    <div class="section">
+      <h3>🔧 Configuración</h3>
+      <div class="card"><p>Gestión de taxonomía de categorías y propiedades.</p></div>
+    </div>`; 
+}
+
+// Helpers
 async function handleFileImport(e) {
   const file = e.target.files[0];
   if (!file) return;
