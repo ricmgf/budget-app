@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Page Controllers & UI Interaction
+// Budget App — Master UI Controller (Final Stage 3)
 // ============================================================
 
 const AppState = {
@@ -29,26 +29,48 @@ function navigateTo(p) {
 
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
-  container.innerHTML = '<div class="loading-overlay">Sincronizando...</div>';
+  container.innerHTML = '<div class="loading-overlay">Calculando Cash Flow...</div>';
   const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  
   container.innerHTML = `
     <div class="metric-grid">
-      <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Pendiente</h3><h2 style="color:var(--accent)">${d.pendingCount} items</h2></div>
-      <div class="card"><h3>Gastos Reales</h3><h2>${Utils.formatCurrency(d.totalGastos)}</h2></div>
-      <div class="card"><h3>Variación</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
+      <div class="card" onclick="navigateTo('review')" style="cursor:pointer">
+        <h3>Inbox Queue</h3><h2 style="color:var(--accent)">${d.pendingCount} items</h2>
+      </div>
+      <div class="card">
+        <h3>Cash Flow</h3><h2 class="${d.cashFlow >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.cashFlow)}</h2>
+      </div>
+      <div class="card">
+        <h3>Presupuesto vs Real</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2>
+      </div>
+    </div>
+    
+    <div class="two-col-equal" style="margin-top:24px;">
+      <div class="card">
+        <h3>🏦 Plan de Fondos</h3>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Transferencias necesarias para cubrir obligaciones.</p>
+        ${Object.entries(d.fundingPlan).map(([acc, amt]) => `
+          <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #eee;">
+            <span>Fondeo <strong>${acc}</strong></span>
+            <span style="font-weight:700;">${Utils.formatCurrency(amt)}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <h3>📈 Resumen de Planificación</h3>
+        <div style="margin-top:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>Ingresos Previstos</span><span>${Utils.formatCurrency(d.plannedIngresos)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span>Gastos Previstos</span><span>${Utils.formatCurrency(d.plannedGastos)}</span>
+          </div>
+        </div>
+      </div>
     </div>`;
 }
 
-function loadImportPage() {
-  document.getElementById('import-content').innerHTML = `
-    <div class="card">
-      <h3>📥 Ingestión de Extractos</h3>
-      <div class="upload-zone" onclick="document.getElementById('f').click()">
-        <p>Seleccionar Excel o CSV</p>
-      </div>
-      <input type="file" id="f" style="display:none" onchange="handleFileImport(event)">
-    </div>`;
-}
+// ... (Rest of Ingestion and Decision Queue logic from Stage 2 remains exactly the same) ...
 
 async function loadReviewPage() {
   const container = document.getElementById('review-content');
@@ -57,7 +79,7 @@ async function loadReviewPage() {
   const pending = all.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente');
   
   if (pending.length === 0) {
-    container.innerHTML = '<div class="card" style="text-align:center; padding:60px;"><h3>Inbox Zero 🎉</h3></div>';
+    container.innerHTML = '<div class="card" style="text-align:center; padding:60px;"><h3>Inbox Zero 🎉</h3><p>Tu clasificador está al día.</p></div>';
     return;
   }
 
@@ -72,6 +94,18 @@ async function loadReviewPage() {
         <div class="form-group" style="margin-top:20px;"><label>Categoría</label><div class="chip-group" id="cat-chips">${Object.keys(AppState.config.categorias).map(c => `<button class="chip" onclick="selectChip(this, 'cat')">${c}</button>`).join('')}</div></div>
         <button class="btn btn-primary" style="width:100%; margin-top:30px; padding:20px;" onclick="resolveItem('${item[GASTOS_COLS.CONCEPTO]}')">Entrenar Regla</button>
       </div>
+    </div>`;
+}
+
+// ... (Rest of helpers) ...
+function loadImportPage() {
+  document.getElementById('import-content').innerHTML = `
+    <div class="card">
+      <h3>📥 Ingestión de Extractos</h3>
+      <div class="upload-zone" onclick="document.getElementById('f').click()">
+        <p>Seleccionar Excel o CSV</p>
+      </div>
+      <input type="file" id="f" style="display:none" onchange="handleFileImport(event)">
     </div>`;
 }
 
