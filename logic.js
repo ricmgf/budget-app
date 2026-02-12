@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Logic Engine (Categorization & Ingestion)
+// Budget App — Master Logic Engine (Final Stage 3)
 // ============================================================
 
 const BudgetLogic = {
@@ -110,17 +110,34 @@ const BudgetLogic = {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const b = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_PLAN);
+    const ip = await SheetsAPI.readSheet(CONFIG.SHEETS.INCOME_PLAN);
+
     const filter = (arr, yr, mo) => arr.slice(1).filter(r => parseInt(r[1]) == yr && parseInt(r[2]) == mo);
     const sum = (arr, col) => arr.reduce((a, b) => a + (parseFloat(b[col]) || 0), 0);
+
     const actG = filter(g, y, m);
     const actI = filter(i, y, m);
     const planG = b.slice(1).filter(r => parseInt(r[0]) == y && parseInt(r[1]) == m);
+    const planI = ip.slice(1).filter(r => parseInt(r[0]) == y && parseInt(r[1]) == m);
+
     return { 
       totalGastos: sum(actG, 5), 
       totalIngresos: sum(actI, 5), 
       plannedGastos: sum(planG, 3),
+      plannedIngresos: sum(planI, 3),
       cashFlow: sum(actI, 5) - sum(actG, 5),
-      pendingCount: g.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente').length
+      pendingCount: g.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente').length,
+      fundingPlan: this.computeFundingPlan(planG, planI)
     };
+  },
+
+  computeFundingPlan(planG, planI) {
+    const needs = {};
+    planG.forEach(p => {
+      const acc = p[4] || 'Principal';
+      needs[acc] = (needs[acc] || 0) + parseFloat(p[3]);
+    });
+    // In a world-class version, we would subtract account balances here
+    return needs;
   }
 };
