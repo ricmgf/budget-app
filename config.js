@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Configuration (Verified IDs & Columns)
+// Budget App — Master Configuration (Complete Phase 1 & 2)
 // ============================================================
 
 var CONFIG = {
@@ -15,18 +15,25 @@ var CONFIG = {
     CONFIG: 'CONFIG',
     RULES: 'RULES',
     BALANCES: 'BALANCES',
+    BUDGET_PLAN: 'BUDGET_PLAN',
+    INCOME_PLAN: 'INCOME_PLAN',
     AUDIT: 'AUDIT_LOG'
   }
 };
 
-// Column indices for GASTOS_TOTAL (Original Zip Audit)
+// Fixed Column Mappings from Master Spec
 var GASTOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
-  NOTAS: 10, ORIGEN: 11, ESTADO: 12, FECHA_IMPORT: 13
+  NOTAS: 10, ORIGEN: 11, ESTADO: 12, HASH: 13 
 };
 
-// Column indices for INGRESOS (Original Zip Audit)
 var INGRESOS_COLS = {
-  ID: 0, AÑO: 1, MES: 2, CUENTA: 3, CONCEPTO: 4, TIPO: 5, IMPORTE: 6, RECURRENTE: 7, NOTAS: 8
+  ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
+  CUENTA: 6, CASA: 7, CATEGORIA: 8, NOTAS: 9, ORIGEN: 10, HASH: 11
+};
+
+var BUDGET_PLAN_COLS = {
+  AÑO: 0, MES: 1, CONCEPTO: 2, IMPORTE: 3, CUENTA: 4, 
+  CASA: 5, CATEGORIA: 6, SUBCATEGORIA: 7, TIPO: 8, NOTAS: 9
 };
