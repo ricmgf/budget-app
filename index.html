@@ -2,17 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budget App</title>
+  <title>Budget App — Direct API</title>
   <link rel="stylesheet" href="app.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body style="margin:0; font-family:'DM Sans', sans-serif;">
   <div id="signin-overlay" style="position:fixed;inset:0;background:#f7f8fa;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
-    <div style="text-align:center">
-      <div style="font-size:48px;margin-bottom:16px">💰</div>
-      <h1>Budget App</h1>
-      <p id="loading-msg" style="color:#666">Cargando servicios de Google...</p>
-      <button id="auth-btn" style="display:none; padding:15px 30px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar Sesión con Google</button>
+    <div style="background:white; padding:40px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.05); text-align:center; width:320px;">
+      <div style="font-size:50px; margin-bottom:20px;">💰</div>
+      <h1 style="margin:0 0 8px 0; font-size:24px; color:#1a1d23;">Budget App</h1>
+      <p id="loading-msg" style="color:#666; margin-bottom:24px;">Conectando con Google...</p>
+      <button id="signin-btn" style="display:none; width:100%; padding:14px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="handleAuthClick()">Iniciar Sesión</button>
     </div>
   </div>
 
@@ -27,13 +27,12 @@
         <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
       </nav>
     </aside>
-
     <main class="main-content">
       <div class="page-header">
         <h2 id="page-title">Panel de Control</h2>
         <div class="month-selector">
           <button onclick="prevMonth()">◄</button>
-          <span id="month-display" style="font-weight:bold; margin: 0 15px;"></span>
+          <span id="month-display" style="font-weight:bold; margin: 0 15px; min-width:120px; display:inline-block; text-align:center;"></span>
           <button onclick="nextMonth()">►</button>
         </div>
       </div>
@@ -50,7 +49,6 @@
   <script src="api.js"></script>
   <script src="logic.js"></script>
   <script src="pages.js"></script>
-
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGIS()"></script>
   <script src="https://apis.google.com/js/api.js" onload="initGoogleAuth()" async defer></script>
 </body>
