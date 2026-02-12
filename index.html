@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget App</title>
   <link rel="stylesheet" href="app.css">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="signin-overlay" style="position:fixed;inset:0;background:#f7f8fa;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
@@ -13,7 +12,7 @@
       <div style="font-size:48px;margin-bottom:16px">💰</div>
       <h1>Budget App</h1>
       <p id="loading-msg" style="color:#666">Cargando servicios de Google...</p>
-      <button id="auth-btn" style="display:none; padding:15px 30px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar Sesión</button>
+      <button id="auth-btn" style="display:none; padding:15px 30px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar Sesión con Google</button>
     </div>
   </div>
 
@@ -23,6 +22,9 @@
         <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
         <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
         <button class="nav-item" data-page="review" onclick="navigateTo('review')">✏️ Revisar</button>
+        <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
+        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
+        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
       </nav>
     </aside>
 
@@ -38,6 +40,9 @@
       <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
       <div id="page-import" class="page"><div id="import-content"></div></div>
       <div id="page-review" class="page"><div id="review-content"></div></div>
+      <div id="page-rules" class="page"><div id="rules-content"></div></div>
+      <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
+      <div id="page-balances" class="page"><div id="balances-content"></div></div>
     </main>
   </div>
 
