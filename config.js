@@ -1,17 +1,13 @@
 // ============================================================
-// Budget App — Configuration
+// Budget App — Configuration (IDs, Sheets, Columns)
 // ============================================================
 
 var CONFIG = {
   CLIENT_ID: '824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com',
-  
-  // YOUR KEY INTEGRATED
-  API_KEY: 'AIzaSyCwrt8rREK0fWIFwGpbsft6Ad8FatQY4Ec', 
-
-  SPREADSHEET_ID: '1Clobogf_4Db6YYfNGPUnzJ83NmT3Q_Kqt_tg8a2wXi8',
-
+  API_KEY: 'AIzaSyCwrt8rREK0fWIFwGpbsft6Ad8FatQY4Ec',
   DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
+  SPREADSHEET_ID: '1Clobogf_4Db6YYfNGPUnzJ83NmT3Q_Kqt_tg8a2wXi8',
 
   SHEETS: {
     GASTOS: 'GASTOS_TOTAL',
@@ -23,9 +19,9 @@ var CONFIG = {
   }
 };
 
-// Column indices for GASTOS_TOTAL (0-based)
+// Full column mapping from your original audit
 var GASTOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
-  NOTAS: 10, ORIGEN: 11, ESTADO: 12
+  NOTAS: 10, ORIGEN: 11, ESTADO: 12, FECHA_IMPORT: 13
 };
