@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget App</title>
-  <link rel="icon" type="image/png" href="favicon.png?v=14">
+  <link rel="icon" type="image/png" href="favicon.png?v=15">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
@@ -17,8 +17,8 @@
       --text-secondary: #64748b;
       --border-light: #e2e8f0;
       --sidebar-width: 260px;
-      /* 50mm approx translation to px for high-end monitors */
-      --elegant-margin: 180px; 
+      /* Spacing reduced by 50% (from 180px to 90px) */
+      --elegant-margin: 90px; 
     }
 
     * { box-sizing: border-box; }
@@ -39,10 +39,9 @@
       flex-direction: column; 
       height: 100%; 
       flex-shrink: 0;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.01);
     }
 
-    .sidebar-header { padding: 40px 24px; display: flex; align-items: center; gap: 12px; }
+    .sidebar-header { padding: 32px 24px; display: flex; align-items: center; gap: 12px; }
     .logo-img { width: 30px; height: 30px; }
     .sidebar-title { font-weight: 700; font-size: 20px; color: var(--text-primary); }
 
@@ -57,12 +56,12 @@
     .nav-item:hover { background: #f1f5f9; color: var(--text-primary); }
     .nav-item.active { background: #eff6ff; color: var(--accent); font-weight: 700; }
 
-    /* MAIN CONTENT: Balanced Margin & Data-Friendly Width */
+    /* Balanced Main Content Area */
     .main-content { 
       flex: 1; 
       height: 100%; 
       overflow-y: auto; 
-      padding: 60px var(--elegant-margin); 
+      padding: 40px var(--elegant-margin); 
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -70,15 +69,14 @@
 
     .view-wrapper {
       width: 100%;
-      /* Widened for spreadsheet-like information */
-      max-width: 1350px; 
+      max-width: 1500px; /* Increased to allow for many-column spreadsheets */
     }
 
     .page-header { 
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      margin-bottom: 48px; 
+      margin-bottom: 40px; 
       position: relative;
     }
 
@@ -91,7 +89,6 @@
 
     .month-label { font-weight: 700; min-width: 130px; text-align: center; font-size: 15px; }
 
-    /* DASHBOARD GRID */
     .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px; }
     .two-col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     
@@ -101,7 +98,6 @@
     
     .positive { color: #10b981; } .negative { color: #ef4444; }
 
-    /* LOGIN MODAL */
     #signin-overlay { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 2000; }
     .signin-card { background: var(--bg-canvas); padding: 50px; border-radius: 28px; text-align: center; border: 1px solid var(--border-light); }
     #signin-btn { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 24px; }
