@@ -1,28 +1,30 @@
 // ============================================================
-// Budget App — Auth (HTML data-attribute callback) + API Client
+// Budget App — Auth + API Client + State + Utils
 // ============================================================
 
-// --- GLOBAL CALLBACK for Google Sign-In (referenced by data-callback in HTML) ---
+// --- GLOBAL CALLBACK for Google Sign-In (data-callback in HTML) ---
 function handleCredentialResponse(response) {
+  console.log('[Auth] Credential response received');
   if (!response.credential) {
+    console.error('[Auth] No credential in response');
     const el = document.getElementById('signin-error');
     if (el) { el.textContent = 'Sign-in failed. No credential received.'; el.style.display = 'block'; }
     return;
   }
 
-  // Save JWT to sessionStorage (survives page navigation, cleared on tab close)
-  sessionStorage.setItem('budget_id_token', response.credential);
+  // Save JWT to localStorage (persists across browser restarts)
+  localStorage.setItem('budget_id_token', response.credential);
 
   // Decode user info from JWT
   try {
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    console.log('[Auth] Signed in as:', payload.email);
     GoogleAuth.idToken = response.credential;
     GoogleAuth.userEmail = payload.email || '';
     GoogleAuth.userName = payload.name || '';
     GoogleAuth._onSignedIn();
   } catch (e) {
-    console.error('JWT decode error:', e);
-    // Token is valid even if we can't decode it client-side
+    console.error('[Auth] JWT decode error:', e);
     GoogleAuth.idToken = response.credential;
     GoogleAuth._onSignedIn();
   }
@@ -35,55 +37,49 @@ const GoogleAuth = {
   userName: null,
 
   init() {
-    // Check if we have a saved token from a previous sign-in (same session)
-    const saved = sessionStorage.getItem('budget_id_token');
+    // Check for saved token
+    const saved = localStorage.getItem('budget_id_token');
     if (saved) {
-      this.idToken = saved;
       try {
         const payload = JSON.parse(atob(saved.split('.')[1]));
-        this.userEmail = payload.email || '';
-        this.userName = payload.name || '';
-        // Check if token is expired
-        const exp = payload.exp * 1000; // Convert to ms
+        const exp = payload.exp * 1000;
         if (Date.now() < exp) {
+          console.log('[Auth] Restored session for:', payload.email);
+          this.idToken = saved;
+          this.userEmail = payload.email || '';
+          this.userName = payload.name || '';
           this._onSignedIn();
-          return; // Already authenticated
+          return;
         } else {
-          // Token expired, clear it
-          sessionStorage.removeItem('budget_id_token');
-          this.idToken = null;
+          console.log('[Auth] Saved token expired, clearing');
+          localStorage.removeItem('budget_id_token');
         }
       } catch (e) {
-        sessionStorage.removeItem('budget_id_token');
-        this.idToken = null;
+        console.warn('[Auth] Bad saved token, clearing');
+        localStorage.removeItem('budget_id_token');
       }
     }
-    // If not authenticated, the Google button in the HTML will handle sign-in
-    // via the data-callback="handleCredentialResponse" attribute
+    console.log('[Auth] No valid token, showing sign-in screen');
+    // Google button in HTML handles sign-in via data-callback
   },
 
   _onSignedIn() {
-    // Hide sign-in overlay
     const overlay = document.getElementById('signin-overlay');
     if (overlay) overlay.style.display = 'none';
 
-    // Show user info
     const userInfo = document.getElementById('user-info');
     if (userInfo) userInfo.textContent = this.userEmail || this.userName || 'Signed in';
 
-    // Boot the app
     initApp();
   },
 
   signOut() {
-    sessionStorage.removeItem('budget_id_token');
+    localStorage.removeItem('budget_id_token');
     this.idToken = null;
     this.userEmail = null;
-    // Disable auto-select so the button shows again
     if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
       google.accounts.id.disableAutoSelect();
     }
-    // Show sign-in overlay
     const overlay = document.getElementById('signin-overlay');
     if (overlay) overlay.style.display = 'flex';
   },
@@ -102,13 +98,13 @@ const API = {
     const token = GoogleAuth.getToken();
     if (!token) throw new Error('Not authenticated. Please sign in.');
 
-    const url = new URL(this.BASE_URL);
-    url.searchParams.set('action', action);
-    url.searchParams.set('id_token', token);
+    // Build URL with action and token
+    const url = this.BASE_URL + '?action=' + encodeURIComponent(action) + '&id_token=' + encodeURIComponent(token);
+
+    console.log('[API] Calling:', action);
 
     const opts = {
       method: data ? 'POST' : 'GET',
-      redirect: 'follow'
     };
 
     if (data) {
@@ -117,20 +113,28 @@ const API = {
     }
 
     try {
-      const res = await fetch(url.toString(), opts);
-      const text = await res.text();
+      const res = await fetch(url, opts);
+      console.log('[API] Response status:', res.status, 'redirected:', res.redirected, 'url:', res.url);
 
-      // Apps Script returns HTML on auth redirects
+      const text = await res.text();
+      console.log('[API] Response body (first 200 chars):', text.substring(0, 200));
+
+      // Apps Script returns HTML when there's an auth redirect
       if (text.startsWith('<!DOCTYPE') || text.startsWith('<html') || text.startsWith('<HTML')) {
-        throw new Error('Auth redirect from Google. Sign out and sign in again.');
+        console.error('[API] Got HTML response instead of JSON — likely auth redirect');
+        throw new Error('Google returned an auth page instead of data. Your Apps Script deployment may need "Who has access: Anyone". See console for details.');
       }
 
       const json = JSON.parse(text);
-      if (json.error) throw new Error(json.error);
+      if (json.error) {
+        console.error('[API] Server error:', json.error);
+        throw new Error(json.error);
+      }
       return json;
     } catch (err) {
       if (err.message.includes('Failed to fetch')) {
-        throw new Error('Network error. Check your connection.');
+        console.error('[API] Network error — CORS or connectivity issue');
+        throw new Error('Failed to fetch. This usually means CORS is blocking the request. Make sure Apps Script is deployed with "Who has access: Anyone" and you created a NEW version after code changes.');
       }
       throw err;
     }
@@ -140,18 +144,24 @@ const API = {
     const token = GoogleAuth.getToken();
     if (!token) throw new Error('Not authenticated.');
 
-    const url = new URL(this.BASE_URL);
-    url.searchParams.set('action', action);
-    url.searchParams.set('id_token', token);
+    let url = this.BASE_URL + '?action=' + encodeURIComponent(action) + '&id_token=' + encodeURIComponent(token);
     Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
+      if (v !== undefined && v !== null && v !== '') {
+        url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+      }
     });
 
-    const res = await fetch(url.toString(), { redirect: 'follow' });
+    console.log('[API] GET:', action);
+
+    const res = await fetch(url);
+    console.log('[API] Response status:', res.status, 'redirected:', res.redirected);
+
     const text = await res.text();
+    console.log('[API] Response (first 200 chars):', text.substring(0, 200));
 
     if (text.startsWith('<!DOCTYPE') || text.startsWith('<html') || text.startsWith('<HTML')) {
-      throw new Error('Auth redirect. Sign out and sign in again.');
+      console.error('[API] Got HTML instead of JSON');
+      throw new Error('Google returned an auth page. Deploy Apps Script with "Who has access: Anyone".');
     }
 
     const json = JSON.parse(text);
@@ -294,7 +304,6 @@ const Utils = {
     return o;
   }
 };
-
 
 // --- BOOTSTRAP ---
 document.addEventListener('DOMContentLoaded', () => {
