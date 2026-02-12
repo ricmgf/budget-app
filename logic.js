@@ -1,7 +1,3 @@
-// ============================================================
-// Budget App — Master Logic Engine (v1.9 - Robust)
-// ============================================================
-
 const BudgetLogic = {
   async loadConfig() {
     try {
@@ -24,8 +20,7 @@ const BudgetLogic = {
   },
 
   sniffAccount(rawText, accounts) {
-    if (!rawText || !accounts || accounts.length === 0) return null;
-    // Limpiamos espacios y guiones para comparar IBANs de forma robusta
+    if (!rawText || !accounts) return null;
     const cleanText = rawText.replace(/[\s-]/g, '');
     for (const acc of accounts) { 
       const cleanID = String(acc[1] || '').replace(/[\s-]/g, '');
@@ -41,19 +36,14 @@ const BudgetLogic = {
 
   async processImport(rawRows, rawText, fileName) {
     const config = await this.loadConfig();
-    let accounts = [];
-    try { 
-      // Forzamos lectura fresca de ACCOUNTS
-      accounts = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS); 
-    } catch(e) { console.warn("Fallo lectura ACCOUNTS en importación"); }
-    
+    const accounts = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS);
     const bank = this.sniffAccount(rawText, accounts.slice(1));
     const alias = bank ? bank[0] : "Desconocido", dCasa = bank ? bank[2] : "", isCr = bank ? (bank[3] === 'Credit') : false;
     
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const r = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
-    const hs = new Set([...g.map(x => x[13]), ...i.map(x => x[10])]);
+    const hs = new Set([...g.map(x => x[GASTOS_COLS.HASH]), ...i.map(x => x[INGRESOS_COLS.HASH])]);
     
     let st = { imported: 0, skipped: 0 };
     for (const row of rawRows) {
@@ -66,17 +56,30 @@ const BudgetLogic = {
       fD = this.excelToDate(fD);
       const fAmt = isCr ? (fA * -1) : fA;
       const hash = this.generateHash(fD, fAmt, fC, alias);
-      
       if (hs.has(hash)) { st.skipped++; continue; }
-      const m = this.findRuleMatch(fC, r), isInc = fAmt > 0, dt = new Date(fD);
-      
-      const nr = [];
-      nr[1] = dt.getFullYear(); nr[2] = dt.getMonth() + 1;
-      nr[3] = fD; nr[4] = fC; nr[5] = Math.abs(fAmt); nr[6] = alias;
-      nr[7] = m.casa || dCasa; nr[8] = m.category || ''; nr[13] = hash;
 
-      if (isInc) await SheetsAPI.appendRow(CONFIG.SHEETS.INGRESOS, nr);
-      else { nr[12] = m.category ? 'Categorizado' : 'Pendiente'; await SheetsAPI.appendRow(CONFIG.SHEETS.GASTOS, nr); }
+      const match = this.findRuleMatch(fC, r);
+      const isInc = fAmt > 0;
+      const dt = new Date(fD);
+      
+      if (isInc) {
+        const nr = new Array(11).fill(""); // K=11
+        nr[INGRESOS_COLS.AÑO] = dt.getFullYear(); nr[INGRESOS_COLS.MES] = dt.getMonth() + 1;
+        nr[INGRESOS_COLS.FECHA] = fD; nr[INGRESOS_COLS.CONCEPTO] = fC;
+        nr[INGRESOS_COLS.IMPORTE] = Math.abs(fAmt); nr[INGRESOS_COLS.CUENTA] = alias;
+        nr[INGRESOS_COLS.CASA] = match.casa || dCasa; nr[INGRESOS_COLS.CATEGORIA] = match.category || '';
+        nr[INGRESOS_COLS.ORIGEN] = fileName; nr[INGRESOS_COLS.HASH] = hash;
+        await SheetsAPI.appendRow(CONFIG.SHEETS.INGRESOS, nr);
+      } else {
+        const nr = new Array(14).fill(""); // N=14
+        nr[GASTOS_COLS.AÑO] = dt.getFullYear(); nr[GASTOS_COLS.MES] = dt.getMonth() + 1;
+        nr[GASTOS_COLS.FECHA] = fD; nr[GASTOS_COLS.CONCEPTO] = fC;
+        nr[GASTOS_COLS.IMPORTE] = Math.abs(fAmt); nr[GASTOS_COLS.CUENTA] = alias;
+        nr[GASTOS_COLS.CASA] = match.casa || dCasa; nr[GASTOS_COLS.CATEGORIA] = match.category || '';
+        nr[GASTOS_COLS.ORIGEN] = fileName; nr[GASTOS_COLS.HASH] = hash;
+        nr[GASTOS_COLS.ESTADO] = match.category ? 'Categorizado' : 'Pendiente';
+        await SheetsAPI.appendRow(CONFIG.SHEETS.GASTOS, nr);
+      }
       st.imported++;
     }
     return { ...st, account: alias };
@@ -85,17 +88,17 @@ const BudgetLogic = {
   generateHash(d, a, c, acc) {
     const s = `${d}|${Math.abs(a).toFixed(2)}|${(c||'').toLowerCase().replace(/[^a-z0-9]/g,'')}|${acc}`;
     let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
-    return 'h' + Math.abs(h);
+    return 'h' + Math.abs(hash);
   },
 
   async saveRuleAndApply(p, cat, sub, casa) {
     await SheetsAPI.appendRow(CONFIG.SHEETS.RULES, [Date.now(), "Contains", p, cat, sub, casa, "User"]);
     const d = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     for (let j = 1; j < d.length; j++) {
-      if (d[j][12] === 'Pendiente' && d[j][4].toLowerCase().includes(p.toLowerCase())) {
-        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, 9, cat);
-        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, 8, casa);
-        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, 13, 'Categorizado');
+      if (d[j][GASTOS_COLS.ESTADO] === 'Pendiente' && d[j][GASTOS_COLS.CONCEPTO].toLowerCase().includes(p.toLowerCase())) {
+        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, GASTOS_COLS.CATEGORIA + 1, cat);
+        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, GASTOS_COLS.CASA + 1, casa);
+        await SheetsAPI.updateCell(CONFIG.SHEETS.GASTOS, j + 1, GASTOS_COLS.ESTADO + 1, 'Categorizado');
       }
     }
   },
@@ -110,20 +113,20 @@ const BudgetLogic = {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const b = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_PLAN);
-    const f = (arr, yr, mo) => arr.slice(1).filter(r => r[1] == yr && r[2] == mo);
+    const f = (arr, yr, mo) => arr.slice(1).filter(r => r[GASTOS_COLS.AÑO] == yr && r[GASTOS_COLS.MES] == mo);
     const actG = f(g, y, m), actI = f(i, y, m), planG = b.slice(1).filter(r => r[0] == y && r[1] == m);
     const funding = {};
     planG.forEach(p => {
       const isOneOff = p[8] === 'One-off';
-      const isPaid = isOneOff && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
+      const isPaid = isOneOff && actG.some(a => a[GASTOS_COLS.CATEGORIA] === p[6] && Math.abs(parseFloat(a[GASTOS_COLS.IMPORTE]) - parseFloat(p[3])) < 10);
       if (!isPaid) { const acc = p[4] || 'Principal'; funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); }
     });
     return {
-      totalGastos: actG.reduce((a,b) => a + (parseFloat(b[5]) || 0), 0),
-      totalIngresos: actI.reduce((a,b) => a + (parseFloat(b[5]) || 0), 0),
+      totalGastos: actG.reduce((a,b) => a + (parseFloat(b[GASTOS_COLS.IMPORTE]) || 0), 0),
+      totalIngresos: actI.reduce((a,b) => a + (parseFloat(b[INGRESOS_COLS.IMPORTE]) || 0), 0),
       plannedGastos: planG.reduce((a,b) => a + (parseFloat(b[3]) || 0), 0),
       fundingPlan: funding,
-      pendingCount: g.filter(r => r[12] === 'Pendiente').length
+      pendingCount: g.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente').length
     };
   }
 };
