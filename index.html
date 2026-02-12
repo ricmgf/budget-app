@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="app.css">
 
   <style>
-    /* Center the month selector using a 3-column grid */
+    /* UI Layout & Centering Logic */
     .page-header {
       display: grid;
       grid-template-columns: 1fr auto 1fr; 
@@ -40,9 +40,23 @@
     }
     .logo-icon { font-size: 28px; }
     
-    /* Ensure pages take full height */
     .page { display: none; }
     .page.active { display: block; }
+
+    /* Modern Upload Zone Styling */
+    .upload-zone {
+      border: 2px dashed var(--border-medium);
+      padding: 40px;
+      border-radius: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--bg-secondary);
+    }
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
   </style>
 </head>
 <body>
