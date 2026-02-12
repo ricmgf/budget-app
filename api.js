@@ -42,11 +42,7 @@ function maybeEnableSignIn() {
 }
 
 function handleAuthClick() {
-  if (gapi.client.getToken() === null) {
-    tokenClient.requestAccessToken({prompt: 'consent'});
-  } else {
-    tokenClient.requestAccessToken({prompt: ''});
-  }
+  tokenClient.requestAccessToken({prompt: 'consent'});
 }
 
 function onTokenResponse(resp) {
@@ -70,23 +66,6 @@ var SheetsAPI = {
       valueInputOption: 'USER_ENTERED',
       resource: { values: [rowData] }
     });
-  },
-  updateRow: async function(sheetName, rowIndex, rowData) {
-    return gapi.client.sheets.spreadsheets.values.update({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      range: `${sheetName}!A${rowIndex}`,
-      valueInputOption: 'USER_ENTERED',
-      resource: { values: [rowData] }
-    });
-  },
-  deleteRow: async function(sheetName, rowIndex) {
-    const resp = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: CONFIG.SPREADSHEET_ID });
-    let sheetId = null;
-    resp.result.sheets.forEach(s => { if (s.properties.title === sheetName) sheetId = s.properties.sheetId; });
-    return gapi.client.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: CONFIG.SPREADSHEET_ID,
-      resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId, dimension: 'ROWS', startIndex: rowIndex-1, endIndex: rowIndex } } }] }
-    });
   }
 };
 
@@ -96,6 +75,5 @@ var DataCache = {
     if (this._cache[key] && (Date.now() - this._timestamps[key]) < this.TTL) return Promise.resolve(this._cache[key]);
     return null;
   },
-  set: function(key, data) { this._cache[key] = data; this._timestamps[key] = Date.now(); },
-  invalidate: function() { this._cache = {}; }
+  set: function(key, data) { this._cache[key] = data; this._timestamps[key] = Date.now(); }
 };
