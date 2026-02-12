@@ -2,29 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Budget App — Direct API</title>
+  <title>Budget App</title>
   <link rel="stylesheet" href="app.css">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0; font-family:'DM Sans', sans-serif;">
+<body style="margin:0; font-family:'DM Sans', sans-serif; background:#f7f8fa;">
+
   <div id="signin-overlay" style="position:fixed;inset:0;background:#f7f8fa;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
     <div style="background:white; padding:40px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.05); text-align:center; width:320px;">
       <div style="font-size:50px; margin-bottom:20px;">💰</div>
       <h1 style="margin:0 0 8px 0; font-size:24px; color:#1a1d23;">Budget App</h1>
-      <p id="loading-msg" style="color:#666; margin-bottom:24px;">Conectando con Google...</p>
-      <button id="signin-btn" style="display:none; width:100%; padding:14px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;" onclick="handleAuthClick()">Iniciar Sesión</button>
+      <p id="loading-msg" style="color:#666; margin-bottom:24px;">Conectando...</p>
+      <button id="signin-btn" style="display:none; width:100%; padding:14px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar Sesión</button>
     </div>
   </div>
 
   <div class="app-layout">
     <aside class="sidebar">
       <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
-        <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
-        <button class="nav-item" data-page="review" onclick="navigateTo('review')">✏️ Revisar</button>
-        <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
-        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
-        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
+        <button class="nav-item active" onclick="navigateTo('dashboard')">📊 Dashboard</button>
+        <button class="nav-item" onclick="navigateTo('import')">📥 Importar</button>
+        <button class="nav-item" onclick="navigateTo('review')">✏️ Revisar</button>
+        <button class="nav-item" onclick="navigateTo('rules')">⚙️ Reglas</button>
       </nav>
     </aside>
     <main class="main-content">
@@ -32,7 +31,7 @@
         <h2 id="page-title">Panel de Control</h2>
         <div class="month-selector">
           <button onclick="prevMonth()">◄</button>
-          <span id="month-display" style="font-weight:bold; margin: 0 15px; min-width:120px; display:inline-block; text-align:center;"></span>
+          <span id="month-display" style="font-weight:bold; margin:0 15px; min-width:120px; text-align:center; display:inline-block;"></span>
           <button onclick="nextMonth()">►</button>
         </div>
       </div>
@@ -40,8 +39,6 @@
       <div id="page-import" class="page"><div id="import-content"></div></div>
       <div id="page-review" class="page"><div id="review-content"></div></div>
       <div id="page-rules" class="page"><div id="rules-content"></div></div>
-      <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
-      <div id="page-balances" class="page"><div id="balances-content"></div></div>
     </main>
   </div>
 
