@@ -1,41 +1,37 @@
-// ============================================================
-// Budget App — Master Logic Engine (v1.5)
-// ============================================================
-
 const BudgetLogic = {
   async loadConfig() {
-    const cached = await DataCache.get('config'); 
-    if (cached) return cached;
-    
-    // Verificación de seguridad para la lectura de CONFIG
-    const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
-    if (!rows || rows.length === 0) throw new Error("No se pudo leer la hoja de CONFIG");
-
-    const cfg = { categorias: {}, cuentas: [], casas: [] };
-    rows.slice(1).forEach(row => {
-      if (row[0]) { 
-        if (!cfg.categorias[row[0]]) cfg.categorias[row[0]] = []; 
-        if (row[1]) cfg.categorias[row[0]].push(row[1]); 
-      }
-      if (row[2] && !cfg.cuentas.includes(row[2])) cfg.cuentas.push(row[2]);
-      if (row[3] && !cfg.casas.includes(row[3])) cfg.casas.push(row[3]);
-    });
-    DataCache.set('config', cfg); 
-    return cfg;
+    try {
+      const cached = await DataCache.get('config'); 
+      if (cached) return cached;
+      const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
+      if (!rows || rows.length === 0) throw new Error("CONFIG_EMPTY");
+      const cfg = { categorias: {}, cuentas: [], casas: [] };
+      rows.slice(1).forEach(row => {
+        if (row[0]) { 
+          if (!cfg.categorias[row[0]]) cfg.categorias[row[0]] = []; 
+          if (row[1]) cfg.categorias[row[0]].push(row[1]); 
+        }
+        if (row[2] && !cfg.cuentas.includes(row[2])) cfg.cuentas.push(row[2]);
+        if (row[3] && !cfg.casas.includes(row[3])) cfg.casas.push(row[3]);
+      });
+      DataCache.set('config', cfg); 
+      return cfg;
+    } catch (e) { console.error("Error loadConfig:", e); throw e; }
   },
 
   sniffAccount(rawText, accounts) {
     if (!rawText || !accounts) return null;
+    const cleanText = rawText.replace(/[\s-]/g, '');
     for (const acc of accounts) { 
-      if (acc[1] && rawText.includes(acc[1])) return acc; 
+      const cleanID = String(acc[1]).replace(/[\s-]/g, '');
+      if (cleanID && cleanText.includes(cleanID)) return acc; 
     }
     return null;
   },
 
   excelToDate(serial) {
     if (isNaN(serial) || serial < 40000) return serial;
-    const date = new Date(Math.round((serial - 25569) * 86400 * 1000));
-    return date.toISOString().split('T')[0];
+    return new Date(Math.round((serial - 25569) * 86400 * 1000)).toISOString().split('T')[0];
   },
 
   async processImport(rawRows, rawText, fileName) {
@@ -51,9 +47,10 @@ const BudgetLogic = {
     
     let st = { imported: 0, skipped: 0 };
     for (const row of rawRows) {
-      let fD = row['Fecha'] || row['Date'] || row['Data'] || row['Fecha valor'];
-      let fC = row['Movimiento'] || row['Description'] || row['Operazione'] || row['Concepto'];
-      let fA = parseFloat(String(row['Importe'] || row['Amount'] || row['Importo']).replace(',','.'));
+      let fD = row['Fecha'] || row['Date'] || row['Data'] || row['Fecha valor'] || row['F.Valor'];
+      let fC = row['Movimiento'] || row['Description'] || row['Operazione'] || row['Concepto'] || row['Dettagli'];
+      let valRaw = row['Importe'] || row['Amount'] || row['Importo'] || row['Value'];
+      let fA = parseFloat(String(valRaw).replace(',','.'));
       
       if (!fD || isNaN(fA)) continue;
       fD = this.excelToDate(fD);
@@ -64,11 +61,9 @@ const BudgetLogic = {
       const m = this.findRuleMatch(fC, r), isInc = fAmt > 0, dt = new Date(fD);
       
       const nr = [];
-      nr[GASTOS_COLS.AÑO] = dt.getFullYear(); nr[GASTOS_COLS.MES] = dt.getMonth() + 1;
-      nr[GASTOS_COLS.FECHA] = fD; nr[GASTOS_COLS.CONCEPTO] = fC;
-      nr[GASTOS_COLS.IMPORTE] = Math.abs(fAmt); nr[GASTOS_COLS.CUENTA] = alias;
-      nr[GASTOS_COLS.CASA] = m.casa || dCasa; nr[GASTOS_COLS.CATEGORIA] = m.category || '';
-      nr[GASTOS_COLS.HASH] = hash;
+      nr[1] = dt.getFullYear(); nr[2] = dt.getMonth() + 1;
+      nr[3] = fD; nr[4] = fC; nr[5] = Math.abs(fAmt); nr[6] = alias;
+      nr[7] = m.casa || dCasa; nr[8] = m.category || ''; nr[13] = hash;
 
       if (isInc) await SheetsAPI.appendRow(CONFIG.SHEETS.INGRESOS, nr);
       else { nr[12] = m.category ? 'Categorizado' : 'Pendiente'; await SheetsAPI.appendRow(CONFIG.SHEETS.GASTOS, nr); }
@@ -97,9 +92,7 @@ const BudgetLogic = {
 
   findRuleMatch(desc, rules) {
     const d = (desc || '').toLowerCase();
-    for (const r of rules.slice(1)) { 
-      if (r[2] && d.includes(r[2].toLowerCase())) return { category: r[3], casa: r[5] }; 
-    }
+    for (const r of rules.slice(1)) { if (r[2] && d.includes(r[2].toLowerCase())) return { category: r[3], casa: r[5] }; }
     return { category: null };
   },
 
@@ -107,20 +100,14 @@ const BudgetLogic = {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
     const b = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_PLAN);
-    
     const f = (arr, yr, mo) => arr.slice(1).filter(r => r[1] == yr && r[2] == mo);
     const actG = f(g, y, m), actI = f(i, y, m), planG = b.slice(1).filter(r => r[0] == y && r[1] == m);
-    
     const funding = {};
     planG.forEach(p => {
       const isOneOff = p[8] === 'One-off';
       const isPaid = isOneOff && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
-      if (!isPaid) { 
-        const acc = p[4] || 'Principal'; 
-        funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); 
-      }
+      if (!isPaid) { const acc = p[4] || 'Principal'; funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); }
     });
-
     return {
       totalGastos: actG.reduce((a,b) => a + (parseFloat(b[5]) || 0), 0),
       totalIngresos: actI.reduce((a,b) => a + (parseFloat(b[5]) || 0), 0),
