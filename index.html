@@ -3,32 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budget — Direct API</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Budget App</title>
   <link rel="stylesheet" href="app.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="signin-overlay" style="position:fixed;inset:0;background:#f7f8fa;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:24px">
+  <div id="signin-overlay" style="position:fixed;inset:0;background:#f7f8fa;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
     <div style="text-align:center">
       <div style="font-size:48px;margin-bottom:16px">💰</div>
-      <h1 style="margin-bottom:8px">Budget App</h1>
+      <h1>Budget App</h1>
       <p id="loading-msg" style="color:#666">Cargando servicios de Google...</p>
-      <button id="auth-btn" style="display:none; padding: 14px 28px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar sesión con Google</button>
+      <button id="auth-btn" style="display:none; padding:15px 30px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;" onclick="handleAuthClick()">Iniciar Sesión</button>
     </div>
   </div>
 
   <div class="app-layout">
     <aside class="sidebar">
-      <div style="padding: 24px; font-weight: bold; font-size: 20px;">B</div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
         <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
         <button class="nav-item" data-page="review" onclick="navigateTo('review')">✏️ Revisar</button>
-        <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
-        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
-        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
-        <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">🔧 Ajustes</button>
       </nav>
     </aside>
 
@@ -36,31 +30,15 @@
       <div class="page-header">
         <h2 id="page-title">Panel de Control</h2>
         <div class="month-selector">
-          <button class="btn-nav" onclick="prevMonth()">◄</button>
-          <span id="month-display" style="font-weight:bold; min-width:120px; text-align:center"></span>
-          <button class="btn-nav" onclick="nextMonth()">►</button>
+          <button onclick="prevMonth()">◄</button>
+          <span id="month-display" style="font-weight:bold; margin: 0 15px;"></span>
+          <button onclick="nextMonth()">►</button>
         </div>
       </div>
-
       <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
       <div id="page-import" class="page"><div id="import-content"></div></div>
       <div id="page-review" class="page"><div id="review-content"></div></div>
-      <div id="page-rules" class="page"><div id="rules-content"></div></div>
-      <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
-      <div id="page-balances" class="page"><div id="balances-content"></div></div>
-      <div id="page-settings" class="page"><div id="settings-content"></div></div>
     </main>
-  </div>
-
-  <div id="modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header"><h3 id="modal-title"></h3></div>
-      <div class="modal-body" id="modal-body"></div>
-      <div class="modal-footer">
-        <button onclick="closeModal()">Cancelar</button>
-        <button id="modal-confirm" class="btn-primary">Guardar</button>
-      </div>
-    </div>
   </div>
 
   <script src="config.js"></script>
