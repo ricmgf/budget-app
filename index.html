@@ -2,23 +2,61 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget — Direct API</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
+
+  <style>
+    /* Fix to center the month selector */
+    .page-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr; /* Creates three sections: left, center, right */
+      align-items: center;
+      width: 100%;
+    }
+    #page-title { grid-column: 1; margin: 0; }
+    .month-selector { 
+      grid-column: 2; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px;
+      justify-self: center; /* Forces the selector to the dead center of the screen */
+    }
+    
+    /* Clean up sidebar logo */
+    .sidebar-header {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 16px;
+    }
+    .logo-icon { font-size: 28px; }
+  </style>
 </head>
 <body>
+
   <div id="signin-overlay" style="position:fixed;inset:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;">
-    <div style="background:var(--bg-secondary); padding:48px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.05); text-align:center; width:100%; max-width:400px; border:1px solid var(--border-light);">
-      <div style="font-size:56px;margin-bottom:20px">💰</div>
-      <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;">Budget App</h1>
-      <p id="loading-msg" style="color:var(--text-secondary);margin-bottom:32px">Conectando...</p>
-      <button id="signin-btn" style="display:none; width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer;" onclick="handleAuthClick()">Entrar con Google</button>
+    <div style="background:var(--bg-secondary); padding:48px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.05); text-align:center; width:100%; max-width:360px; border:1px solid var(--border-light);">
+      <div style="font-size:64px; margin-bottom:24px;">💰</div>
+      <h1 style="font-size:28px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">Budget App</h1>
+      <p id="loading-msg" style="color:var(--text-secondary); margin-bottom:32px;">Conectando con Google...</p>
+      <button id="signin-btn" style="display:none; width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:600; font-size:16px;" onclick="handleAuthClick()">Entrar con Google</button>
     </div>
   </div>
 
   <div class="app-layout">
     <aside class="sidebar">
-      <div class="sidebar-header"><div class="logo-icon">💰</div><span class="logo-text">Budget</span></div>
+      <div class="sidebar-header">
+        <div class="logo-icon">💰</div>
+        <span style="font-weight:700; font-size:18px; color:var(--text-primary);">Budget</span>
+      </div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
         <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
@@ -26,21 +64,28 @@
         <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
         <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
         <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
-        <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">🔧 Ajustes</button>
       </nav>
     </aside>
+
     <main class="main-content">
-      <header class="page-header">
+      <div class="page-header">
         <h2 id="page-title">Dashboard</h2>
-        <div class="month-selector"><button onclick="prevMonth()">◄</button><span id="month-display" class="month-label"></span><button onclick="nextMonth()">►</button></div>
-      </header>
+        
+        <div class="month-selector">
+          <button class="btn-icon" onclick="prevMonth()" style="background:none; border:1px solid var(--border-medium); border-radius:6px; cursor:pointer; padding:4px 8px;">◄</button>
+          <span id="month-display" style="font-weight:600; min-width:140px; text-align:center; font-size:16px;"></span>
+          <button class="btn-icon" onclick="nextMonth()" style="background:none; border:1px solid var(--border-medium); border-radius:6px; cursor:pointer; padding:4px 8px;">►</button>
+        </div>
+        
+        <div style="grid-column: 3;"></div>
+      </div>
+
       <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
       <div id="page-import" class="page"><div id="import-content"></div></div>
       <div id="page-review" class="page"><div id="review-content"></div></div>
       <div id="page-rules" class="page"><div id="rules-content"></div></div>
       <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
       <div id="page-balances" class="page"><div id="balances-content"></div></div>
-      <div id="page-settings" class="page"><div id="settings-content"></div></div>
     </main>
   </div>
 
