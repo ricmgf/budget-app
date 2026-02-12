@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Configuration (Phase 1-4 Complete)
+// Budget App — Master Configuration (Phase 1, 2, 3 & 4)
 // ============================================================
 
 var CONFIG = {
@@ -17,30 +17,62 @@ var CONFIG = {
     BALANCES: 'BALANCES',
     BUDGET_PLAN: 'BUDGET_PLAN',
     INCOME_PLAN: 'INCOME_PLAN',
-    ACCOUNTS: 'ACCOUNTS', // Nueva para el Sniffer
+    ACCOUNTS: 'ACCOUNTS', // Para el Registro de Bancos
     AUDIT: 'AUDIT_LOG'
   }
 };
 
-// GASTOS_TOTAL indices (N=13) - RESPETADO AL 100%
+// GASTOS_TOTAL indices (N=14) - LEGACY COMPLETO
 var GASTOS_COLS = {
-  ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
-  CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
-  NOTAS: 10, ORIGEN: 11, ESTADO: 12, HASH: 13 
+  ID: 0, 
+  AÑO: 1, 
+  MES: 2, 
+  FECHA: 3, 
+  CONCEPTO: 4, 
+  IMPORTE: 5,
+  CUENTA: 6, 
+  CASA: 7, 
+  CATEGORIA: 8, 
+  SUBCATEGORIA: 9, 
+  NOTAS: 10, 
+  ORIGEN: 11, 
+  ESTADO: 12, 
+  HASH: 13 
 };
 
-// INGRESOS indices (K=10) - RESPETADO AL 100%
+// INGRESOS indices (K=11) - LEGACY COMPLETO
 var INGRESOS_COLS = {
-  ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
-  CUENTA: 6, CASA: 7, CATEGORIA: 8, ORIGEN: 9, HASH: 10
+  ID: 0, 
+  AÑO: 1, 
+  MES: 2, 
+  FECHA: 3, 
+  CONCEPTO: 4, 
+  IMPORTE: 5,
+  CUENTA: 6, 
+  CASA: 7, 
+  CATEGORIA: 8, 
+  ORIGEN: 9, 
+  HASH: 10
 };
 
-// BUDGET_PLAN indices (TIPO=8) - RESPETADO AL 100%
+// BUDGET_PLAN indices (TIPO=10) - LEGACY COMPLETO
 var BUDGET_COLS = {
-  AÑO: 0, MES: 1, CONCEPTO: 2, IMPORTE: 3, CUENTA: 4, 
-  CASA: 5, CATEGORIA: 6, SUBCATEGORIA: 7, TIPO: 8, NOTAS: 9
+  AÑO: 0, 
+  MES: 1, 
+  CONCEPTO: 2, 
+  IMPORTE: 3, 
+  CUENTA: 4, 
+  CASA: 5, 
+  CATEGORIA: 6, 
+  SUBCATEGORIA: 7, 
+  TIPO: 8, 
+  NOTAS: 9
 };
 
+// ACCOUNTS indices (Nueva para Fase 4)
 var ACCOUNT_COLS = {
-  ALIAS: 0, IDENTIFIER: 1, CASA: 2, TIPO: 3
+  ALIAS: 0, 
+  IDENTIFIER: 1, 
+  CASA: 2, 
+  TIPO: 3
 };
