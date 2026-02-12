@@ -1,3 +1,7 @@
+// ============================================================
+// Budget App — Master Logic Engine (v1.9 - Robust)
+// ============================================================
+
 const BudgetLogic = {
   async loadConfig() {
     try {
@@ -20,10 +24,11 @@ const BudgetLogic = {
   },
 
   sniffAccount(rawText, accounts) {
-    if (!rawText || !accounts) return null;
+    if (!rawText || !accounts || accounts.length === 0) return null;
+    // Limpiamos espacios y guiones para comparar IBANs de forma robusta
     const cleanText = rawText.replace(/[\s-]/g, '');
     for (const acc of accounts) { 
-      const cleanID = String(acc[1]).replace(/[\s-]/g, '');
+      const cleanID = String(acc[1] || '').replace(/[\s-]/g, '');
       if (cleanID && cleanText.includes(cleanID)) return acc; 
     }
     return null;
@@ -36,7 +41,12 @@ const BudgetLogic = {
 
   async processImport(rawRows, rawText, fileName) {
     const config = await this.loadConfig();
-    const accounts = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS);
+    let accounts = [];
+    try { 
+      // Forzamos lectura fresca de ACCOUNTS
+      accounts = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS); 
+    } catch(e) { console.warn("Fallo lectura ACCOUNTS en importación"); }
+    
     const bank = this.sniffAccount(rawText, accounts.slice(1));
     const alias = bank ? bank[0] : "Desconocido", dCasa = bank ? bank[2] : "", isCr = bank ? (bank[3] === 'Credit') : false;
     
@@ -48,7 +58,7 @@ const BudgetLogic = {
     let st = { imported: 0, skipped: 0 };
     for (const row of rawRows) {
       let fD = row['Fecha'] || row['Date'] || row['Data'] || row['Fecha valor'] || row['F.Valor'];
-      let fC = row['Movimiento'] || row['Description'] || row['Operazione'] || row['Concepto'] || row['Dettagli'];
+      let fC = row['Movimiento'] || row['Description'] || row['Operazione'] || row['Concepto'];
       let valRaw = row['Importe'] || row['Amount'] || row['Importo'] || row['Value'];
       let fA = parseFloat(String(valRaw).replace(',','.'));
       
