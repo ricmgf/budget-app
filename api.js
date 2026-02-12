@@ -2,7 +2,7 @@ var tokenClient = null;
 var gapiInited = false;
 var gisInited = false;
 
-// --- Initialize Google API Client ---
+// --- Initialize GAPI ---
 function initGoogleAuth() {
   gapi.load('client', function() {
     gapi.client.init({
@@ -14,14 +14,13 @@ function initGoogleAuth() {
       maybeEnableSignIn();
     }).catch(function(err) {
       console.error('[Auth] gapi init error:', err);
-      // Show error on screen if the key is wrong
       const msg = document.getElementById('loading-msg');
-      if (msg) msg.innerHTML = '<span style="color:red">Error: Clave API no válida</span>';
+      if (msg) msg.innerHTML = '<span style="color:red">Error: Clave API no válida. <br>Asegúrate de que "Google Sheets API" esté habilitado en Cloud Console.</span>';
     });
   });
 }
 
-// --- Initialize Identity Services ---
+// --- Initialize GIS ---
 function initGIS() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.CLIENT_ID,
@@ -36,15 +35,13 @@ function initGIS() {
   maybeEnableSignIn();
 }
 
-// --- Safety check to find HTML elements ---
 function maybeEnableSignIn() {
   if (gapiInited && gisInited) {
     const btn = document.getElementById('auth-btn');
     const msg = document.getElementById('loading-msg');
     
-    // If HTML isn't ready, wait 100ms and try again
     if (!btn || !msg) {
-      setTimeout(maybeEnableSignIn, 100);
+      setTimeout(maybeEnableSignIn, 150);
       return;
     }
 
@@ -64,7 +61,6 @@ function onSignedIn() {
   if (typeof initApp === 'function') initApp();
 }
 
-// --- Sheets API Library ---
 var SheetsAPI = {
   readSheet: async function(sheetName) {
     const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -73,11 +69,4 @@ var SheetsAPI = {
     });
     return response.result.values || [];
   }
-};
-
-// --- DATA CACHE ---
-var DataCache = {
-  _cache: {},
-  get: function(key) { return this._cache[key] || null; },
-  set: function(key, val) { this._cache[key] = val; }
 };
