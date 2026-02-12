@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Configuration (Complete Phase 1 & 2)
+// Budget App — Master Configuration (Phase 1, 2 & 3)
 // ============================================================
 
 var CONFIG = {
@@ -21,19 +21,15 @@ var CONFIG = {
   }
 };
 
-// Fixed Column Mappings from Master Spec
+// Precise Column Indices for GASTOS_TOTAL (N=13)
 var GASTOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, SUBCATEGORIA: 9, 
   NOTAS: 10, ORIGEN: 11, ESTADO: 12, HASH: 13 
 };
 
+// Precise Column Indices for INGRESOS (K=10)
 var INGRESOS_COLS = {
   ID: 0, AÑO: 1, MES: 2, FECHA: 3, CONCEPTO: 4, IMPORTE: 5,
   CUENTA: 6, CASA: 7, CATEGORIA: 8, NOTAS: 9, ORIGEN: 10, HASH: 11
-};
-
-var BUDGET_PLAN_COLS = {
-  AÑO: 0, MES: 1, CONCEPTO: 2, IMPORTE: 3, CUENTA: 4, 
-  CASA: 5, CATEGORIA: 6, SUBCATEGORIA: 7, TIPO: 8, NOTAS: 9
 };
