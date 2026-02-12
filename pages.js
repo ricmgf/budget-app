@@ -1,3 +1,7 @@
+// ============================================================
+// Budget App — Master UI Controller (v1.9)
+// ============================================================
+
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
   currentPage: 'dashboard',
@@ -16,6 +20,7 @@ function navigateTo(p) {
   const target = document.getElementById(`page-${p}`); if (target) target.classList.add('active');
   const nav = document.querySelector(`[data-page="${p}"]`); if (nav) nav.classList.add('active');
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
+  
   if (p === 'dashboard') loadDashboard();
   else if (p === 'import') loadImportPage();
   else if (p === 'review') loadReviewPage();
@@ -25,26 +30,42 @@ function navigateTo(p) {
 
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
+  if (!c) return;
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>';
-  const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-  c.innerHTML = `
-    <div class="metric-grid">
-      <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount} items</h2></div>
-      <div class="card"><h3>Neto Mes</h3><h2 class="${(d.totalIngresos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
-      <div class="card"><h3>Variación</h3><h2 class="${(d.plannedGastos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
-    </div>
-    <div class="two-col-equal">
-      <div class="card"><h3>🏦 Funding Plan</h3>
-        ${Object.entries(d.fundingPlan).map(([acc, amt]) => `<div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border-light);"><span>${acc}</span><strong>${Utils.formatCurrency(amt)}</strong></div>`).join('')}
+  try {
+    const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+    c.innerHTML = `
+      <div class="metric-grid">
+        <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount} items</h2></div>
+        <div class="card"><h3>Neto Mes</h3><h2 class="${(d.totalIngresos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
+        <div class="card"><h3>Variación</h3><h2 class="${(d.plannedGastos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
       </div>
-      <div class="card"><h3>📈 Status</h3><p>Gastos: ${Utils.formatCurrency(d.totalGastos)} / ${Utils.formatCurrency(d.plannedGastos)}</p></div>
-    </div>`;
+      <div class="two-col-equal">
+        <div class="card"><h3>🏦 Funding Plan</h3>
+          ${Object.entries(d.fundingPlan).map(([acc, amt]) => `<div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border-light);"><span>${acc}</span><strong>${Utils.formatCurrency(amt)}</strong></div>`).join('')}
+        </div>
+        <div class="card"><h3>📈 Status</h3><p>Gastos: ${Utils.formatCurrency(d.totalGastos)} / ${Utils.formatCurrency(d.plannedGastos)}</p></div>
+      </div>`;
+  } catch(e) { c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>'; }
 }
 
 async function loadSettingsPage() {
   const c = document.getElementById('settings-content');
+  if (!c) return;
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>';
-  const accs = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS);
+  
+  let accs = [];
+  try { 
+    // Intento de lectura fresca
+    accs = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS); 
+  } catch(e) {
+    c.innerHTML = `<div class="card" style="border:2px solid red; padding:20px;">
+      <h3 style="color:red;">⚠️ Error de conexión con Google Sheets</h3>
+      <p>La hoja <b>ACCOUNTS</b> no responde. Por favor, asegúrate de que el nombre es exacto y refresca la aplicación.</p>
+    </div>`;
+    return;
+  }
+
   const casas = AppState.config ? AppState.config.casas : [];
   c.innerHTML = `
     <div class="card">
@@ -69,20 +90,28 @@ async function loadSettingsPage() {
 }
 
 async function saveNewAccount() {
-  const row = [document.getElementById('new-acc-alias').value, document.getElementById('new-acc-id').value, document.getElementById('new-acc-casa').value, document.getElementById('new-acc-type').value];
-  if(!row[0] || !row[1]) return alert("Faltan datos");
-  await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, row);
-  loadSettingsPage();
+  const alias = document.getElementById('new-acc-alias').value;
+  const id = document.getElementById('new-acc-id').value;
+  const casa = document.getElementById('new-acc-casa').value;
+  const type = document.getElementById('new-acc-type').value;
+  if(!alias || !id) return alert("Faltan datos");
+  try {
+    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [alias, id, casa, type]);
+    loadSettingsPage();
+  } catch(e) { alert("Error al guardar. Revisa la hoja ACCOUNTS."); }
 }
 
 async function loadReviewPage() {
   const c = document.getElementById('review-content');
+  if (!c) return;
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>';
-  const all = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
-  const pending = all.filter(r => r[12] === 'Pendiente');
-  if (pending.length === 0) { c.innerHTML = '<div class="card" style="text-align:center; padding:80px;"><h3>Inbox Zero 🎉</h3></div>'; return; }
-  const item = pending[0];
-  c.innerHTML = `<div class="decision-queue" style="max-width:550px; margin:auto;"><div class="card" style="border: 2px solid var(--accent);"><h3>${item[4]}</h3><h2>${Utils.formatCurrency(item[5])}</h2><div class="form-group"><label>Casa</label><div class="chip-group" id="casa-chips">${AppState.config.casas.map(cas => `<button class="chip" onclick="selectChip(this, 'casa')">${cas}</button>`).join('')}</div></div><div class="form-group" style="margin-top:20px;"><label>Categoría</label><div class="chip-group" id="cat-chips">${Object.keys(AppState.config.categorias).map(cat => `<button class="chip" onclick="selectChip(this, 'cat')">${cat}</button>`).join('')}</div></div><button style="width:100%; margin-top:30px; padding:20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;" onclick="resolveItem('${item[4]}')">ENTRENAR REGLA</button></div></div>`;
+  try {
+    const all = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
+    const pending = all.filter(r => r[12] === 'Pendiente');
+    if (pending.length === 0) { c.innerHTML = '<div class="card" style="text-align:center; padding:80px;"><h3>Inbox Zero 🎉</h3></div>'; return; }
+    const item = pending[0];
+    c.innerHTML = `<div class="decision-queue" style="max-width:550px; margin:auto;"><div class="card" style="border: 2px solid var(--accent);"><h3>${item[4]}</h3><h2>${Utils.formatCurrency(item[5])}</h2><div class="form-group"><label>Casa</label><div class="chip-group" id="casa-chips">${AppState.config.casas.map(cas => `<button class="chip" onclick="selectChip(this, 'casa')">${cas shards}</button>`).join('')}</div></div><div class="form-group" style="margin-top:20px;"><label>Categoría</label><div class="chip-group" id="cat-chips">${Object.keys(AppState.config.categorias).map(cat => `<button class="chip" onclick="selectChip(this, 'cat')">${cat}</button>`).join('')}</div></div><button style="width:100%; margin-top:30px; padding:20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;" onclick="resolveItem('${item[4]}')">ENTRENAR REGLA</button></div></div>`;
+  } catch(e) { c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>'; }
 }
 
 async function resolveItem(p) {
@@ -92,7 +121,11 @@ async function resolveItem(p) {
 }
 
 function selectChip(el, group) { document.querySelectorAll(`#${group}-chips .chip`).forEach(c => c.classList.remove('active')); el.classList.add('active'); }
-function loadImportPage() { document.getElementById('import-content').innerHTML = `<div class="card"><div class="upload-zone" onclick="document.getElementById('f').click()" style="padding:80px; text-align:center; cursor:pointer; background:var(--bg-canvas); border-radius:24px; border:2px dashed var(--border-light);"><h3>📥 Importar XLSX/CSV</h3><p>Detección automática por IBAN/ID configurado</p></div><input type="file" id="f" style="display:none" onchange="handleFileImport(event)"></div>`; }
+
+function loadImportPage() {
+  document.getElementById('import-content').innerHTML = `<div class="card"><div class="upload-zone" onclick="document.getElementById('f').click()" style="padding:80px; text-align:center; cursor:pointer; background:var(--bg-canvas); border-radius:24px; border:2px dashed var(--border-light);"><h3>📥 Importar XLSX/CSV</h3><p>Detección automática por IBAN/ID configurado</p></div><input type="file" id="f" style="display:none" onchange="handleFileImport(event)"></div>`;
+}
+
 async function handleFileImport(e) {
   const file = e.target.files[0]; const reader = new FileReader();
   reader.onload = async (evt) => {
@@ -104,10 +137,7 @@ async function handleFileImport(e) {
   }; reader.readAsArrayBuffer(file);
 }
 
-function loadStubPage(p) { 
-  const cont = document.getElementById(`${p}-content`);
-  if (cont) cont.innerHTML = `<div class="card"><h3>${p}</h3><p style="color:var(--text-secondary);">En desarrollo.</p></div>`; 
-}
+function loadStubPage(p) { const cont = document.getElementById(`${p}-content`); if (cont) cont.innerHTML = `<div class="card"><h3>${p}</h3><p>En desarrollo.</p></div>`; }
 function updateMonthSelector() { const el = document.getElementById('month-display'); if (el) el.textContent = `${AppState.getMonthName(AppState.currentMonth)} ${AppState.currentYear}`; }
 function prevMonth() { AppState.prevMonth(); updateMonthSelector(); navigateTo(AppState.currentPage); }
 function nextMonth() { AppState.nextMonth(); updateMonthSelector(); navigateTo(AppState.currentPage); }
