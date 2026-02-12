@@ -77,7 +77,7 @@ async function loadReviewPage() {
   const c = document.getElementById('review-content');
   const all = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
   const pending = all.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente');
-  if (pending.length === 0) { c.innerHTML = '<div class="card" style="text-align:center; padding:60px;"><h3>Inbox Zero 🎉</h3></div>'; return; }
+  if (pending.length === 0) { c.innerHTML = '<div class="card" style="text-align:center; padding:80px;"><h3>Inbox Zero 🎉</h3></div>'; return; }
   const item = pending[0];
   c.innerHTML = `
     <div class="decision-queue" style="max-width:550px; margin:auto;">
