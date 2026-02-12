@@ -1,19 +1,12 @@
-// ============================================================
-// Budget App — Page Controllers
-// ============================================================
-
+// --- NAVIGATION ---
 function navigateTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  
   const pageEl = document.getElementById(`page-${page}`);
   const navEl = document.querySelector(`[data-page="${page}"]`);
-  
   if (pageEl) pageEl.classList.add('active');
   if (navEl) navEl.classList.add('active');
-  
   AppState.currentPage = page;
-
   switch (page) {
     case 'dashboard': loadDashboard(); break;
     case 'import': loadImportPage(); break;
@@ -25,38 +18,54 @@ function navigateTo(page) {
   }
 }
 
+// --- DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
-  container.innerHTML = '<div class="loading-overlay">Cargando datos...</div>';
+  container.innerHTML = '<div class="loading-overlay">Cargando Dashboard...</div>';
   try {
     const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-    container.innerHTML = `
-      <div class="stats-grid">
-        <div class="stat-card"><h3>Ingresos</h3><p>${Utils.formatCurrency(data.totalIngresos)}</p></div>
-        <div class="stat-card"><h3>Gastos</h3><p>${Utils.formatCurrency(data.totalGastos)}</p></div>
-        <div class="stat-card"><h3>Neto</h3><p>${Utils.formatCurrency(data.ahorro)}</p></div>
-      </div>`;
+    renderDashboard(data);
   } catch (err) {
-    container.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+    container.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
   }
 }
 
-// --- Other Pages ---
-function loadImportPage() { document.getElementById('import-content').innerHTML = '<h3>📥 Importar</h3><p>Listo para procesar CSV.</p>'; }
-function loadReviewPage() { document.getElementById('review-content').innerHTML = '<h3>✏️ Revisar</h3><p>No hay pendientes.</p>'; }
-function loadRulesPage() { document.getElementById('rules-content').innerHTML = '<h3>⚙️ Reglas</h3><p>Gestión de automatización.</p>'; }
-function loadReportingPage() { document.getElementById('reporting-content').innerHTML = '<h3>📈 Reportes</h3><p>Análisis mensual.</p>'; }
-function loadBalancesPage() { document.getElementById('balances-content').innerHTML = '<h3>🏦 Saldos</h3><p>Estado de cuentas.</p>'; }
-function loadSettingsPage() { document.getElementById('settings-content').innerHTML = '<h3>🔧 Ajustes</h3><p>Configuración general.</p>'; }
+function renderDashboard(data) {
+  const container = document.getElementById('dashboard-content');
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><h3>Ingresos</h3><div class="stat-value text-success">${Utils.formatCurrency(data.totalIngresos)}</div></div>
+      <div class="stat-card"><h3>Gastos</h3><div class="stat-value text-danger">${Utils.formatCurrency(data.totalGastos)}</div></div>
+      <div class="stat-card"><h3>Ahorro</h3><div class="stat-value">${Utils.formatCurrency(data.ahorro)}</div></div>
+    </div>
+    <div class="section"><h3 class="section-title">Añadir Gasto Rápido</h3><div id="quick-add"></div></div>`;
+  renderQuickAdd();
+}
 
-// --- App State & Utilities ---
+// --- IMPORT & OTHERS ---
+function loadImportPage() { 
+  document.getElementById('import-content').innerHTML = `
+    <div class="section">
+      <h3>📥 Importar Transacciones</h3>
+      <input type="file" id="csv-input" accept=".csv" onchange="handleCSVUpload(event)">
+      <div id="import-preview" style="margin-top:20px"></div>
+    </div>`;
+}
+
+// ... All other loaders (loadReviewPage, loadRulesPage, etc.) matched to original logic ...
+function loadReviewPage() { document.getElementById('review-content').innerHTML = '<h3>✏️ Revisar</h3><p>Cargando pendientes...</p>'; }
+function loadRulesPage() { document.getElementById('rules-content').innerHTML = '<h3>⚙️ Reglas</h3>'; }
+function loadReportingPage() { document.getElementById('reporting-content').innerHTML = '<h3>📈 Reportes</h3>'; }
+function loadBalancesPage() { document.getElementById('balances-content').innerHTML = '<h3>🏦 Saldos</h3>'; }
+function loadSettingsPage() { document.getElementById('settings-content').innerHTML = '<h3>🔧 Ajustes</h3>'; }
+
+// --- APP STATE ---
 const AppState = {
-  config: null,
-  currentYear: new Date().getFullYear(),
-  currentMonth: new Date().getMonth() + 1,
+  config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
   getMonthName: (m) => ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][m],
   prevMonth: function() { this.currentMonth--; if(this.currentMonth < 1){ this.currentMonth=12; this.currentYear--; } },
-  nextMonth: function() { this.currentMonth++; if(this.currentMonth > 12){ this.currentMonth=1; this.currentYear++; } }
+  nextMonth: function() { this.currentMonth++; if(this.currentMonth > 12){ this.currentMonth=1; this.currentYear++; } },
+  init: function() { console.log('[App] State initialized'); }
 };
 
 const Utils = {
@@ -65,19 +74,13 @@ const Utils = {
 
 function updateMonthSelector() {
   const el = document.getElementById('month-display');
-  if(el) el.textContent = `${AppState.getMonthName(AppState.currentMonth)} ${AppState.currentYear}`;
+  if (el) el.textContent = `${AppState.getMonthName(AppState.currentMonth)} ${AppState.currentYear}`;
 }
-
 function prevMonth() { AppState.prevMonth(); updateMonthSelector(); navigateTo(AppState.currentPage); }
 function nextMonth() { AppState.nextMonth(); updateMonthSelector(); navigateTo(AppState.currentPage); }
 
 async function initApp() {
-  updateMonthSelector();
-  try {
-    AppState.config = await BudgetLogic.loadConfig();
-    navigateTo('dashboard');
-  } catch (err) {
-    console.error(err);
-    document.getElementById('dashboard-content').innerHTML = `<p>Error: ${err.message}</p>`;
-  }
+  AppState.init(); updateMonthSelector();
+  try { AppState.config = await BudgetLogic.loadConfig(); navigateTo('dashboard'); }
+  catch(err) { console.error(err); }
 }
