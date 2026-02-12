@@ -2,7 +2,7 @@ var tokenClient = null;
 var gapiInited = false;
 var gisInited = false;
 
-// --- Initialize GAPI ---
+// --- Initialize Google API Client ---
 function initGoogleAuth() {
   gapi.load('client', function() {
     gapi.client.init({
@@ -14,27 +14,35 @@ function initGoogleAuth() {
       maybeEnableSignIn();
     }).catch(function(err) {
       console.error('[Auth] gapi init error:', err);
+      // Show error on screen if the key is wrong
+      const msg = document.getElementById('loading-msg');
+      if (msg) msg.innerHTML = '<span style="color:red">Error: Clave API no válida</span>';
     });
   });
 }
 
-// --- Initialize GIS ---
+// --- Initialize Identity Services ---
 function initGIS() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.CLIENT_ID,
     scope: CONFIG.SCOPES,
-    callback: onTokenResponse
+    callback: (resp) => {
+      if (resp.error !== undefined) throw (resp);
+      onSignedIn();
+    }
   });
   gisInited = true;
-  console.log('[Auth] GIS token client initialized');
+  console.log('[Auth] GIS initialized');
   maybeEnableSignIn();
 }
 
+// --- Safety check to find HTML elements ---
 function maybeEnableSignIn() {
   if (gapiInited && gisInited) {
     const btn = document.getElementById('auth-btn');
     const msg = document.getElementById('loading-msg');
     
+    // If HTML isn't ready, wait 100ms and try again
     if (!btn || !msg) {
       setTimeout(maybeEnableSignIn, 100);
       return;
@@ -47,20 +55,8 @@ function maybeEnableSignIn() {
 }
 
 function handleAuthClick() {
-  tokenClient.callback = async (resp) => {
-    if (resp.error !== undefined) throw (resp);
-    localStorage.setItem('budget_access_token', resp.access_token);
-    onSignedIn();
-  };
-
-  if (gapi.client.getToken() === null) {
-    tokenClient.requestAccessToken({prompt: 'consent'});
-  } else {
-    tokenClient.requestAccessToken({prompt: ''});
-  }
+  tokenClient.requestAccessToken({prompt: 'consent'});
 }
-
-function onTokenResponse(resp) {}
 
 function onSignedIn() {
   const overlay = document.getElementById('signin-overlay');
@@ -68,7 +64,7 @@ function onSignedIn() {
   if (typeof initApp === 'function') initApp();
 }
 
-// --- Sheets API Wrapper ---
+// --- Sheets API Library ---
 var SheetsAPI = {
   readSheet: async function(sheetName) {
     const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -77,4 +73,11 @@ var SheetsAPI = {
     });
     return response.result.values || [];
   }
+};
+
+// --- DATA CACHE ---
+var DataCache = {
+  _cache: {},
+  get: function(key) { return this._cache[key] || null; },
+  set: function(key, val) { this._cache[key] = val; }
 };
