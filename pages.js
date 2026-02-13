@@ -1,17 +1,12 @@
 /**
  * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
- * ⚠️ REGLA DE ORO ABSOLUTA: PROHIBIDO SIMPLIFICAR, MODIFICAR O ELIMINAR LA CARGA 
+ * ⚠️ REGLA DE ORO: PROHIBIDO SIMPLIFICAR, MODIFICAR O ELIMINAR LA CARGA 
  * DE LA APLICACIÓN (initApp) Y DEL DASHBOARD (loadDashboard, renderDashboard).
  * ESTE CÓDIGO FUNCIONA PERFECTAMENTE. NO TOCAR SALVO ORDEN EXPLÍCITA.
  */
-
 const AppState = {
-  config: null, 
-  currentYear: new Date().getFullYear(), 
-  currentMonth: new Date().getMonth() + 1,
-  currentPage: 'dashboard', 
-  settingsTab: 'bancos',
-  // [BLOQUE_PROTEGIDO]
+  config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
+  currentPage: 'dashboard', settingsTab: 'bancos',
   initUI: function() {
     const el = document.getElementById('month-display');
     if (el) {
@@ -21,13 +16,9 @@ const AppState = {
   }
 };
 
-const Utils = { 
-  formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) 
-};
+const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// ============================================================
-// [BLOQUE_PROTEGIDO] - NAVEGACIÓN ORIGINAL
-// ============================================================
+// --- NAVEGACIÓN ---
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -57,7 +48,7 @@ window.prevMonth = function() {
 };
 
 // ============================================================
-// [BLOQUE_PROTEGIDO] - DASHBOARD ORIGINAL (v1.55)
+// [BLOQUE_PROTEGIDO] - DASHBOARD (NO MODIFICAR)
 // ============================================================
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
@@ -89,9 +80,7 @@ function renderDashboard(container, data) {
   `;
 }
 
-// ============================================================
-// CONFIGURACIÓN (RESTAURADO)
-// ============================================================
+// --- SETTINGS ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -137,7 +126,7 @@ function renderCategoriasTab(container, header, cats) {
 }
 
 // ============================================================
-// [BLOQUE_PROTEGIDO] - ARRANQUE ORIGINAL (NO TOCAR)
+// [BLOQUE_PROTEGIDO] - ARRANQUE (NO MODIFICAR)
 // ============================================================
 async function initApp() {
   try {
@@ -152,6 +141,7 @@ async function initApp() {
   } catch(e) { console.error("Fallo initApp:", e); }
 }
 
+// --- GLOBALES ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() {
   const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
