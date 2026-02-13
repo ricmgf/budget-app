@@ -1,6 +1,13 @@
-// ============================================================
-// Budget App — Master Logic Engine (v1.46 - STABLE)
-// ============================================================
+/**
+ * ============================================================
+ * BUDGET APP — MASTER LOGIC ENGINE (v1.47)
+ * ============================================================
+ * * ⚠️ SEGURIDAD - NO CAMBIAR:
+ * 1. NO declarar GASTOS_COLS o INGRESOS_COLS aquí (vienen de config.js). 
+ * Hacerlo provoca SyntaxError y rompe la App.
+ * 2. loadConfig DEBE mapear la Columna D (index 3) para la Tabla Maestra de Casas.
+ * 3. getDashboardData DEBE mantener los índices legacy (Importe Col 5, Cat Col 8).
+ */
 
 const BudgetLogic = {
   async loadConfig() {
@@ -11,13 +18,13 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Columna A/B: Categorías
+        // Dimensión 1: Categorías (Col A/B)
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Tabla Maestra de Casas (Madrid, Otros, etc.)
+        // Dimensión 2: Tabla Maestra de CASAS (Col D / Index 3) - CRÍTICO
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
@@ -27,6 +34,7 @@ const BudgetLogic = {
     } catch (e) { console.error("Error loadConfig:", e); throw e; }
   },
 
+  // Sniffer Legacy para detección de bancos por ID
   sniffAccount(rawText, accounts) {
     if (!rawText || !accounts) return null;
     const cleanText = rawText.replace(/[\s-]/g, '');
@@ -37,6 +45,7 @@ const BudgetLogic = {
     return null;
   },
 
+  // Cálculo de Dashboard con lógica de One-offs (Col 8 de Plan vs Col 8 de Gastos)
   async getDashboardData(y, m) {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
@@ -47,7 +56,6 @@ const BudgetLogic = {
     
     const funding = {};
     planG.forEach(p => {
-      // Usamos los índices heredados de CONFIG (CASA=7, CAT=8, IMPORTE=5)
       const isPaid = (p[8] === 'One-off') && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
       if (!isPaid) { const acc = p[4] || 'Principal'; funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); }
     });
