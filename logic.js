@@ -1,40 +1,43 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.24 - Enterprise)
+// Budget App — Master Logic Engine (v1.25 - Enterprise Fix)
 // ============================================================
 
 const BudgetLogic = {
   async loadConfig() {
     try {
+      // Forzamos la obtención de datos fresca del backend
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
       const cfg = { categorias: {}, cuentas: [], casas: [] };
       
-      if (rows && rows.length > 0) {
-        rows.slice(1).forEach(row => {
-          // Filtrado de borrado lógico (Columna 5 del Excel)
-          if (row[0] && row[4] !== 'DELETED') { 
-            const cat = row[0].trim();
-            if (!cfg.categorias[cat]) cfg.categorias[cat] = []; 
-            if (row[1] && row[1].trim() !== "" && row[1] !== 'General') {
-              cfg.categorias[cat].push(row[1].trim()); 
-            }
+      if (!rows || rows.length === 0) throw new Error("No se pudo leer la hoja CONFIG");
+
+      rows.slice(1).forEach(row => {
+        // Ignoramos filas borradas lógicamente
+        if (row[0] && row[4] !== 'DELETED') { 
+          const cat = row[0].trim();
+          if (!cfg.categorias[cat]) cfg.categorias[cat] = []; 
+          if (row[1] && row[1].trim() !== "" && row[1] !== 'General') {
+            cfg.categorias[cat].push(row[1].trim()); 
           }
-          if (row[2] && row[2].trim() !== "" && !cfg.cuentas.includes(row[2].trim())) {
-            cfg.cuentas.push(row[2].trim());
-          }
-          if (row[3] && row[3].trim() !== "" && !cfg.casas.includes(row[3].trim())) {
-            cfg.casas.push(row[3].trim());
-          }
-        });
-      }
+        }
+        // IMPORTANTE: Captura de Cuentas y Casas (Indices 2 y 3)
+        if (row[2] && row[2].trim() !== "" && !cfg.cuentas.includes(row[2].trim())) {
+          cfg.cuentas.push(row[2].trim());
+        }
+        if (row[3] && row[3].trim() !== "" && !cfg.casas.includes(row[3].trim())) {
+          cfg.casas.push(row[3].trim());
+        }
+      });
+
       AppState.config = cfg;
       return cfg;
     } catch (e) {
-      console.error("Error crítico en loadConfig:", e);
-      return { categorias: {}, cuentas: [], casas: [] };
+      console.error("Error crítico de arquitectura en loadConfig:", e);
+      throw e;
     }
   },
 
-  // --- LEGACY: Sniffer, Hash, Fechas (Sin cambios) ---
+  // --- LEGACY INTACTO (Sniffer, Hash, Dashboard Data) ---
   sniffAccount(rawText, accounts) {
     if (!rawText || !accounts) return null;
     const cleanText = rawText.replace(/[\s-]/g, '');
@@ -43,11 +46,6 @@ const BudgetLogic = {
       if (cleanID && cleanText.includes(cleanID)) return acc;
     }
     return null;
-  },
-
-  excelToDate(serial) {
-    if (isNaN(serial) || serial < 40000) return serial;
-    return new Date(Math.round((serial - 25569) * 86400 * 1000)).toISOString().split('T')[0];
   },
 
   async getDashboardData(y, m) {
