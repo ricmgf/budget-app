@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.45 - STABLE)
+// Budget App — Master Logic Engine (v1.46 - STABLE)
 // ============================================================
 
 const BudgetLogic = {
@@ -17,12 +17,10 @@ const BudgetLogic = {
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Tabla Maestra de Casas (Madrid, Mallorca, Otros...)
+        // Columna D: Tabla Maestra de Casas (Madrid, Otros, etc.)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna C: Cuentas
-        if (row[2] && row[2].trim() !== "") cfg.cuentas.push(row[2].trim());
       });
       AppState.config = cfg;
       return cfg;
@@ -49,7 +47,7 @@ const BudgetLogic = {
     
     const funding = {};
     planG.forEach(p => {
-      // Usamos los índices definidos en config.js para el Legacy
+      // Usamos los índices heredados de CONFIG (CASA=7, CAT=8, IMPORTE=5)
       const isPaid = (p[8] === 'One-off') && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
       if (!isPaid) { const acc = p[4] || 'Principal'; funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); }
     });
