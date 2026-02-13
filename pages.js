@@ -1,11 +1,7 @@
 /**
- * ============================================================
- * BUDGET APP — MASTER UI CONTROLLER (v1.52 - STABLE)
- * ============================================================
- * [SEGURIDAD]: Carga asíncrona controlada. No inicia hasta que 
- * la API de Google confirme disponibilidad.
+ * [BLOQUE_PROTEGIDO_V1.54] - CONTROLADOR DE UI
+ * ⚠️ NO DECLARAR 'BudgetLogic' aquí (Ya está en logic.js).
  */
-
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
   currentPage: 'dashboard', settingsTab: 'bancos',
@@ -15,50 +11,36 @@ const AppState = {
       const mNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
     }
-  },
-  prevMonth: function() {
-    this.currentMonth--;
-    if (this.currentMonth < 1) { this.currentMonth = 12; this.currentYear--; }
-    this.initUI(); if (this.currentPage === 'dashboard') loadDashboard();
-  },
-  nextMonth: function() {
-    this.currentMonth++;
-    if (this.currentMonth > 12) { this.currentMonth = 1; this.currentYear++; }
-    this.initUI(); if (this.currentPage === 'dashboard') loadDashboard();
   }
 };
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- NAVEGACIÓN ---
-function navigateTo(p) {
+// --- NAVEGACIÓN (Anclada a Window para los botones del menú) ---
+window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
   const t = document.getElementById(`page-${p}`);
   if (t) t.classList.add('active');
+  const nav = document.querySelector(`[data-page="${p}"]`);
+  if (nav) nav.classList.add('active');
+  
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
-}
+};
 
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
   if (!c) return;
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando Dashboard...</div>';
-  try {
-    const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-    c.innerHTML = `
-      <div class="metric-grid">
-        <div class="card" onclick="navigateTo('review')" style="cursor:pointer">
-          <h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2>
-        </div>
-        <div class="card">
-          <h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2>
-        </div>
-        <div class="card">
-          <h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2>
-        </div>
-      </div>`;
-  } catch(e) { console.error("Fallo Dashboard UI:", e); }
+  const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  c.innerHTML = `
+    <div class="metric-grid">
+      <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2></div>
+      <div class="card"><h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
+      <div class="card"><h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
+    </div>`;
 }
 
 async function loadSettingsPage() {
@@ -77,6 +59,7 @@ async function loadSettingsPage() {
   else renderBancosTab(c, tabHeader, cfg.casas);
 }
 
+// --- RENDERERS (Estilo 18px Semibold) ---
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `
     ${header}
@@ -98,39 +81,72 @@ function renderCasasTab(container, header, casas) {
     </div>`;
 }
 
-// --- ARRANQUE SEGURO ---
-async function startApp() {
-  try {
-    // Esperamos a que gapi esté listo para evitar el ReferenceError de 'sheets'
-    let retry = 0;
-    while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
-      if (retry > 15) throw new Error("Google API Timeout");
-      await new Promise(r => setTimeout(r, 200));
-      retry++;
-    }
-    
-    await BudgetLogic.loadConfig();
-    AppState.initUI();
-    navigateTo('dashboard');
-  } catch(e) { 
-    console.error("Fallo al iniciar:", e); 
-    document.body.innerHTML += `<div style="padding:20px; color:red;">Fallo de conexión: ${e.message}</div>`;
-  }
+function renderBancosTab(container, header, casas) {
+  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
+    container.innerHTML = `
+      ${header}
+      <div class="card">
+        <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Bancos</h3>
+        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:14px;">
+          ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:12px; font-weight:600;">${a[0]}</td><td>${a[1]}</td><td>${a[2]}</td></tr>`).join('')}
+        </table>
+        <div style="margin-top:24px; padding:20px; background:#f8fafc; border-radius:12px;">
+          <h4 style="margin-bottom:16px; font-size:15px;">Añadir Banco</h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <input type="text" id="n-alias" placeholder="Alias">
+            <input type="text" id="n-id" placeholder="ID/IBAN">
+            <select id="n-casa">
+              <option value="">Seleccionar casa...</option>
+              ${casas.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
+            </select>
+          </div>
+          <button onclick="saveAccount()" style="margin-top:16px; width:100%; padding:10px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:700;">Guardar Banco</button>
+        </div>
+      </div>`;
+  });
 }
 
-// FUNCIONES GLOBALES PARA EL HTML
+function renderCategoriasTab(container, header, cats) {
+  container.innerHTML = `
+    ${header}
+    <div class="card">
+      <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Categorías</h3>
+      ${Object.entries(cats).map(([cat, subs]) => `
+        <div style="margin-bottom:16px; padding:16px; border:1px solid var(--border-light); border-radius:12px;">
+          <div style="font-weight:700; color:var(--accent); margin-bottom:8px;">${cat}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            ${subs.map(s => `<span style="background:#f1f5f9; padding:4px 10px; border-radius:6px; font-size:12px;">${s}</span>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// --- ARRANQUE SEGURO ---
+async function initApp() {
+  try {
+    let retry = 0;
+    while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
+      if (retry > 20) throw new Error("API Timeout");
+      await new Promise(r => setTimeout(r, 200)); retry++;
+    }
+    await BudgetLogic.loadConfig();
+    AppState.initUI();
+    window.navigateTo('dashboard');
+  } catch(e) { console.error("Fallo initApp:", e); }
+}
+
+// --- ACCIONES GLOBALES (Window) ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() {
-  const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
+  const n = prompt("Nombre de la nueva casa:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
 };
 window.renameCasaMaster = async function(row, current) {
   const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
 };
 window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
+  if (confirm("¿Borrar casa de la tabla maestra?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
 };
 window.prevMonth = () => AppState.prevMonth();
 window.nextMonth = () => AppState.nextMonth();
 
-// Ejecución
-startApp();
+initApp();
