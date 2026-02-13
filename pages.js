@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master UI Controller (v1.45 - FULL INTEGRATION)
+// Budget App — Master UI Controller (v1.46 - FIXED)
 // ============================================================
 
 const AppState = {
@@ -18,7 +18,7 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- NAVEGACIÓN Y CARGA ---
+// --- VISTAS ---
 
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
@@ -32,7 +32,7 @@ async function loadDashboard() {
         <div class="card"><h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
         <div class="card"><h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
       </div>`;
-  } catch(e) { c.innerHTML = '<div class="card">Error al cargar Dashboard.</div>'; }
+  } catch(e) { c.innerHTML = '<div class="card">Error en Dashboard.</div>'; }
 }
 
 async function loadSettingsPage() {
@@ -109,12 +109,18 @@ window.addEventListener('load', async () => {
     AppState.config = await BudgetLogic.loadConfig();
     AppState.initUI();
     navigateTo('dashboard');
-  } catch(e) { console.error("Fallo App:", e); }
+  } catch(e) { console.error("Error App:", e); }
 });
 
-// --- FUNCIONES GLOBALES ---
+// --- ACCIONES GLOBALES (Expuestas al window para onclick) ---
 window.addCasaMaster = async function() {
-  const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
+  const n = prompt("Nombre de la nueva casa:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
+};
+window.renameCasaMaster = async function(row, current) {
+  const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
+};
+window.deleteCasaMaster = async function(row) {
+  if (confirm("¿Eliminar casa de la tabla maestra?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
 };
 window.setSettingsTab = function(t) { AppState.settingsTab = t; loadSettingsPage(); };
 window.prevMonth = function() { AppState.prevMonth(); };
