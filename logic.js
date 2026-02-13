@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.38)
+// Budget App — Master Logic Engine (v1.39)
 // ============================================================
 
 const BudgetLogic = {
@@ -11,13 +11,13 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Columna A y B: Categorías
+        // Col A: Categorías (Mapeo Legacy)
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Tabla Maestra de Casas (Tu "Otros", Madrid, etc.)
+        // Col D: Tabla Maestra de Casas (Tu valor "Otros" vive aquí)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
@@ -43,7 +43,6 @@ const BudgetLogic = {
     const b = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_PLAN);
     const f = (arr, yr, mo) => arr.slice(1).filter(r => r[1] == yr && r[2] == mo);
     const actG = f(g, y, m), actI = f(i, y, m), planG = b.slice(1).filter(r => r[0] == y && r[1] == m);
-    
     const funding = {};
     planG.forEach(p => {
       const isPaid = (p[8] === 'One-off') && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
