@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master UI Controller (v1.18 - Settings Tabs & Categories CRUD)
+// Budget App — Master UI Controller (v1.19 - FULL LEGACY & TABS)
 // ============================================================
 
 const AppState = {
@@ -20,7 +20,6 @@ function navigateTo(p) {
   const target = document.getElementById(`page-${p}`); if (target) target.classList.add('active');
   const nav = document.querySelector(`[data-page="${p}"]`); if (nav) nav.classList.add('active');
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
-  
   if (p === 'dashboard') loadDashboard();
   else if (p === 'import') loadImportPage();
   else if (p === 'review') loadReviewPage();
@@ -28,7 +27,7 @@ function navigateTo(p) {
   else loadStubPage(p);
 }
 
-// --- SETTINGS: MULTI-TAB NAVIGATION ---
+// --- SETTINGS TABS ---
 function setSettingsTab(tab) {
   AppState.settingsTab = tab;
   loadSettingsPage();
@@ -36,41 +35,28 @@ function setSettingsTab(tab) {
 
 async function loadSettingsPage() {
   const c = document.getElementById('settings-content');
+  if (!c) return;
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>';
   
-  // Tab Header (Minimalist Underlined)
   const tabHeader = `
     <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
       <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; text-decoration:none; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'transparent'}">Bancos</a>
       <a href="#" onclick="setSettingsTab('categorias'); return false;" style="padding:12px 0; text-decoration:none; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'transparent'}">Categorías</a>
-    </div>
-  `;
+    </div>`;
 
-  if (AppState.settingsTab === 'bancos') {
-    await renderBancosTab(c, tabHeader);
-  } else {
-    await renderCategoriasTab(c, tabHeader);
-  }
+  if (AppState.settingsTab === 'bancos') await renderBancosTab(c, tabHeader);
+  else await renderCategoriasTab(c, tabHeader);
 }
 
-// --- TAB: BANCOS (With Fixed Casa Dropdown) ---
 async function renderBancosTab(container, header) {
   const accs = await SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS);
   const casas = AppState.config ? AppState.config.casas : [];
-  
   container.innerHTML = `
     ${header}
     <div class="card">
       <h3 style="margin-bottom:24px;">Gestión de Cuentas Bancarias</h3>
       <table style="width:100%; text-align:left; border-collapse:collapse;">
-        <thead>
-          <tr style="color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--border-light);">
-            <th style="padding:12px;">Alias</th>
-            <th style="padding:12px;">Identificador</th>
-            <th style="padding:12px;">Casa</th>
-            <th style="padding:12px; text-align:right;">Acciones</th>
-          </tr>
-        </thead>
+        <thead><tr style="color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--border-light);"><th style="padding:12px;">Alias</th><th style="padding:12px;">Identificador</th><th style="padding:12px;">Casa</th><th style="padding:12px; text-align:right;">Acciones</th></tr></thead>
         <tbody>
           ${accs.slice(1).map((a, i) => `
             <tr style="border-bottom:1px solid #f8fafc;">
@@ -85,32 +71,25 @@ async function renderBancosTab(container, header) {
             </tr>`).join('')}
         </tbody>
       </table>
-      
       <div id="acc-form" style="margin-top:40px; padding:24px; background:#f8fafc; border-radius:16px;">
         <h4 id="form-title">Añadir nueva cuenta</h4>
         <input type="hidden" id="edit-row-idx" value="">
         <div style="display:grid; grid-template-columns: repeat(2,1fr); gap:16px; margin-top:16px;">
-          <input type="text" id="n-alias" placeholder="Nombre (Ej: Caixa Nomina)" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+          <input type="text" id="n-alias" placeholder="Nombre" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
           <input type="text" id="n-id" placeholder="IBAN o fragmento" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
           <select id="n-casa" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
             <option value="">Seleccionar Casa...</option>
             ${casas.map(c => `<option value="${c}">${c}</option>`).join('')}
           </select>
-          <select id="n-type" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
-            <option value="Current">Corriente</option>
-            <option value="Credit">Crédito</option>
-          </select>
+          <select id="n-type" style="padding:12px; border:1px solid #ddd; border-radius:8px;"><option value="Current">Corriente</option><option value="Credit">Crédito</option></select>
         </div>
         <button onclick="saveAccount()" style="margin-top:20px; padding:12px 32px; background:var(--accent); color:white; border:none; border-radius:12px; font-weight:700; cursor:pointer;">Guardar Banco</button>
       </div>
     </div>`;
 }
 
-// --- TAB: CATEGORÍAS (CRUD Implementation) ---
 async function renderCategoriasTab(container, header) {
-  const config = await BudgetLogic.loadConfig();
-  const cats = config.categorias;
-
+  const cats = AppState.config.categorias;
   container.innerHTML = `
     ${header}
     <div class="card">
@@ -122,55 +101,17 @@ async function renderCategoriasTab(container, header) {
         ${Object.entries(cats).map(([cat, subs]) => `
           <div style="background:#f8fafc; border-radius:12px; padding:16px; border:1px solid var(--border-light);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:16px;">${cat}</span>
+              <span style="font-weight:700;">${cat}</span>
               <div style="font-size:12px;">
                 <a href="#" onclick="editSubcategories('${cat}'); return false;" style="color:var(--accent); text-decoration:none;">Ver | Editar</a>
                 <span style="margin:0 8px; color:#ddd;">|</span>
                 <a href="#" onclick="deleteCategory('${cat}'); return false;" style="color:var(--negative); text-decoration:none;">Eliminar</a>
               </div>
             </div>
-            <div style="margin-top:8px; font-size:13px; color:var(--text-secondary);">
-              ${subs.length > 0 ? subs.join(' • ') : '<i style="font-size:11px;">Sin subcategorías</i>'}
-            </div>
-          </div>
-        `).join('')}
+            <div style="margin-top:8px; font-size:13px; color:var(--text-secondary);">${subs.join(' • ')}</div>
+          </div>`).join('')}
       </div>
-    </div>
-  `;
-}
-
-// --- CATEGORY ACTIONS ---
-async function addCategory() {
-  const name = prompt("Nombre de la nueva categoría:");
-  if (!name) return;
-  await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [name, "General", "", ""]); // Default first subcategory
-  DataCache._cache = {}; // Clear cache to force reload
-  loadSettingsPage();
-}
-
-async function editSubcategories(catName) {
-  const newSub = prompt(`Añadir nueva subcategoría a ${catName}:`);
-  if (!newSub) return;
-  await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [catName, newSub, "", ""]);
-  DataCache._cache = {};
-  loadSettingsPage();
-}
-
-async function deleteCategory(catName) {
-  if (!confirm(`¿Eliminar la categoría ${catName} y todas sus subcategorías?`)) return;
-  // Note: Logical delete by renaming as the API doesn't support easy row deletion by value
-  await SheetsAPI.appendRow(CONFIG.SHEETS.AUDIT, [new Date(), "DELETE_CAT", catName]);
-  alert("Por favor, elimine las filas de '" + catName + "' manualmente en la hoja CONFIG por seguridad.");
-}
-
-// --- BANK ACTIONS ---
-function editAccount(row, alias, id, casa, type) {
-  document.getElementById('form-title').textContent = "Editar: " + alias;
-  document.getElementById('edit-row-idx').value = row;
-  document.getElementById('n-alias').value = alias;
-  document.getElementById('n-id').value = id;
-  document.getElementById('n-casa').value = casa;
-  document.getElementById('n-type').value = type;
+    </div>`;
 }
 
 async function saveAccount() {
@@ -181,60 +122,63 @@ async function saveAccount() {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 2, data[1]);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 3, data[2]);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 4, data[3]);
-  } else {
-    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, data);
-  }
+  } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, data); }
   loadSettingsPage();
 }
 
-async function deleteAccount(row) {
-  if(confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 2, "BORRADO"); loadSettingsPage(); }
+async function addCategory() {
+  const n = prompt("Nombre categoría:");
+  if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n, "General", "", ""]); AppState.config = await BudgetLogic.loadConfig(); loadSettingsPage(); }
 }
 
-// --- DASHBOARD (LEGACY 100%) ---
+async function editSubcategories(cat) {
+  const s = prompt(`Nueva subcategoría para ${cat}:`);
+  if(s) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, s, "", ""]); AppState.config = await BudgetLogic.loadConfig(); loadSettingsPage(); }
+}
+
+function editAccount(row, alias, id, casa, type) {
+  document.getElementById('form-title').textContent = "Editar: " + alias;
+  document.getElementById('edit-row-idx').value = row;
+  document.getElementById('n-alias').value = alias;
+  document.getElementById('n-id').value = id;
+  document.getElementById('n-casa').value = casa;
+  document.getElementById('n-type').value = type;
+}
+
+async function deleteAccount(r) { if(confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, r, 2, "BORRADO"); loadSettingsPage(); } }
+async function deleteCategory(c) { alert("Elimine '" + c + "' manualmente en la hoja CONFIG por seguridad."); }
+
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos...</div>';
-  try {
-    const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-    c.innerHTML = `
-      <div class="metric-grid">
-        <div class="card" onclick="navigateTo('review')" style="cursor:pointer">
-          <h3>Inbox Exceptions</h3>
-          <h2 style="color:var(--accent)">${d.pendingCount} items</h2>
-        </div>
-        <div class="card">
-          <h3>Neto Mes</h3>
-          <h2 class="${(d.totalIngresos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2>
-        </div>
-        <div class="card">
-          <h3>Variación Plan</h3>
-          <h2 class="${(d.plannedGastos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2>
-        </div>
-      </div>
-      <div class="two-col-equal">
-        <div class="card">
-          <h3>🏦 Funding Plan</h3>
-          <div style="margin-top:10px;">
-            ${Object.entries(d.fundingPlan).map(([acc, amt]) => `
-              <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border-light);">
-                <span>${acc}</span><strong>${Utils.formatCurrency(amt)}</strong>
-              </div>`).join('')}
-          </div>
-        </div>
-        <div class="card"><h3>📈 Status</h3><p>Real: ${Utils.formatCurrency(d.totalGastos)} / Plan: ${Utils.formatCurrency(d.plannedGastos)}</p></div>
-      </div>`;
-  } catch(e) { c.innerHTML = '<div class="card">Error.</div>'; }
+  const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  c.innerHTML = `
+    <div class="metric-grid">
+      <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2></div>
+      <div class="card"><h3>Neto</h3><h2 class="${(d.totalIngresos - d.totalGastos) >= 0 ? 'positive' : 'negative'}">${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
+      <div class="card"><h3>Variación</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
+    </div>
+    <div class="two-col-equal">
+      <div class="card"><h3>🏦 Funding Plan</h3>${Object.entries(d.fundingPlan).map(([acc, amt]) => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-light);"><span>${acc}</span><strong>${Utils.formatCurrency(amt)}</strong></div>`).join('')}</div>
+      <div class="card"><h3>📈 Status</h3><p>Real: ${Utils.formatCurrency(d.totalGastos)}</p></div>
+    </div>`;
 }
 
-// --- REVIEW (LEGACY 100%) ---
 async function loadReviewPage() {
   const c = document.getElementById('review-content');
   const all = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
   const pending = all.filter(r => r[12] === 'Pendiente');
   if (pending.length === 0) { c.innerHTML = '<div class="card" style="text-align:center; padding:80px;"><h3>Inbox Zero 🎉</h3></div>'; return; }
   const item = pending[0];
-  c.innerHTML = `<div class="decision-queue" style="max-width:550px; margin:auto;"><div class="card" style="border: 2px solid var(--accent);"><h3>${item[4]}</h3><h2>${Utils.formatCurrency(item[5])}</h2><div class="form-group"><label>Casa</label><div class="chip-group" id="casa-chips">${AppState.config.casas.map(cas => `<button class="chip" onclick="selectChip(this, 'casa')">${cas}</button>`).join('')}</div></div><div class="form-group" style="margin-top:20px;"><label>Categoría</label><div class="chip-group" id="cat-chips">${Object.keys(AppState.config.categorias).map(cat => `<button class="chip" onclick="selectChip(this, 'cat')">${cat}</button>`).join('')}</div></div><button style="width:100%; margin-top:30px; padding:20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;" onclick="resolveItem('${item[4]}')">ENTRENAR REGLA</button></div></div>`;
+  c.innerHTML = `
+    <div class="decision-queue" style="max-width:550px; margin:auto;">
+      <div class="card" style="border: 2px solid var(--accent);">
+        <h3>${item[4]}</h3><h2>${Utils.formatCurrency(item[5])}</h2>
+        <div class="form-group"><label>Casa</label><div class="chip-group" id="casa-chips">${AppState.config.casas.map(cas => `<button class="chip" onclick="selectChip(this, 'casa')">${cas}</button>`).join('')}</div></div>
+        <div class="form-group" style="margin-top:20px;"><label>Categoría</label><div class="chip-group" id="cat-chips">${Object.keys(AppState.config.categorias).map(cat => `<button class="chip" onclick="selectChip(this, 'cat')">${cat}</button>`).join('')}</div></div>
+        <button style="width:100%; margin-top:30px; padding:20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-weight:700; cursor:pointer;" onclick="resolveItem('${item[4]}')">ENTRENAR REGLA</button>
+      </div>
+    </div>`;
 }
 
 async function resolveItem(p) {
@@ -254,7 +198,7 @@ async function handleFileImport(e) {
   }; reader.readAsArrayBuffer(file);
 }
 
-function loadStubPage(p) { const cont = document.getElementById(`${p}-content`); if (cont) cont.innerHTML = `<div class="card"><h3>${p}</h3><p>En desarrollo.</p></div>`; }
+function loadStubPage(p) { const cont = document.getElementById(`${p}-content`); if (cont) cont.innerHTML = `<div class="card"><h3>${p}</h3><p>Módulo ${p} en desarrollo.</p></div>`; }
 function updateMonthSelector() { const el = document.getElementById('month-display'); if (el) el.textContent = `${AppState.getMonthName(AppState.currentMonth)} ${AppState.currentYear}`; }
 function prevMonth() { AppState.prevMonth(); updateMonthSelector(); if(AppState.currentPage === 'dashboard') loadDashboard(); }
 function nextMonth() { AppState.nextMonth(); updateMonthSelector(); if(AppState.currentPage === 'dashboard') loadDashboard(); }
@@ -266,4 +210,3 @@ async function initApp() {
     navigateTo('dashboard');
   } catch(e) { console.error("Fallo:", e); }
 }
-updateMonthSelector();
