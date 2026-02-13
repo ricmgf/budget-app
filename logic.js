@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.36)
+// Budget App — Master Logic Engine (v1.37 - FULL LEGACY)
 // ============================================================
 
 const BudgetLogic = {
@@ -15,9 +15,11 @@ const BudgetLogic = {
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
-          if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
+          if (row[1] && row[1].trim() !== "" && row[1].trim() !== 'General') {
+            cfg.categorias[cat].push(row[1].trim());
+          }
         }
-        // Columna D: Tabla Maestra de Casas (Auditado)
+        // Columna D: Tabla Maestra de Casas (Extracción independiente)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
@@ -51,16 +53,16 @@ const BudgetLogic = {
     
     const funding = {};
     planG.forEach(p => {
-      // Legacy: Verificación de One-offs
-      const isPaid = (p[8] === 'One-off') && actG.some(a => a[8] === p[6] && Math.abs(parseFloat(a[5]) - parseFloat(p[3])) < 10);
+      // Legacy: Verificación de One-offs (Columna 8 de plan vs Columna 8 de gastos)
+      const isPaid = (p[8] === 'One-off') && actG.some(a => a[GASTOS_COLS.ID_PLAN] === p[6] && Math.abs(parseFloat(a[GASTOS_COLS.IMPORTE]) - parseFloat(p[3])) < 10);
       if (!isPaid) { const acc = p[4] || 'Principal'; funding[acc] = (funding[acc] || 0) + parseFloat(p[3]); }
     });
     return { 
-      totalGastos: actG.reduce((a,b) => a + (parseFloat(b[5])||0), 0), 
-      totalIngresos: actI.reduce((a,b) => a + (parseFloat(b[5])||0), 0), 
+      totalGastos: actG.reduce((a,b) => a + (parseFloat(b[GASTOS_COLS.IMPORTE])||0), 0), 
+      totalIngresos: actI.reduce((a,b) => a + (parseFloat(b[INGRESOS_COLS.IMPORTE])||0), 0), 
       plannedGastos: planG.reduce((a,b) => a + (parseFloat(b[3])||0), 0), 
       fundingPlan: funding, 
-      pendingCount: g.filter(r => r[12] === 'Pendiente').length 
+      pendingCount: g.filter(r => r[GASTOS_COLS.ESTADO] === 'Pendiente').length 
     };
   }
 };
