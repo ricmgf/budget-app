@@ -1,28 +1,36 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.40 - FINAL)
+// Budget App — Master Logic Engine (v1.41 - ANTI-CRASH)
 // ============================================================
 
 const BudgetLogic = {
   async loadConfig() {
     try {
+      // Validación de existencia de CONFIG
+      if (typeof CONFIG === 'undefined') throw new Error("CONFIG_NOT_FOUND");
+      
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
       const cfg = { categorias: {}, cuentas: [], casas: [] };
       if (!rows || rows.length <= 1) return cfg;
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
+        // Categorías y Subcategorías
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
+        // Tabla Maestra de Casas (Columna D)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
       });
       AppState.config = cfg;
       return cfg;
-    } catch (e) { console.error("Error loadConfig:", e); throw e; }
+    } catch (e) {
+      console.error("Error loadConfig:", e.message);
+      throw e;
+    }
   },
 
   sniffAccount(rawText, accounts) {
