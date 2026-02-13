@@ -1,12 +1,9 @@
 /**
  * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
- * ⚠️ PROHIBIDO MODIFICAR LAS FUNCIONES DE INICIALIZACIÓN (initGoogleAuth, initGIS).
- * EL SISTEMA DE LOGIN ES SENSIBLE Y NO DEBE ALTERARSE.
+ * ⚠️ PROHIBIDO MODIFICAR LA INICIALIZACIÓN DE GOOGLE API (Login).
  */
-
 var tokenClient, gapiInited = false, gisInited = false;
 
-// [BLOQUE_PROTEGIDO]
 function initGoogleAuth() {
   gapi.load('client', () => {
     gapi.client.init({ apiKey: CONFIG.API_KEY, discoveryDocs: CONFIG.DISCOVERY_DOCS })
@@ -14,7 +11,6 @@ function initGoogleAuth() {
   });
 }
 
-// [BLOQUE_PROTEGIDO]
 function initGIS() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.CLIENT_ID, scope: CONFIG.SCOPES,
@@ -32,7 +28,6 @@ function maybeEnableSignIn() {
 function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
 function onSignedIn() { document.getElementById('signin-overlay').style.display = 'none'; initApp(); }
 
-// [BLOQUE_PROTEGIDO] - MÉTODOS DE SHEETS
 var SheetsAPI = {
   readSheet: async (s) => (await gapi.client.sheets.spreadsheets.values.get({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A:Z`})).result.values || [],
   appendRow: async (s, data) => gapi.client.sheets.spreadsheets.values.append({
