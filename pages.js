@@ -1,19 +1,15 @@
 /**
- * ============================================================
- * BUDGET APP — MASTER UI CONTROLLER (v1.48)
- * ============================================================
- * ⚠️ SEGURIDAD - NO CAMBIAR (DO NOT CHANGE):
- * 1. MANTENER window.addEventListener('load') para el arranque.
- * Garantiza que gapi.client.sheets esté listo.
- * 2. FUNCIONES DE CARGA (loadDashboard, loadSettingsPage) deben ser declaradas 
- * antes de navigateTo.
- * 3. TODA FUNCIÓN ONCLICK (addCasaMaster, renameCasaMaster, deleteCasaMaster) 
- * debe estar anclada a 'window' para visibilidad global.
+ * [BLOQUE_PROTEGIDO]: CONTROLADOR DE UI v1.50 (LEGACY TOTAL)
+ * ⚠️ NO ELIMINAR window.onload.
  */
 
 const AppState = {
-  config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
-  currentPage: 'dashboard', settingsTab: 'bancos',
+  config: null, 
+  currentYear: new Date().getFullYear(), 
+  currentMonth: new Date().getMonth() + 1,
+  currentPage: 'dashboard', 
+  settingsTab: 'bancos',
+
   initUI: function() {
     const el = document.getElementById('month-display');
     if (el) {
@@ -21,39 +17,64 @@ const AppState = {
       el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
     }
   },
-  prevMonth: function() { this.currentMonth--; if(this.currentMonth < 1){ this.currentMonth=12; this.currentYear--; } this.initUI(); if(this.currentPage === 'dashboard') loadDashboard(); },
-  nextMonth: function() { this.currentMonth++; if(this.currentMonth > 12){ this.currentMonth=1; this.currentYear++; } this.initUI(); if(this.currentPage === 'dashboard') loadDashboard(); }
+  
+  // FUNCIONES DE NAVEGACIÓN (Recuperadas de v1.38)
+  prevMonth: function() {
+    this.currentMonth--;
+    if (this.currentMonth < 1) { this.currentMonth = 12; this.currentYear--; }
+    this.initUI();
+    if (this.currentPage === 'dashboard') loadDashboard();
+  },
+  nextMonth: function() {
+    this.currentMonth++;
+    if (this.currentMonth > 12) { this.currentMonth = 1; this.currentYear++; }
+    this.initUI();
+    if (this.currentPage === 'dashboard') loadDashboard();
+  }
 };
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- VISTAS DE PÁGINA ---
+// --- CARGA DE VISTAS ---
 
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
   if (!c) return;
-  c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando Dashboard...</div>';
+  c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando...</div>';
   try {
     const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
     c.innerHTML = `
       <div class="metric-grid">
-        <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2></div>
-        <div class="card"><h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
-        <div class="card"><h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
+        <div class="card" onclick="navigateTo('review')" style="cursor:pointer">
+          <h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2>
+        </div>
+        <div class="card">
+          <h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2>
+        </div>
+        <div class="card">
+          <h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2>
+        </div>
+      </div>
+      <div class="card" style="margin-top:24px;">
+        <h3 style="margin-bottom:16px;">Funding por Cuenta</h3>
+        ${Object.entries(d.fundingPlan).map(([acc, amt]) => `
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border-light);">
+            <span>${acc}</span><strong>${Utils.formatCurrency(amt)}</strong>
+          </div>
+        `).join('')}
       </div>`;
-  } catch(e) { console.error("Error Dashboard:", e); c.innerHTML = '<div class="card">Reintentando conexión con Sheets...</div>'; }
+  } catch(e) { console.error(e); }
 }
 
 async function loadSettingsPage() {
   const c = document.getElementById('settings-content');
   if (!c) return;
-  c.innerHTML = '<div style="padding:40px; text-align:center;">Cargando...</div>';
   const cfg = await BudgetLogic.loadConfig();
   const tabHeader = `
     <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
-      <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; text-decoration:none; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'transparent'}">Bancos</a>
-      <a href="#" onclick="setSettingsTab('categorias'); return false;" style="padding:12px 0; text-decoration:none; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'transparent'}">Categorías</a>
-      <a href="#" onclick="setSettingsTab('casas'); return false;" style="padding:12px 0; text-decoration:none; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'transparent'}">Casas</a>
+      <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'transparent'}">Bancos</a>
+      <a href="#" onclick="setSettingsTab('categorias'); return false;" style="padding:12px 0; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'transparent'}">Categorías</a>
+      <a href="#" onclick="setSettingsTab('casas'); return false;" style="padding:12px 0; font-weight:700; font-size:15px; color:${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'transparent'}">Casas</a>
     </div>`;
 
   if (AppState.settingsTab === 'casas') renderCasasTab(c, tabHeader, cfg.casas);
@@ -61,6 +82,7 @@ async function loadSettingsPage() {
   else renderBancosTab(c, tabHeader, cfg.casas);
 }
 
+// RENDERERS (Estilo 18px Semibold)
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `
     ${header}
@@ -73,7 +95,10 @@ function renderCasasTab(container, header, casas) {
         ${casas.map(casa => `
           <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700; font-size:16px; color:var(--accent);">${casa.name}</span>
-            <div style="font-size:12px;"><a href="#" onclick="renameCasaMaster('${casa.row}', '${casa.name}');return false;">Editar</a> | <a href="#" onclick="deleteCasaMaster('${casa.row}');return false;">Eliminar</a></div>
+            <div style="font-size:12px;">
+              <a href="#" onclick="renameCasaMaster('${casa.row}', '${casa.name}');return false;">Editar</a> | 
+              <a href="#" onclick="deleteCasaMaster('${casa.row}');return false;">Eliminar</a>
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
@@ -90,24 +115,25 @@ function navigateTo(p) {
   else if (p === 'settings') loadSettingsPage();
 }
 
-// ARRANQUE SEGURO (MODELO v1.38 con seguro API)
-window.addEventListener('load', async () => {
+// ARRANQUE BLINDADO (v1.38 + Seguro de Espera)
+window.onload = async function() {
   try {
-    // Espera hasta que la API de Google esté inicializada
-    let attempts = 0;
+    let retry = 0;
     while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
-      if (attempts > 10) throw new Error("Google API Timeout");
+      if (retry > 20) throw new Error("Google API Timeout");
       await new Promise(r => setTimeout(r, 200));
-      attempts++;
+      retry++;
     }
-    
     AppState.config = await BudgetLogic.loadConfig();
     AppState.initUI();
     navigateTo('dashboard');
-  } catch(e) { console.error("Fallo de arranque:", e); }
-});
+  } catch(e) { console.error("Fallo App:", e.message); }
+};
 
-// --- ACCIONES GLOBALES (Ancladas a Window) ---
+// EXPOSICIÓN GLOBAL DE FUNCIONES (Para onclick)
+window.prevMonth = () => AppState.prevMonth();
+window.nextMonth = () => AppState.nextMonth();
+window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() {
   const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
 };
@@ -115,8 +141,5 @@ window.renameCasaMaster = async function(row, current) {
   const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
 };
 window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
+  if (confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
 };
-window.setSettingsTab = function(t) { AppState.settingsTab = t; loadSettingsPage(); };
-window.prevMonth = function() { AppState.prevMonth(); };
-window.nextMonth = function() { AppState.nextMonth(); };
