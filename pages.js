@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master UI Controller (v1.41 - STABLE VERSION)
+// Budget App — Master UI Controller (v1.44 - TOTAL INTEGRATION)
 // ============================================================
 
 const AppState = {
@@ -16,7 +16,7 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- 1. VISTAS DE PÁGINA ---
+// --- VISTAS DE PÁGINA ---
 
 const loadDashboard = async () => {
   const c = document.getElementById('dashboard-content');
@@ -26,11 +26,11 @@ const loadDashboard = async () => {
     const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
     c.innerHTML = `
       <div class="metric-grid">
-        <div class="card" onclick="navigateTo('review')"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2></div>
+        <div class="card" onclick="navigateTo('review')" style="cursor:pointer"><h3>Queue</h3><h2 style="color:var(--accent)">${d.pendingCount}</h2></div>
         <div class="card"><h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
         <div class="card"><h3>Variación</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
       </div>`;
-  } catch(e) { c.innerHTML = '<div class="card">Error en Dashboard.</div>'; }
+  } catch(e) { c.innerHTML = '<div class="card">Error al cargar Dashboard.</div>'; }
 };
 
 const loadSettingsPage = async () => {
@@ -49,11 +49,10 @@ const loadSettingsPage = async () => {
   else renderBancosTab(c, tabHeader, cfg.casas);
 };
 
-// --- 2. RENDERERS PULIDOS ---
+// --- RENDERERS (ESTILO ARMONIZADO) ---
 
 const renderCategoriasTab = (container, header, cats) => {
-  container.innerHTML = `
-    ${header}
+  container.innerHTML = `${header}
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
         <h3 style="margin:0; font-weight:600; font-size:18px;">Categorías</h3>
@@ -72,8 +71,7 @@ const renderCategoriasTab = (container, header, cats) => {
 };
 
 const renderCasasTab = (container, header, casas) => {
-  container.innerHTML = `
-    ${header}
+  container.innerHTML = `${header}
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
         <h3 style="margin:0; font-weight:600; font-size:18px;">Casas</h3>
@@ -89,41 +87,7 @@ const renderCasasTab = (container, header, casas) => {
     </div>`;
 };
 
-const renderBancosTab = (container, header, casas) => {
-  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    container.innerHTML = `
-      ${header}
-      <div class="card">
-        <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Bancos</h3>
-        <table style="width:100%; text-align:left; border-collapse:collapse;">
-          <thead><tr style="color:var(--text-secondary); font-size:11px; text-transform:uppercase;"><th>Alias</th><th>ID</th><th>Casa</th></tr></thead>
-          <tbody>
-            ${accs.slice(1).filter(a => a[1] !== 'BORRADO').map(a => `
-              <tr style="border-bottom:1px solid #f8fafc;"><td style="padding:12px;"><strong>${a[0]}</strong></td><td>${a[1]}</td><td>${a[2]}</td></tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  });
-};
-
-// --- 3. FUNCIONES GLOBALES DE ACCIÓN ---
-
-window.addCasaMaster = async function() {
-  const n = prompt("Nombre de la nueva casa:");
-  if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
-};
-
-window.renameCasaMaster = async function(row, current) {
-  const n = prompt("Nuevo nombre:", current);
-  if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
-};
-
-window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
-};
-
-window.setSettingsTab = function(t) { AppState.settingsTab = t; loadSettingsPage(); };
+// --- NAVEGACIÓN Y BOOTSTRAP ---
 
 function navigateTo(p) {
   AppState.currentPage = p;
@@ -134,17 +98,19 @@ function navigateTo(p) {
   else if (p === 'settings') loadSettingsPage();
 }
 
-// --- ARRANQUE ---
-
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('load', async () => {
   try {
-    // Si CONFIG no existe aquí, el error es el orden en index.html
-    if (typeof CONFIG === 'undefined') {
-      alert("ERROR CRÍTICO: El archivo config.js no se ha cargado. Verifica el orden en index.html.");
-      return;
-    }
+    if (typeof CONFIG === 'undefined') throw new Error("CONFIG_NOT_LOADED");
     AppState.config = await BudgetLogic.loadConfig();
     AppState.initUI();
     navigateTo('dashboard');
-  } catch(e) { console.error("Fallo App:", e); }
+  } catch(e) { console.error("Error App:", e); }
 });
+
+// EXPOSICIÓN GLOBAL PARA ONCLICK
+window.addCasaMaster = async function() {
+  const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
+};
+window.setSettingsTab = function(t) { AppState.settingsTab = t; loadSettingsPage(); };
+window.prevMonth = function() { AppState.prevMonth(); };
+window.nextMonth = function() { AppState.nextMonth(); };
