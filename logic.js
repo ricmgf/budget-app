@@ -1,15 +1,18 @@
 // ============================================================
-// Budget App — Master Logic Engine (v1.30 - FULL LEGACY)
+// Budget App — Master Logic Engine (v1.32 - Architecture Fix)
 // ============================================================
 
 const BudgetLogic = {
   async loadConfig() {
     try {
+      // Forzamos lectura fresca para evitar caché del navegador
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
       const cfg = { categorias: {}, cuentas: [], casas: [] };
-      if (!rows || rows.length === 0) throw new Error("BACKEND_ERROR");
+      
+      if (!rows || rows.length <= 1) return cfg;
 
       rows.slice(1).forEach(row => {
+        // 1. Categorías y Subcategorías (Col 0 y 1)
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
@@ -17,14 +20,25 @@ const BudgetLogic = {
             cfg.categorias[cat].push(row[1].trim());
           }
         }
-        if (row[2] && row[2].trim() !== "" && !cfg.cuentas.includes(row[2].trim())) cfg.cuentas.push(row[2].trim());
-        if (row[3] && row[3].trim() !== "" && !cfg.casas.includes(row[3].trim())) cfg.casas.push(row[3].trim());
+        // 2. Cuentas (Col 2)
+        if (row[2] && row[2].trim() !== "" && !cfg.cuentas.includes(row[2].trim())) {
+          cfg.cuentas.push(row[2].trim());
+        }
+        // 3. Casas / Propiedades (Col 3) - VALIDADO
+        if (row[3] && row[3].trim() !== "" && !cfg.casas.includes(row[3].trim())) {
+          cfg.casas.push(row[3].trim());
+        }
       });
+
       AppState.config = cfg;
       return cfg;
-    } catch (e) { console.error("Error loadConfig:", e); throw e; }
+    } catch (e) {
+      console.error("Error estructural en loadConfig:", e);
+      return { categorias: {}, cuentas: [], casas: [] };
+    }
   },
 
+  // --- LEGACY: Sniffer de Bancos ---
   sniffAccount(rawText, accounts) {
     if (!rawText || !accounts) return null;
     const cleanText = rawText.replace(/[\s-]/g, '');
@@ -35,17 +49,7 @@ const BudgetLogic = {
     return null;
   },
 
-  excelToDate(serial) {
-    if (isNaN(serial) || serial < 40000) return serial;
-    return new Date(Math.round((serial - 25569) * 86400 * 1000)).toISOString().split('T')[0];
-  },
-
-  generateHash(d, a, c, acc) {
-    const s = `${d}|${Math.abs(a).toFixed(2)}|${(c||'').toLowerCase().replace(/[^a-z0-9]/g,'')}|${acc}`;
-    let h = 0; for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
-    return 'h' + Math.abs(h);
-  },
-
+  // --- LEGACY: Dashboard Data con Lógica de One-off ---
   async getDashboardData(y, m) {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
