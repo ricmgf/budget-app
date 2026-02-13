@@ -1,8 +1,7 @@
 /**
- * [ARCHIVO_MAESTRO_V1.6.6_PROTEGIDO]
- * ⚠️ REGLA DE ORO: ESTE CÓDIGO COMBINA LA CARGA ESTABLE DEL ZIP CON 
- * LOS ESTILOS AVANZADOS (18px) Y LA LÓGICA DE BANCOS/DASHBOARD DEL CHAT.
- * PROHIBIDO MODIFICAR LA ESTRUCTURA DE CARGA O EL DISEÑO SIN ORDEN EXPLÍCITA.
+ * [ARCHIVO_MAESTRO_V1.7.0_PROTEGIDO]
+ * ⚠️ REGLA DE ORO: PROHIBIDO SIMPLIFICAR O MODIFICAR CARGA (initApp) O DASHBOARD FUNCIONAL.
+ * INYECCIÓN: WIDGET IMPORT (DRAG&DROP), CATEGORÍAS (PASTILLAS), BANCOS (INPUTS/CASAS) Y MENÚS VACÍOS.
  */
 
 const AppState = {
@@ -24,7 +23,9 @@ const Utils = {
   formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) 
 };
 
-// --- NAVEGACIÓN ---
+// ============================================================
+// NAVEGACIÓN Y CARGA (PROTEGIDO)
+// ============================================================
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -36,6 +37,11 @@ window.navigateTo = function(p) {
   
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
+  else if (p === 'import') loadImportPage();
+  else if (p === 'review') loadReviewPage();
+  else if (p === 'balances') loadBalancesPage();
+  else if (p === 'reporting') loadReportingPage();
+  else if (p === 'rules') loadRulesPage();
 };
 
 window.nextMonth = function() {
@@ -53,7 +59,7 @@ window.prevMonth = function() {
 };
 
 // ============================================================
-// [BLOQUE_PROTEGIDO] - DASHBOARD (ESTILO 18PX / QUEUE)
+// [BLOQUE_PROTEGIDO] - DASHBOARD (ESTILOS 28PX Y COLORES)
 // ============================================================
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
@@ -61,7 +67,9 @@ async function loadDashboard() {
   c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando...</div>';
   try {
     const d = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-    // Recuperamos tu estructura original de 3 tarjetas
+    const neto = (d.resumen.totalIngresos || 0) - (d.resumen.totalGastos || 0);
+    const netoColor = neto >= 0 ? 'var(--positive)' : 'var(--negative)';
+    
     c.innerHTML = `
       <div class="metric-grid">
         <div class="card" onclick="navigateTo('review')" style="cursor:pointer">
@@ -70,25 +78,57 @@ async function loadDashboard() {
         </div>
         <div class="card">
           <h3 style="font-weight:600; font-size:15px; color:var(--text-secondary);">Neto Mes</h3>
-          <h2 style="font-size:28px; font-weight:700;">${Utils.formatCurrency(d.resumen.totalIngresos - d.resumen.totalGastos)}</h2>
+          <h2 style="font-size:28px; font-weight:700; color:${netoColor};">${Utils.formatCurrency(neto)}</h2>
         </div>
         <div class="card">
           <h3 style="font-weight:600; font-size:15px; color:var(--text-secondary);">Variación Plan</h3>
-          <h2 style="font-size:28px; font-weight:700;">${Utils.formatCurrency((d.plannedGastos || 0) - d.resumen.totalGastos)}</h2>
+          <h2 style="font-size:28px; font-weight:700;">${Utils.formatCurrency((d.plannedGastos || 0) - (d.resumen.totalGastos || 0))}</h2>
         </div>
       </div>`;
   } catch(e) { 
-    c.innerHTML = '<div class="card">Error de acceso a datos (403).</div>'; 
+    c.innerHTML = '<div class="card">Error de acceso a datos.</div>'; 
   }
 }
 
 // ============================================================
-// [BLOQUE_PROTEGIDO] - SETTINGS (ESTILO ORIGINAL ELEGANTE)
+// [INYECTADO] - IMPORTACIÓN (WIDGET DRAG & DROP PREMIUM)
+// ============================================================
+function loadImportPage() {
+  const container = document.getElementById('import-content');
+  container.innerHTML = `
+    <div class="card" style="max-width: 800px; margin: 0 auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <h3 style="font-weight:600; font-size:18px; margin-bottom:16px;">Importar Extractos</h3>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:24px;">Sube tus archivos para procesar gastos e ingresos automáticamente.</p>
+      
+      <div id="drop-zone" style="border: 2px dashed var(--border-medium); border-radius: 16px; padding: 60px 40px; text-align: center; background: #fcfdfe; transition: all 0.2s ease; cursor: pointer;">
+        <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+        <p style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">Arrastra tus archivos aquí</p>
+        <p style="color: var(--text-tertiary); font-size: 13px; margin-bottom: 24px;">o haz clic para buscar en tu dispositivo</p>
+        <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
+        <button class="btn btn-primary" onclick="document.getElementById('file-import').click()">Seleccionar Archivos</button>
+      </div>
+    </div>`;
+
+  const dz = document.getElementById('drop-zone');
+  ['dragenter', 'dragover'].forEach(e => dz.addEventListener(e, () => { 
+    dz.style.background = 'var(--accent-subtle)'; 
+    dz.style.borderColor = 'var(--accent)'; 
+  }));
+  ['dragleave', 'drop'].forEach(e => dz.addEventListener(e, () => { 
+    dz.style.background = '#fcfdfe'; 
+    dz.style.borderColor = 'var(--border-medium)'; 
+  }));
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    handleFileSelection({ target: { files: e.dataTransfer.files } });
+  });
+}
+
+// ============================================================
+// [INYECTADO] - SETTINGS (BANCOS CON INPUTS Y CATEGORÍAS CON PASTILLAS)
 // ============================================================
 async function loadSettingsPage() {
   const c = document.getElementById('settings-content');
-  if (!c) return;
-  
   const tabHeader = `
     <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
       <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; font-weight:700; font-size:15px; text-decoration:none; color:${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'transparent'}">Bancos</a>
@@ -96,85 +136,19 @@ async function loadSettingsPage() {
       <a href="#" onclick="setSettingsTab('casas'); return false;" style="padding:12px 0; font-weight:700; font-size:15px; text-decoration:none; color:${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'transparent'}">Casas</a>
     </div>`;
 
-  const cfg = AppState.config;
-  if (AppState.settingsTab === 'casas') renderCasasTab(c, tabHeader, cfg.casas);
-  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(c, tabHeader, cfg.categorias);
-  else renderBancosTab(c, tabHeader, cfg.casas);
+  if (AppState.settingsTab === 'casas') renderCasasTab(c, tabHeader, AppState.config.casas);
+  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(c, tabHeader, AppState.config.categorias);
+  else renderBancosTab(c, tabHeader, AppState.config.casas);
 }
 
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `
     ${header}
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0; font-weight:600; font-size:18px;">Casas</h3>
-        <button onclick="addCasaMaster()" style="padding:8px 16px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:700; cursor:pointer;">+ Nueva Casa</button>
+      <div class="flex-between mb-6">
+        <h3 style="margin:0; font-weight:600; font-size:18px;">Gestión de Casas</h3>
+        <button class="btn btn-primary" onclick="addCasaMaster()">+ Nueva Casa</button>
       </div>
       <div style="display:flex; flex-direction:column; gap:12px;">
         ${casas.map(casa => `
-          <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:700; font-size:16px; color:var(--accent);">${casa.name}</span>
-            <div style="font-size:12px;"><a href="#" onclick="renameCasaMaster('${casa.row}', '${casa.name}');return false;" style="text-decoration:none; color:var(--accent);">Editar</a> | <a href="#" onclick="deleteCasaMaster('${casa.row}');return false;" style="text-decoration:none; color:var(--danger);">Eliminar</a></div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
-function renderBancosTab(container, header, casas) {
-  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    container.innerHTML = `
-      ${header}
-      <div class="card">
-        <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Bancos</h3>
-        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:14px;">
-          ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:12px; font-weight:600;">${a[0] || ''}</td><td>${a[1] || ''}</td><td>${a[2] || ''}</td></tr>`).join('')}
-        </table>
-        <div style="margin-top:24px; padding:20px; background:#f8fafc; border-radius:12px;">
-          <h4 style="margin-bottom:16px; font-size:15px;">Añadir Banco</h4>
-          <select id="n-casa" style="padding:8px; border-radius:6px; border:1px solid var(--border-light);">${casas.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}</select>
-        </div>
-      </div>`;
-  });
-}
-
-function renderCategoriasTab(container, header, cats) {
-  container.innerHTML = `
-    ${header}
-    <div class="card">
-      <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Categorías</h3>
-      <div style="display:grid; gap:8px;">
-        ${Object.keys(cats).map(c => `<div style="padding:12px; border-bottom:1px solid #f1f5f9; font-weight:500;">${c}</div>`).join('')}
-      </div>
-    </div>`;
-}
-
-// ============================================================
-// [BLOQUE_PROTEGIDO] - ARRANQUE (MANTIENE LÓGICA DEL ZIP)
-// ============================================================
-async function initApp() {
-  try {
-    let retry = 0;
-    while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
-      if (retry > 20) throw new Error("API Timeout");
-      await new Promise(r => setTimeout(r, 200)); retry++;
-    }
-    await BudgetLogic.loadConfig();
-    AppState.initUI();
-    window.navigateTo('dashboard');
-  } catch(e) { console.error("Fallo initApp:", e); }
-}
-
-// --- GLOBALES ---
-window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
-window.addCasaMaster = async function() {
-  const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
-};
-window.renameCasaMaster = async function(row, current) {
-  const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
-};
-window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
-};
-
-// Iniciar aplicación
-initApp();
+          <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:20px; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 4px 6px -1px rgba(0,0,
