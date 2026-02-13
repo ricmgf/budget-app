@@ -1,5 +1,5 @@
 // ============================================================
-// Budget App — Master UI Controller (v1.25 - UI Hierarchy Fix)
+// Budget App — Master UI Controller (v1.27 - Visual Polish)
 // ============================================================
 
 const AppState = {
@@ -14,12 +14,14 @@ const AppState = {
   }
 };
 
+const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
+
 async function loadSettingsPage() {
   const c = document.getElementById('settings-content');
   if (!c) return;
-  c.innerHTML = '<div style="padding:40px; text-align:center;">Sincronizando datos con el backend...</div>';
+  c.innerHTML = '<div style="padding:40px; text-align:center; font-weight:500;">Sincronizando con el servidor...</div>';
   
-  // Garantizamos que los datos de Casas/Categorías están cargados
+  // Garantizamos carga de datos para los desplegables (Casa / Categorías)
   const freshConfig = await BudgetLogic.loadConfig();
 
   const tabHeader = `
@@ -37,14 +39,18 @@ function renderBancosTab(container, header, casas) {
     container.innerHTML = `
       ${header}
       <div class="card">
-        <h3 style="margin-bottom:24px; font-weight:700; font-size:18px;">Gestión de Cuentas Bancarias</h3>
+        <h3 style="margin-bottom:24px; font-weight:700; font-size:20px;">Gestión de Cuentas Bancarias</h3>
         <table style="width:100%; text-align:left; border-collapse:collapse;">
-          <thead><tr style="color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--border-light);"><th style="padding:12px;">Alias</th><th style="padding:12px;">Identificador</th><th style="padding:12px;">Casa</th><th style="padding:12px; text-align:right;">Acciones</th></tr></thead>
+          <thead>
+            <tr style="color:var(--text-secondary); font-size:11px; text-transform:uppercase; border-bottom:1px solid var(--border-light);">
+              <th style="padding:12px;">Alias</th><th style="padding:12px;">Identificador</th><th style="padding:12px;">Casa</th><th style="padding:12px; text-align:right;">Acciones</th>
+            </tr>
+          </thead>
           <tbody>
             ${accs.slice(1).filter(a => a[1] !== 'BORRADO').map((a, i) => `
               <tr style="border-bottom:1px solid #f8fafc;">
                 <td style="padding:12px; font-weight:500;">${a[0]}</td>
-                <td style="padding:12px; font-family:monospace;">${a[1]}</td>
+                <td style="padding:12px; font-family:monospace; font-size:13px;">${a[1]}</td>
                 <td style="padding:12px;">${a[2]}</td>
                 <td style="padding:12px; text-align:right; font-size:12px;">
                   <a href="#" onclick="editAccount(${i+2},'${a[0]}','${a[1]}','${a[2]}','${a[3]}');return false;" style="color:var(--accent); text-decoration:none;">Editar</a>
@@ -54,10 +60,10 @@ function renderBancosTab(container, header, casas) {
               </tr>`).join('')}
           </tbody>
         </table>
-        <div id="acc-form" style="margin-top:40px; padding:24px; background:#f8fafc; border-radius:16px;">
-          <h4 id="form-title" style="font-weight:700; margin-bottom:16px;">Añadir nueva cuenta</h4>
+        <div style="margin-top:40px; padding:24px; background:#f8fafc; border-radius:16px;">
+          <h4 style="font-weight:700; margin-bottom:16px;">Añadir nueva cuenta</h4>
           <div style="display:grid; grid-template-columns: repeat(2,1fr); gap:16px;">
-            <input type="text" id="n-alias" placeholder="Alias (Ej: Caixa Nómina)" style="padding:10px; border-radius:8px; border:1px solid #ddd;">
+            <input type="text" id="n-alias" placeholder="Nombre (Ej: Caixa Nómina)" style="padding:10px; border-radius:8px; border:1px solid #ddd;">
             <input type="text" id="n-id" placeholder="IBAN o Identificador" style="padding:10px; border-radius:8px; border:1px solid #ddd;">
             <select id="n-casa" style="padding:10px; border-radius:8px; border:1px solid #ddd;">
               <option value="">Seleccionar casa...</option>
@@ -71,17 +77,19 @@ function renderBancosTab(container, header, casas) {
   });
 }
 
+
+
 function renderCategoriasTab(container, header, cats) {
   container.innerHTML = `
     ${header}
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
-        <h3 style="margin:0; font-weight:700; font-size:22px; color:var(--text-primary);">Categorías y Subcategorías</h3>
-        <button onclick="addCategory()" style="padding:10px 20px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">+ Nueva Categoría</button>
+        <h3 style="margin:0; font-weight:700; font-size:24px; color:var(--text-primary);">Categorías</h3>
+        <button onclick="addCategory()" style="padding:10px 24px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:700; cursor:pointer;">+ Nueva Categoría</button>
       </div>
       <div style="display:flex; flex-direction:column; gap:16px;">
         ${Object.entries(cats).map(([cat, subs]) => `
-          <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+          <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:24px;">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:16px; margin-bottom:16px;">
               <span style="font-weight:700; font-size:18px; color:var(--accent);">${cat}</span>
               <div style="font-size:13px;">
@@ -92,7 +100,7 @@ function renderCategoriasTab(container, header, cats) {
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:10px;">
               ${subs.map(sub => `
-                <div style="background:#f1f5f9; padding:8px 14px; border-radius:8px; display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text-primary);">
+                <div style="background:#f1f5f9; padding:8px 14px; border-radius:8px; display:flex; align-items:center; gap:10px; font-size:14px;">
                   ${sub} <a href="#" onclick="deleteSubcategory('${cat}', '${sub}'); return false;" style="color:#94a3b8; text-decoration:none; font-weight:700;">✕</a>
                 </div>`).join('')}
               <button onclick="addSubcategory('${cat}')" style="background:none; border:1px dashed var(--accent); color:var(--accent); padding:6px 14px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer;">+ subcategoría</button>
@@ -105,13 +113,13 @@ function renderCategoriasTab(container, header, cats) {
 // --- ARRANQUE SEGURO ---
 async function initApp() {
   try {
-    // 1. Cargamos configuración (Backend)
+    // 1. Cargamos configuración obligatoriamente antes de nada
     AppState.config = await BudgetLogic.loadConfig(); 
-    // 2. Iniciamos UI (Mes)
+    // 2. Iniciamos el calendario superior
     AppState.initUI(); 
-    // 3. Navegamos (Solo cuando hay datos)
+    // 3. Navegamos al Dashboard
     navigateTo('dashboard'); 
   } catch(e) { 
-    console.error("Fallo crítico en el arranque:", e); 
+    console.error("Fallo crítico en el arranque de la aplicación:", e); 
   }
 }
