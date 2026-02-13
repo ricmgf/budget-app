@@ -1,30 +1,30 @@
 /**
- * ============================================================
- * BUDGET APP — MASTER LOGIC ENGINE (v1.48)
- * ============================================================
- * ⚠️ SEGURIDAD - NO CAMBIAR (DO NOT CHANGE):
- * 1. NO DECLARAR CONSTANTES 'GASTOS_COLS' O 'INGRESOS_COLS' AQUÍ.
- * Deben ser heredadas globalmente de config.js para evitar SyntaxError.
- * 2. loadConfig DEBE leer Col D (index 3) para la Tabla Maestra de Casas.
- * 3. getDashboardData DEBE mantener los índices legacy (Importe Col 5, Cat Col 8, Estado Col 12).
+ * [BLOQUE_PROTEGIDO]: MOTOR DE LÓGICA v1.49
+ * ⚠️ PROHIBIDO DECLARAR 'GASTOS_COLS' O 'INGRESOS_COLS' AQUÍ.
+ * Ya existen en config.js. Declararlos aquí rompe la App (SyntaxError).
  */
 
 const BudgetLogic = {
   async loadConfig() {
     try {
+      // ⚠️ Validación Crítica: Asegura que la API de Google existe antes de llamar
+      if (!window.gapi || !gapi.client || !gapi.client.sheets) {
+        throw new Error("API de Google no lista.");
+      }
+      
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
       const cfg = { categorias: {}, cuentas: [], casas: [] };
       if (!rows || rows.length <= 1) return cfg;
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Categorías (Col A/B)
+        // Col A/B: Categorías
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Tabla Maestra de Casas (Col D / Index 3) - IMPORTANTE
+        // Col D: Tabla Maestra de Casas (Legacy Fix)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
@@ -32,23 +32,12 @@ const BudgetLogic = {
       AppState.config = cfg;
       return cfg;
     } catch (e) {
-      console.error("Critical Error in loadConfig:", e);
+      console.error("Critical Error loadConfig:", e.message);
       throw e;
     }
   },
 
-  // Sniffer Legacy para bancos
-  sniffAccount(rawText, accounts) {
-    if (!rawText || !accounts) return null;
-    const cleanText = rawText.replace(/[\s-]/g, '');
-    for (const acc of accounts) {
-      const cleanID = String(acc[1] || '').replace(/[\s-]/g, '');
-      if (cleanID && cleanText.includes(cleanID)) return acc;
-    }
-    return null;
-  },
-
-  // Dashboard con 14 columnas de Gastos y lógica de One-offs
+  // Legacy: Mapeo de Dashboard con 14 columnas
   async getDashboardData(y, m) {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
