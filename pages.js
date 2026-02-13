@@ -1,6 +1,15 @@
-// ============================================================
-// Budget App — Master UI Controller (v1.46 - FIXED)
-// ============================================================
+/**
+ * ============================================================
+ * BUDGET APP — MASTER UI CONTROLLER (v1.47)
+ * ============================================================
+ * * ⚠️ SEGURIDAD - NO CAMBIAR:
+ * 1. MANTENER window.addEventListener('DOMContentLoaded') para el arranque.
+ * Esto evita que initApp() se llame antes de que el script sea leído.
+ * 2. NO mover funciones de carga (loadDashboard, loadSettingsPage) a bloques 
+ * internos; deben ser accesibles para navigateTo.
+ * 3. FUNCIONES DE ACCIÓN (addCasaMaster, etc.) DEBEN estar en el objeto window 
+ * para que el atributo onclick del HTML funcione siempre.
+ */
 
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
@@ -18,7 +27,7 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- VISTAS ---
+// --- VISTAS DE PÁGINA ---
 
 async function loadDashboard() {
   const c = document.getElementById('dashboard-content');
@@ -32,7 +41,7 @@ async function loadDashboard() {
         <div class="card"><h3>Neto Mes</h3><h2>${Utils.formatCurrency(d.totalIngresos - d.totalGastos)}</h2></div>
         <div class="card"><h3>Variación Plan</h3><h2>${Utils.formatCurrency(d.plannedGastos - d.totalGastos)}</h2></div>
       </div>`;
-  } catch(e) { c.innerHTML = '<div class="card">Error en Dashboard.</div>'; }
+  } catch(e) { console.error(e); c.innerHTML = '<div class="card">Error en Dashboard.</div>'; }
 }
 
 async function loadSettingsPage() {
@@ -52,30 +61,6 @@ async function loadSettingsPage() {
   else renderBancosTab(c, tabHeader, cfg.casas);
 }
 
-function renderCategoriasTab(container, header, cats) {
-  container.innerHTML = `
-    ${header}
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0; font-weight:600; font-size:18px;">Categorías</h3>
-        <button onclick="addCategory()" style="padding:8px 16px; background:var(--accent); color:white; border-radius:8px; border:none; font-weight:700; cursor:pointer;">+ Nueva Categoría</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:16px;">
-        ${Object.entries(cats).map(([cat, subs]) => `
-          <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <span style="font-weight:700; font-size:16px; color:var(--accent);">${cat}</span>
-              <div style="font-size:12px;"><a href="#" onclick="renameCategory('${cat}');return false;">Editar</a></div>
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:10px;">
-              ${subs.map(s => `<div style="background:#f1f5f9; padding:6px 12px; border-radius:6px; font-size:13px;">${s} <a href="#" onclick="deleteSubcategory('${cat}','${s}');return false;" style="color:#94a3b8; text-decoration:none;">✕</a></div>`).join('')}
-              <button onclick="addSubcategory('${cat}')" style="background:none; border:1px dashed var(--accent); color:var(--accent); padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer;">+ subcategoría</button>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
-}
-
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `
     ${header}
@@ -88,11 +73,16 @@ function renderCasasTab(container, header, casas) {
         ${casas.map(casa => `
           <div style="background:#fff; border:1px solid var(--border-light); border-radius:16px; padding:20px; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-weight:700; font-size:16px; color:var(--accent);">${casa.name}</span>
-            <div style="font-size:12px;"><a href="#" onclick="renameCasaMaster('${casa.row}', '${casa.name}');return false;">Editar</a> | <a href="#" onclick="deleteCasaMaster('${casa.row}');return false;">Eliminar</a></div>
+            <div style="font-size:12px;">
+              <a href="#" onclick="renameCasaMaster('${casa.row}', '${casa.name}');return false;">Editar</a> | 
+              <a href="#" onclick="deleteCasaMaster('${casa.row}');return false;">Eliminar</a>
+            </div>
           </div>`).join('')}
       </div>
     </div>`;
 }
+
+// --- NAVEGACIÓN Y ARRANQUE ---
 
 function navigateTo(p) {
   AppState.currentPage = p;
@@ -103,24 +93,24 @@ function navigateTo(p) {
   else if (p === 'settings') loadSettingsPage();
 }
 
-// --- BOOTSTRAP ---
-window.addEventListener('load', async () => {
+// ARRANQUE SEGURO (Mismo modelo que v1.38)
+window.addEventListener('DOMContentLoaded', async () => {
   try {
     AppState.config = await BudgetLogic.loadConfig();
     AppState.initUI();
     navigateTo('dashboard');
-  } catch(e) { console.error("Error App:", e); }
+  } catch(e) { console.error("Fallo App:", e); }
 });
 
-// --- ACCIONES GLOBALES (Expuestas al window para onclick) ---
+// --- ACCIONES GLOBALES (Expuestas al window para acceso desde HTML) ---
 window.addCasaMaster = async function() {
-  const n = prompt("Nombre de la nueva casa:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
+  const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); loadSettingsPage(); }
 };
 window.renameCasaMaster = async function(row, current) {
   const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); loadSettingsPage(); }
 };
 window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Eliminar casa de la tabla maestra?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
+  if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); loadSettingsPage(); }
 };
 window.setSettingsTab = function(t) { AppState.settingsTab = t; loadSettingsPage(); };
 window.prevMonth = function() { AppState.prevMonth(); };
