@@ -10,14 +10,15 @@
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
-  <div id="signin-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-    <h1 style="margin-bottom:20px; color:#1a1d23; font-family:'DM Sans', sans-serif;">Budget Master</h1>
+  <div id="signin-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background-color:#f8fafc;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <h1 style="margin-bottom:20px; color:#1a1d23; font-weight:700;">Budget Master</h1>
     <button id="signin-btn" style="display:none; padding:12px 24px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;" onclick="handleAuthClick()">Iniciar sesión con Google</button>
   </div>
 
   <div class="app-layout">
     <aside class="app-sidebar" id="main-sidebar">
-      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()" style="position: absolute; top: 18px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; z-index: 100;">‹</button>
+      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; width: 24px; height: 24px; cursor: pointer; z-index: 100;">‹</button>
+      
       <div class="sidebar-header">
         <div class="logo-icon">B</div>
         <h1 class="logo-text">Budget</h1>
@@ -42,6 +43,7 @@
             <button class="btn-icon" onclick="nextMonth()">►</button>
           </div>
         </header>
+        
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
         <div id="page-import" class="page"><div id="import-content"></div></div>
         <div id="page-review" class="page"><div id="review-content"></div></div>
