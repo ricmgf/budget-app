@@ -1,23 +1,32 @@
+/**
+ * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
+ */
 const BudgetLogic = {
   async loadConfig() {
     try {
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
       const cfg = { categorias: {}, cuentas: [], casas: [], tarjetas: [] };
       if (!rows || rows.length <= 1) return cfg;
+
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        if (row[0] && row[0] !== 'DELETED') {
+        if (row[0] && row[0].trim() !== "" && row[0] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') cfg.casas.push({ name: row[3].trim(), row: rowIdx });
-        if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
+        if (row[3] && row[3].trim() !== "" && row[3] !== 'DELETED') {
+          cfg.casas.push({ name: row[3].trim(), row: rowIdx });
+        }
+        if (row[4] && row[4].trim() !== "" && row[4] !== 'DELETED') {
+          cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
+        }
       });
       AppState.config = cfg;
       return cfg;
     } catch (e) { console.error("Error loadConfig:", e); throw e; }
   },
+
   async getDashboardData(y, m) {
     const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
     const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
