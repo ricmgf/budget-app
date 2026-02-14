@@ -11,16 +11,13 @@
 </head>
 <body>
   <div id="signin-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background-color:#f8fafc;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-    <div style="background:white; padding:40px; border-radius:24px; box-shadow:0 10px 25px -5px rgba(0,0,0,0.1); border:1px solid #e2e8f0; text-align:center;">
-      <div style="width:48px; height:48px; background:#2563eb; border-radius:12px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:24px;">B</div>
-      <h1 style="margin-bottom:8px; color:#1a1d23; font-weight:700;">Budget Master</h1>
-      <button id="signin-btn" style="display:none; padding:12px 24px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;" onclick="handleAuthClick()">Continuar con Google</button>
-    </div>
+    <h1 style="margin-bottom:20px; color:#1a1d23; font-weight:700;">Budget Master</h1>
+    <button id="signin-btn" style="display:none; padding:12px 24px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;" onclick="handleAuthClick()">Iniciar sesión con Google</button>
   </div>
 
   <div class="app-layout">
     <aside class="app-sidebar" id="main-sidebar">
-      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()">‹</button>
+      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()" style="position: absolute; top: 18px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; z-index: 100;">‹</button>
       <div class="sidebar-header">
         <div class="logo-icon">B</div>
         <h1 class="logo-text">Budget</h1>
@@ -62,5 +59,6 @@
   <script src="pages.js"></script>
   <script async defer src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
   <script async defer src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>
