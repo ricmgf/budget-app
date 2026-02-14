@@ -1,8 +1,7 @@
 /**
- * [ARCHIVO_MAESTRO_V1.9.0_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.9.1_PROTEGIDO]
  * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
- * FIX: deleteBankMaster funcional (marcado como DELETED igual que Casas).
- * NUEVO: Multiselección de tarjetas con checkboxes y visualización en Tags.
+ * FIX: Multi-select real con checkboxes y cierre al clicar fuera.
  */
 
 const AppState = {
@@ -20,6 +19,7 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
+// --- NAVEGACIÓN ---
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -45,6 +45,7 @@ window.toggleSidebar = function() {
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth = 1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth = 12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 
+// --- DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
@@ -70,6 +71,7 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
+// --- AJUSTES: BANCOS, CASAS, CATEGORÍAS ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -102,12 +104,14 @@ function renderBancosTab(container, header, casas) {
           </select></div>
           <div>
             <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tarjetas Asociadas</label>
-            <div class="multi-select-container" onclick="document.querySelector('.multi-select-options').classList.toggle('active')">
-              ${selectedCards.length > 0 ? selectedCards.join(', ') : 'Seleccionar...'}
-              <div class="multi-select-options">
+            <div class="custom-multiselect">
+              <div class="ms-display" onclick="document.querySelector('.ms-options').classList.toggle('active')">
+                <span id="ms-label">${selectedCards.length > 0 ? selectedCards.join(', ') : 'Seleccionar...'}</span>
+              </div>
+              <div class="ms-options">
                 ${['Amex', 'Visa Iberia', 'Visa', 'Mastercard'].map(t => `
-                  <div class="option-item" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="card-checkbox" value="${t}" ${selectedCards.includes(t) ? 'checked' : ''} onchange="updateSelectedText()"> 
+                  <div class="ms-option">
+                    <input type="checkbox" class="card-cb" value="${t}" ${selectedCards.includes(t) ? 'checked' : ''} onchange="syncCardLabel()"> 
                     <label>${t}</label>
                   </div>`).join('')}
               </div>
@@ -123,7 +127,7 @@ function renderBancosTab(container, header, casas) {
           </thead>
           <tbody>
             ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => {
-              const cards = a[3] ? a[3].split(',') : [];
+              const cards = a[3] ? a[3].split(',').filter(c => c.trim()) : [];
               return `<tr>
                 <td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td>
                 <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
@@ -140,10 +144,9 @@ function renderBancosTab(container, header, casas) {
   });
 }
 
-window.updateSelectedText = () => {
-  const selected = Array.from(document.querySelectorAll('.card-checkbox:checked')).map(cb => cb.value);
-  const container = document.querySelector('.multi-select-container');
-  if (container) container.firstChild.textContent = selected.length > 0 ? selected.join(', ') : 'Seleccionar...';
+window.syncCardLabel = () => {
+  const selected = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value);
+  document.getElementById('ms-label').textContent = selected.length > 0 ? selected.join(', ') : 'Seleccionar...';
 };
 
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
@@ -153,28 +156,28 @@ window.saveBank = async function() {
   const n = document.getElementById('new-bank-name').value;
   const i = document.getElementById('new-bank-iban').value;
   const c = document.getElementById('new-bank-casa').value;
-  const selectedCards = Array.from(document.querySelectorAll('.card-checkbox:checked')).map(cb => cb.value).join(',');
+  const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(',');
   
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
   if (AppState.editingBankData && AppState.editingBankData.row) {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, selectedCards);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
   } else { 
-    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, selectedCards]); 
+    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); 
   }
   AppState.isAddingBank = false; AppState.editingBankData = null; loadSettingsPage();
 };
 
 window.deleteBankMaster = async function(row) {
   if (confirm("¿Seguro que quieres eliminar este banco?")) {
-    // Aplicamos la misma lógica que en Casas: marcar como DELETED en la primera columna
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED');
     loadSettingsPage();
   }
 };
 
+// --- RESTO DE MÓDULOS (CASAS, CATEGORÍAS, IMPORT) ---
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button></div>
@@ -218,6 +221,6 @@ window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); }
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.addCategoryMaster = async function() { const n = prompt("Nombre de la nueva categoría principal:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCategoryMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
 initApp();
