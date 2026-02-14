@@ -1,8 +1,5 @@
 /**
  * [ARCHIVO_MAESTRO_V1.6.6_PROTEGIDO]
- * ⚠️ REGLA DE ORO: ESTE CÓDIGO COMBINA LA CARGA ESTABLE DEL ZIP CON 
- * LOS ESTILOS AVANZADOS (18px) Y LA LÓGICA DE BANCOS/DASHBOARD DEL CHAT.
- * PROHIBIDO MODIFICAR LA ESTRUCTURA DE CARGA O EL DISEÑO SIN ORDEN EXPLÍCITA.
  */
 
 const AppState = {
@@ -69,38 +66,38 @@ window.prevMonth = () => {
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
-  container.innerHTML = '<div style="padding:20px;">Cargando datos...</div>';
+  container.innerHTML = '<div style="padding:20px; color:var(--text-secondary);">Cargando datos...</div>';
   try {
     const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
     const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
     container.innerHTML = `
       <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-bottom:30px;">
-        <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
-          <div style="color:#64748b; font-size:14px; font-weight:600;">Pendientes Review</div>
-          <div style="font-size:32px; font-weight:700; color:#2563eb; margin-top:8px;">${data.pendingCount || 0}</div>
+        <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="color:var(--text-secondary); font-size:14px; font-weight:600;">Pendientes Review</div>
+          <div style="font-size:32px; font-weight:700; color:var(--accent); margin-top:8px;">${data.pendingCount || 0}</div>
         </div>
-        <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
-          <div style="color:#64748b; font-size:14px; font-weight:600;">Neto del Mes</div>
+        <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="color:var(--text-secondary); font-size:14px; font-weight:600;">Neto del Mes</div>
           <div style="font-size:32px; font-weight:700; color:${neto >= 0 ? '#10b981' : '#ef4444'}; margin-top:8px;">${Utils.formatCurrency(neto)}</div>
         </div>
-        <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
-          <div style="color:#64748b; font-size:14px; font-weight:600;">Variación Presupuesto</div>
-          <div style="font-size:32px; font-weight:700; margin-top:8px;">${Utils.formatCurrency((data.plannedGastos || 0) - data.resumen.totalGastos)}</div>
+        <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="color:var(--text-secondary); font-size:14px; font-weight:600;">Variación Plan</div>
+          <div style="font-size:32px; font-weight:700; color:var(--text-primary); margin-top:8px;">${Utils.formatCurrency((data.plannedGastos || 0) - data.resumen.totalGastos)}</div>
         </div>
       </div>`;
   } catch (e) { console.error(e); }
 }
 
-// --- CONFIGURACIÓN ---
+// --- CONFIGURACIÓN (RESTAURADA AL 100%) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
   const casas = AppState.config.casas;
   const header = `
-    <div style="display:flex; gap:32px; border-bottom:1px solid #e2e8f0; margin-bottom:32px;">
-      <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'bancos' ? '#2563eb' : '#64748b'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? '#2563eb' : 'transparent'}">BANCOS</a>
-      <a href="#" onclick="setSettingsTab('categorias'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'categorias' ? '#2563eb' : '#64748b'}; border-bottom: 2px solid ${AppState.settingsTab === 'categorias' ? '#2563eb' : 'transparent'}">CATEGORÍAS</a>
-      <a href="#" onclick="setSettingsTab('casas'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'casas' ? '#2563eb' : '#64748b'}; border-bottom: 2px solid ${AppState.settingsTab === 'casas' ? '#2563eb' : 'transparent'}">CASAS</a>
+    <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
+      <a href="#" onclick="setSettingsTab('bancos'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'bancos' ? 'var(--accent)' : 'transparent'}">BANCOS</a>
+      <a href="#" onclick="setSettingsTab('categorias'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'categorias' ? 'var(--accent)' : 'transparent'}">CATEGORÍAS</a>
+      <a href="#" onclick="setSettingsTab('casas'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === 'casas' ? 'var(--accent)' : 'transparent'}">CASAS</a>
     </div>`;
   if (AppState.settingsTab === 'casas') renderCasasTab(container, header, casas);
   else if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header, cats);
@@ -110,17 +107,22 @@ async function loadSettingsPage() {
 function renderBancosTab(container, header, casas) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     container.innerHTML = `${header}
-      <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
+      <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+           <h3 style="margin:0; color:var(--text-primary);">Registro de Bancos</h3>
+           <button onclick="addBankMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nuevo Banco</button>
+        </div>
         <table style="width:100%; border-collapse:collapse; text-align:left;">
-          <thead style="color:#64748b; font-size:12px; text-transform:uppercase;">
-            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th></tr>
+          <thead style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; border-bottom: 1px solid var(--border-light);">
+            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th><th>Acciones</th></tr>
           </thead>
           <tbody>
-            ${accs.slice(1).map(a => `
+            ${accs.slice(1).map((a, i) => `
               <tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:16px 8px; font-weight:600;">${a[0]||''}</td>
-                <td style="font-family:monospace;">${a[1]||''}</td>
-                <td>${a[3]||''}</td> <td><span style="background:#eff6ff; color:#2563eb; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2]||'Global'}</span></td> </tr>`).join('')}
+                <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
+                <td>${a[3]||''}</td> <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2]||'Global'}</span></td> <td><button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></td>
+              </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
@@ -129,18 +131,18 @@ function renderBancosTab(container, header, casas) {
 
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}
-    <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
+    <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0;">Mis Casas</h3>
-        <button onclick="addCasaMaster()" style="background:#2563eb; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Casa</button>
+        <h3 style="margin:0; color:var(--text-primary);">Mis Casas</h3>
+        <button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button>
       </div>
       <div style="display:grid; gap:12px;">
         ${casas.map(c => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:#f8fafc; border-radius:12px;">
-            <span style="font-weight:600;">${c.name}</span>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
+            <span style="font-weight:600; color:var(--text-primary);">${c.name}</span>
             <div style="display:flex; gap:16px;">
-              <button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:#2563eb; cursor:pointer;">Renombrar</button>
-              <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:#ef4444; cursor:pointer;">Eliminar</button>
+              <button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
+              <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button>
             </div>
           </div>`).join('')}
       </div>
@@ -148,29 +150,48 @@ function renderCasasTab(container, header, casas) {
 }
 
 function renderCategoriasTab(container, header, cats) {
-  container.innerHTML = `${header}
-    <div style="background:white; padding:24px; border-radius:16px; border:1px solid #e2e8f0;">
-      <h3 style="margin-bottom:24px;">Estructura de Categorías</h3>
-      <div style="display:grid; gap:8px;">
-        ${Object.keys(cats).map(c => `<div style="padding:12px; border-bottom:1px solid #f1f5f9; font-weight:500;">${c}</div>`).join('')}
-      </div>
-    </div>`;
+  let html = header + `
+    <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <h3 style="margin:0; color:var(--text-primary);">Estructura de Categorías</h3>
+        <button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button>
+      </div>`;
+  
+  Object.keys(cats).forEach(cat => {
+    html += `
+      <div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:16px; color:var(--text-primary);">${cat}</strong>
+          <div>
+            <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button>
+            <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(sub => `
+            <span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">
+              ${sub}
+              <button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button>
+            </span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html + `</div>`;
 }
 
 function loadImportPage() {
   document.getElementById('import-content').innerHTML = `
-    <div style="background:white; padding:60px; border-radius:24px; border:1px solid #e2e8f0; text-align:center;">
+    <div style="background:white; padding:60px; border-radius:24px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align:center;">
       <div style="font-size:48px; margin-bottom:24px;">📂</div>
-      <h2 style="margin-bottom:16px;">Importar Extractos</h2>
-      <p style="color:#64748b; margin-bottom:32px;">Arrastra tus archivos XLSX aquí o haz clic para seleccionar</p>
+      <h2 style="margin-bottom:16px; color:var(--text-primary);">Importar Extractos</h2>
+      <p style="color:var(--text-secondary); margin-bottom:32px;">Arrastra tus archivos XLSX aquí o haz clic para seleccionar</p>
       <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
-      <button onclick="document.getElementById('file-import').click()" style="background:#2563eb; color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
+      <button onclick="document.getElementById('file-import').click()" style="background:var(--accent); color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
     </div>`;
 }
 
-// ============================================================
-// [BLOQUE_PROTEGIDO] - ARRANQUE (MANTIENE LÓGICA DEL ZIP)
-// ============================================================
+// --- ARRANQUE (RESTAURADO) ---
 async function initApp() {
   try {
     let retry = 0;
@@ -194,6 +215,9 @@ window.renameCasaMaster = async function(row, current) {
 };
 window.deleteCasaMaster = async function(row) {
   if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); }
+};
+window.addCategoryMaster = async function() {
+  const n = prompt("Nueva Categoría:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); }
 };
 
 initApp();
