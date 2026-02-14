@@ -1,5 +1,5 @@
 /**
- * [ARCHIVO_MAESTRO_V1.7.3_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.7.4_PROTEGIDO]
  * REGLA DE ORO: NO MUTILAR.
  */
 const AppState = {
@@ -25,9 +25,8 @@ window.navigateTo = function(p) {
   if (target) target.classList.add('active');
   const nav = document.querySelector(`[data-page="${p}"]`);
   if (nav) nav.classList.add('active');
-  
   const titleMap = { dashboard: 'Dashboard', review: 'Review', balances: 'Balances', import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Ajustes' };
-  document.getElementById('page-title').textContent = titleMap[p];
+  if (document.getElementById('page-title')) document.getElementById('page-title').textContent = titleMap[p];
 
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
@@ -60,7 +59,7 @@ async function loadDashboard() {
         </div>
         <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <div style="color:var(--text-secondary); font-size:14px; font-weight:600;">Neto Mes</div>
-          <div style="font-size:32px; font-weight:700; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'}; margin-top:8px;">${Utils.formatCurrency(neto)}</div>
+          <div style="font-size:32px; font-weight:700; color:${neto >= 0 ? '#10b981' : '#ef4444'}; margin-top:8px;">${Utils.formatCurrency(neto)}</div>
         </div>
         <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
           <div style="color:var(--text-secondary); font-size:14px; font-weight:600;">Variación Plan</div>
@@ -128,10 +127,13 @@ window.initEditBank = (row, n, i, c, t) => {
     if(document.getElementById('new-bank-iban')) document.getElementById('new-bank-iban').value = i; 
     if(document.getElementById('new-bank-casa')) document.getElementById('new-bank-casa').value = c; 
     if(document.getElementById('new-bank-tipo')) document.getElementById('new-bank-tipo').value = t; 
-  }, 50); 
+  }, 100); 
 };
 window.saveBank = async function() {
-  const n = document.getElementById('new-bank-name').value; const i = document.getElementById('new-bank-iban').value; const c = document.getElementById('new-bank-casa').value; const t = document.getElementById('new-bank-tipo').value;
+  const n = document.getElementById('new-bank-name').value; 
+  const i = document.getElementById('new-bank-iban').value; 
+  const c = document.getElementById('new-bank-casa').value; 
+  const t = document.getElementById('new-bank-tipo').value;
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
   if (AppState.editingBankRow) { 
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankRow, 1, n); 
