@@ -20,7 +20,7 @@ const BudgetLogic = {
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna E: Tarjetas (Clonado manual de lógica de Casas)
+        // Columna E: Tarjetas (Inyección manual clonada de Casas)
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
