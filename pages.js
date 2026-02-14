@@ -2,6 +2,7 @@
  * [ARCHIVO_MAESTRO_V2.2_AUDITADO]
  * REGLA DE ORO: NO MUTILAR.
  */
+
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
   currentPage: 'dashboard', settingsTab: 'bancos', sidebarCollapsed: false,
@@ -17,7 +18,7 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- SIDEBAR Y NAVEGACIÓN ---
+// --- NAVEGACIÓN Y SIDEBAR ---
 window.toggleSidebar = function() {
   const sidebar = document.querySelector('.app-sidebar');
   AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
@@ -32,7 +33,7 @@ window.navigateTo = function(p) {
   document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
   const target = document.getElementById(`page-${p}`);
   if (target) target.classList.add('active');
-  const btn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
+  const btn = document.getElementById(`nav-${p}`);
   if (btn) btn.classList.add('active');
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
   if (p === 'dashboard') loadDashboard();
@@ -96,7 +97,7 @@ function renderBancosTab(container) {
     
     html += `<table style="width:100%; border-collapse:collapse; text-align:left;">
       <thead style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;">
-        <tr><th style="padding:12px;">NOMBRE</th><th>IBAN</th><th>TARJETAS</th><th>CASA</th><th style="text-align:right;">ACCIONES</th></tr>
+        <tr><th style="padding:12px;">BANCO</th><th>IBAN</th><th>TARJETAS</th><th>CASA</th><th style="text-align:right;">ACCIONES</th></tr>
       </thead>
       <tbody>${accs.slice(1).filter(a => a[0]!=='DELETED').map((a, i) => `
         <tr style="border-top:1px solid var(--border-light);">
@@ -119,7 +120,7 @@ function renderCategoriasTab(container) {
         <div style="font-weight:700; margin-bottom:8px;">${cat}</div>
         <div style="display:flex; flex-wrap:wrap; gap:8px;">
           ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
-          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 12px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
+          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
         </div>
       </div>
       <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
@@ -129,14 +130,14 @@ function renderCategoriasTab(container) {
 }
 
 function renderTarjetasTab(v) { 
-  v.innerHTML = `<div class="card"><h3>Tarjetas</h3>${AppState.config.tarjetas.map(t => `<div class="settings-row"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; 
+  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Tarjetas</h3><button onclick="addCardMaster()" class="btn btn-primary">+ Nueva Tarjeta</button></div>${AppState.config.tarjetas.map(t => `<div class="settings-row"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; 
 }
 
 function renderCasasTab(v) { 
-  v.innerHTML = `<div class="card"><h3>Casas</h3>${AppState.config.casas.map(c => `<div class="settings-row"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; 
+  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Casas</h3><button onclick="addCasaMaster()" class="btn btn-primary">+ Nueva Casa</button></div>${AppState.config.casas.map(c => `<div class="settings-row"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; 
 }
 
-// --- ACCIONES ---
+// --- ACCIONES WINDOW ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
 window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
@@ -153,6 +154,14 @@ window.saveBank = async () => {
   } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
   AppState.isAddingBank = false; loadSettingsPage();
 };
+
+window.renameCategoryMaster = async (cat) => { const n = prompt("Nuevo nombre para " + cat + ":", cat); if(n && n!==cat) { alert("Use el Excel para renombrar."); } };
+window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteSubcategory = async (cat, sub) => { if(confirm(`¿Borrar ${sub}?`)) { alert("Use el Excel."); } };
+window.addCardMaster = async () => { const n = prompt("Nombre Tarjeta:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCasaMaster = async () => { const n = prompt("Nombre Casa:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCardMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 7, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCasaMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth=1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth=12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
