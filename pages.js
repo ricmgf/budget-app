@@ -1,7 +1,6 @@
 /**
- * [ARCHIVO_MAESTRO_V1.8.2_PROTEGIDO]
- * CORRECCIÓN: Bancos (selected con trim/lowercase) + Función loadImportPage restaurada.
- * ARRANQUE: Preservado initApp original del ZIP.
+ * [ARCHIVO_MAESTRO_V1.8.4_PROTEGIDO]
+ * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
  */
 
 const AppState = {
@@ -160,9 +159,28 @@ function renderCasasTab(container, header, casas) {
 }
 
 function renderCategoriasTab(container, header, cats) {
-  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><h3 style="margin-bottom:24px;">Categorías</h3>`;
+  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Categorías</h3>
+      <button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button>
+    </div>`;
   Object.keys(cats).forEach(cat => {
-    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><strong style="font-size:16px; color:var(--text-primary);">${cat}</strong></div><div style="display:flex; flex-wrap:wrap; gap:8px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary);">${sub}</span>`).join('')}</div></div>`;
+    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:16px; color:var(--text-primary);">${cat}</strong>
+          <div>
+            <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button>
+            <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">
+            ${sub}
+            <button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button>
+          </span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button>
+        </div>
+      </div>`;
   });
   container.innerHTML = html + `</div>`;
 }
@@ -173,4 +191,5 @@ window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); }
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCategoryMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 initApp();
