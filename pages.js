@@ -1,7 +1,7 @@
 /**
- * [ARCHIVO_PROTEGIDO_V1.7.3_FINAL]
- * ⚠️ REGLA DE ORO: INYECCIÓN QUIRÚRGICA. 
- * CAMBIOS: 1. Corrección orden columnas Bancos. 2. Reducción márgenes laterales 20%.
+ * [ARCHIVO_PROTEGIDO_V1.7.4_FINAL]
+ * ⚠️ REGLA DE ORO: INYECCIÓN QUIRÚRGICA SOBRE BASE V1.55.
+ * CAMBIOS: 1. Corrección Mapeo Bancos. 2. Optimización área de trabajo (Margen Izq -20%, Der -35%).
  * PROHIBIDO ALTERAR CARGA, FECHAS O ESTRUCTURA DE AppState.
  */
 const AppState = {
@@ -13,12 +13,13 @@ const AppState = {
       const mNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
     }
-    // Ajuste de diseño: Reducción de márgenes laterales en un 20% para maximizar área de trabajo
+    // MAXIMIZACIÓN DE ÁREA DE TRABAJO (Ajuste Quirúrgico de Márgenes)
     const wrapper = document.querySelector('.view-wrapper');
     if (wrapper) {
-      wrapper.style.paddingLeft = '40px';  // Antes ~50-60px
-      wrapper.style.paddingRight = '40px'; // Antes ~50-60px
-      wrapper.style.maxWidth = '1600px';   // Expandimos el máximo para pantallas grandes
+      wrapper.style.paddingLeft = '40px';   // Reducción ~20% (de 50px a 40px)
+      wrapper.style.paddingRight = '32px';  // Reducción ~35% (de 50px a 32px)
+      wrapper.style.maxWidth = '1650px';    // Expansión horizontal máxima
+      wrapper.style.margin = '0 auto';
     }
   }
 };
@@ -106,7 +107,7 @@ function loadImportPage() {
   dz.addEventListener('drop', (e) => { e.preventDefault(); handleFileSelection({ target: { files: e.dataTransfer.files } }); });
 }
 
-// --- SETTINGS (CORRECCIÓN COLUMNAS BANCOS) ---
+// --- SETTINGS (CORRECCIÓN DE ORDEN EN TABLA BANCOS) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -135,7 +136,7 @@ function renderBancosTab(container, header, casas) {
             ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f8fafc;">
                 <td style="padding:14px 8px; font-weight:600;">${a[0]||''}</td>
                 <td style="font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td>
-                <td style="padding:14px 8px;">${a[2]||''}</td> <td style="padding:14px 8px;"><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[3]||'Global'}</span></td> </tr>`).join('')}
+                <td style="padding:14px 8px;">${a[3]||''}</td> <td style="padding:14px 8px;"><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[2]||'Global'}</span></td> </tr>`).join('')}
           </tbody>
         </table>
         <div style="padding:24px; background:#f8fafc; border-radius:12px; border:1px solid var(--border-light);">
@@ -190,13 +191,13 @@ function renderCategoriasTab(container, header, cats) {
   container.innerHTML = html + `</div></div>`;
 }
 
-// --- MENÚS VACÍOS (RESTAURADOS) ---
+// --- MENÚS (RESTAURADOS) ---
 function loadReviewPage() { document.getElementById('review-content').innerHTML = `<div class="card"><h3>Review</h3><p>Pendiente de validar...</p></div>`; }
 function loadBalancesPage() { document.getElementById('balances-content').innerHTML = `<div class="card"><h3>Balances</h3><p>Cash Flow por bancos...</p></div>`; }
 function loadReportingPage() { document.getElementById('reporting-content').innerHTML = `<div class="card"><h3>Reporting</h3><p>Análisis anual...</p></div>`; }
 function loadRulesPage() { document.getElementById('rules-content').innerHTML = `<div class="card"><h3>Reglas</h3><p>Gestión de autocategorización...</p></div>`; }
 
-// --- ARRANQUE (IDÉNTICO A V1.55) ---
+// --- ARRANQUE (V1.55 ESTABLE) ---
 async function initApp() {
   try {
     let retry = 0;
