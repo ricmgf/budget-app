@@ -1,11 +1,11 @@
 /**
- * [ARCHIVO_MAESTRO_V1.7.4_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.7.5_PROTEGIDO]
  * REGLA DE ORO: NO MUTILAR.
  */
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
   currentPage: 'dashboard', settingsTab: 'bancos', sidebarCollapsed: false,
-  isAddingBank: false, editingBankRow: null,
+  isAddingBank: false, editingBankData: null,
   initUI: function() {
     const el = document.getElementById('month-display');
     if (el) {
@@ -27,7 +27,6 @@ window.navigateTo = function(p) {
   if (nav) nav.classList.add('active');
   const titleMap = { dashboard: 'Dashboard', review: 'Review', balances: 'Balances', import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Ajustes' };
   if (document.getElementById('page-title')) document.getElementById('page-title').textContent = titleMap[p];
-
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
   else if (p === 'import') loadImportPage();
@@ -88,15 +87,22 @@ function renderBancosTab(container, header, casas) {
            <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Bancos</h3>
            <button onclick="toggleAddBankForm()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">${AppState.isAddingBank ? 'Cancelar' : '+ Nuevo'}</button>
         </div>`;
+    
     if (AppState.isAddingBank) {
+      const d = AppState.editingBankData || { row: null, name: '', iban: '', casa: '', tipo: 'Corriente' };
       html += `<div style="background:var(--bg-canvas); padding:20px; border-radius:12px; margin-bottom:24px; display:grid; grid-template-columns: repeat(4, 1fr) auto; gap:12px; align-items:end;">
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">${casas.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}</select></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tipo</label><select id="new-bank-tipo" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"><option value="Corriente">Corriente</option><option value="Ahorro">Ahorro</option><option value="Inversión">Inversión</option></select></div>
-          <button onclick="saveBank()" style="background:var(--positive); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">${AppState.editingBankRow ? 'Actualizar' : 'Guardar'}</button>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
+            ${casas.map(c => `<option value="${c.name}" ${d.casa === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+          </select></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tipo</label><select id="new-bank-tipo" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
+            ${['Corriente', 'Ahorro', 'Inversión'].map(t => `<option value="${t}" ${d.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+          </select></div>
+          <button onclick="saveBank()" style="background:var(--positive); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">${d.row ? 'Actualizar' : 'Guardar'}</button>
         </div>`;
     }
+
     html += `<table style="width:100%; border-collapse:collapse; text-align:left;">
           <thead style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; border-bottom: 1px solid var(--border-light);">
             <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
@@ -105,7 +111,7 @@ function renderBancosTab(container, header, casas) {
             ${accs.slice(1).map((a, i) => `<tr>
                 <td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td>
                 <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
-                <td style="color:var(--text-secondary);">${a[3]||'Corriente'}</td> 
+                <td style="color:var(--text-secondary);">${a[3]||''}</td> 
                 <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2] || ''}</span></td> 
                 <td style="text-align:right;">
                   <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
@@ -117,32 +123,32 @@ function renderBancosTab(container, header, casas) {
   });
 }
 
-window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankRow = null; loadSettingsPage(); };
-window.initEditBank = (row, n, i, c, t) => { 
-  AppState.isAddingBank = true; 
-  AppState.editingBankRow = row; 
-  loadSettingsPage(); 
-  setTimeout(() => { 
-    if(document.getElementById('new-bank-name')) document.getElementById('new-bank-name').value = n; 
-    if(document.getElementById('new-bank-iban')) document.getElementById('new-bank-iban').value = i; 
-    if(document.getElementById('new-bank-casa')) document.getElementById('new-bank-casa').value = c; 
-    if(document.getElementById('new-bank-tipo')) document.getElementById('new-bank-tipo').value = t; 
-  }, 100); 
+window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
+
+window.initEditBank = (row, n, i, c, t) => {
+  AppState.isAddingBank = true;
+  AppState.editingBankData = { row, name: n, iban: i, casa: c, tipo: t };
+  loadSettingsPage();
 };
+
 window.saveBank = async function() {
-  const n = document.getElementById('new-bank-name').value; 
-  const i = document.getElementById('new-bank-iban').value; 
-  const c = document.getElementById('new-bank-casa').value; 
+  const n = document.getElementById('new-bank-name').value;
+  const i = document.getElementById('new-bank-iban').value;
+  const c = document.getElementById('new-bank-casa').value;
   const t = document.getElementById('new-bank-tipo').value;
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
-  if (AppState.editingBankRow) { 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankRow, 1, n); 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankRow, 2, i); 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankRow, 3, c); 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankRow, 4, t); 
+  
+  if (AppState.editingBankData && AppState.editingBankData.row) {
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
+  } else {
+    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]);
   }
-  else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
-  AppState.isAddingBank = false; AppState.editingBankRow = null; loadSettingsPage();
+  AppState.isAddingBank = false;
+  AppState.editingBankData = null;
+  loadSettingsPage();
 };
 
 function renderCasasTab(container, header, casas) {
