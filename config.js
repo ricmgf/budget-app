@@ -1,78 +1,59 @@
-// ============================================================
-// Budget App — Master Configuration (Phase 1, 2, 3 & 4)
-// ============================================================
+/**
+ * [MASTER_LOGIC_V2.2.1]
+ * REGLA DE ORO: ARCHIVO COMPLETO.
+ * SISTEMA: Puente de datos Excel -> AppState (Categorías, Casas, Tarjetas).
+ */
 
-var CONFIG = {
-  CLIENT_ID: '824143713001-hkpisl7k9js7001f87o80jpoq86k4cm2.apps.googleusercontent.com',
-  API_KEY: 'AIzaSyCwrt8rREK0fWIFwGpbsft6Ad8FatQY4Ec',
-  SPREADSHEET_ID: '1Clobogf_4Db6YYfNGPUnzJ83NmT3Q_Kqt_tg8a2wXi8',
-  DISCOVERY_DOCS: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-  SCOPES: 'https://www.googleapis.com/auth/spreadsheets',
+const BudgetLogic = {
+  config: null,
 
-  SHEETS: {
-    GASTOS: 'GASTOS_TOTAL',
-    INGRESOS: 'INGRESOS',
-    CONFIG: 'CONFIG',
-    RULES: 'RULES',
-    BALANCES: 'BALANCES',
-    BUDGET_PLAN: 'BUDGET_PLAN',
-    INCOME_PLAN: 'INCOME_PLAN',
-    ACCOUNTS: 'ACCOUNTS', // Para el Registro de Bancos
-    AUDIT: 'AUDIT_LOG'
+  loadConfig: async function() {
+    try {
+      const config = await SheetsAPI.runScript('getFullConfig');
+      // Clonación absoluta: si casas funciona, tarjetas ahora también.
+      this.config = {
+        categorias: config.categorias || {},
+        casas: config.casas || [],
+        tarjetas: config.tarjetas || []
+      };
+      AppState.config = this.config;
+      return this.config;
+    } catch (e) {
+      console.error("Error crítico en loadConfig (logic.js):", e);
+      throw e;
+    }
+  },
+
+  getDashboardData: async function(year, month) {
+    try {
+      const results = await Promise.all([
+        SheetsAPI.readSheet(`${month}_${year}`),
+        SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET)
+      ]);
+
+      const transactions = results[0] || [];
+      const budgetData = results[1] || [];
+      
+      let totalGastos = 0;
+      let totalIngresos = 0;
+      let pendingCount = 0;
+
+      transactions.slice(1).forEach(t => {
+        if (t[0] === 'DELETED') return;
+        const amount = parseFloat(t[2]) || 0;
+        if (amount < 0) totalGastos += Math.abs(amount);
+        else totalIngresos += amount;
+        if (!t[3] || !t[4]) pendingCount++;
+      });
+
+      return {
+        resumen: { totalGastos, totalIngresos },
+        pendingCount: pendingCount,
+        plannedGastos: 0 // Se implementará en el módulo Budget
+      };
+    } catch (e) {
+      console.error("Error getDashboardData:", e);
+      return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 };
+    }
   }
-};
-
-// GASTOS_TOTAL indices (N=14) - LEGACY COMPLETO
-var GASTOS_COLS = {
-  ID: 0, 
-  AÑO: 1, 
-  MES: 2, 
-  FECHA: 3, 
-  CONCEPTO: 4, 
-  IMPORTE: 5,
-  CUENTA: 6, 
-  CASA: 7, 
-  CATEGORIA: 8, 
-  SUBCATEGORIA: 9, 
-  NOTAS: 10, 
-  ORIGEN: 11, 
-  ESTADO: 12, 
-  HASH: 13 
-};
-
-// INGRESOS indices (K=11) - LEGACY COMPLETO
-var INGRESOS_COLS = {
-  ID: 0, 
-  AÑO: 1, 
-  MES: 2, 
-  FECHA: 3, 
-  CONCEPTO: 4, 
-  IMPORTE: 5,
-  CUENTA: 6, 
-  CASA: 7, 
-  CATEGORIA: 8, 
-  ORIGEN: 9, 
-  HASH: 10
-};
-
-// BUDGET_PLAN indices (TIPO=10) - LEGACY COMPLETO
-var BUDGET_COLS = {
-  AÑO: 0, 
-  MES: 1, 
-  CONCEPTO: 2, 
-  IMPORTE: 3, 
-  CUENTA: 4, 
-  CASA: 5, 
-  CATEGORIA: 6, 
-  SUBCATEGORIA: 7, 
-  TIPO: 8, 
-  NOTAS: 9
-};
-
-// ACCOUNTS indices (Nueva para Fase 4)
-var ACCOUNT_COLS = {
-  ALIAS: 0, 
-  IDENTIFIER: 1, 
-  CASA: 2, 
-  TIPO: 3
 };
