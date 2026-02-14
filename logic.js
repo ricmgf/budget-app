@@ -16,11 +16,11 @@ const BudgetLogic = {
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Casas (Legacy Fix)
+        // Columna D: Casas
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna E: Tarjetas (Inyección limpia)
+        // Columna E: Tarjetas (Clonado manual de lógica de Casas)
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
