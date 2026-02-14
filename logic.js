@@ -6,6 +6,7 @@ const BudgetLogic = {
   async loadConfig() {
     try {
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
+      // He inyectado 'tarjetas' en tu array original
       const cfg = { categorias: {}, cuentas: [], casas: [], tarjetas: [] };
       if (!rows || rows.length <= 1) return cfg;
 
@@ -13,14 +14,14 @@ const BudgetLogic = {
         const rowIdx = index + 2;
         if (row[0] && row[4] !== 'DELETED') {
           const cat = row[0].trim();
-          if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
-          if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
+          if (!config.categorias[cat]) config.categorias[cat] = [];
+          if (row[1] && row[1].trim() !== "") config.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Casas
+        // Columna D: Casas (Tu lógica original)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna E: Tarjetas (Clonado manual de lógica de Casas)
+        // Columna E: Tarjetas (Clonado manual de la lógica de casas)
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
