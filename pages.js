@@ -1,7 +1,11 @@
 /**
- * [ARCHIVO_MAESTRO_V1.9.1_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.9.6_PROTEGIDO]
  * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
- * FIX: Multi-select real con checkboxes y cierre al clicar fuera.
+ * MODIFICACIONES:
+ * 1. Tarjetas dinámicas desde Columna E de CONFIG.
+ * 2. Nuevo Módulo de Ajustes para gestión de Tarjetas (Cards).
+ * 3. Selector Multi-select de bancos conectado a AppState.config.tarjetas.
+ * 4. Fix deleteBankMaster (Borrado lógico 'DELETED').
  */
 
 const AppState = {
@@ -71,19 +75,24 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
-// --- AJUSTES: BANCOS, CASAS, CATEGORÍAS ---
+// --- AJUSTES (SETTINGS) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
   const casas = AppState.config.casas;
+  const tarjetas = AppState.config.tarjetas;
+  
   const header = `<div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
-    ${['bancos', 'categorias', 'casas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
+    ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
   </div>`;
+
   if (AppState.settingsTab === 'casas') renderCasasTab(container, header, casas);
   else if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header, cats);
+  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(container, header, tarjetas);
   else renderBancosTab(container, header, casas);
 }
 
+// --- GESTIÓN DE BANCOS ---
 function renderBancosTab(container, header, casas) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     let html = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -100,7 +109,7 @@ function renderBancosTab(container, header, casas) {
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
-            ${casas.map(c => `<option value="${c.name}" ${String(d.casa).trim().toLowerCase() === String(c.name).trim().toLowerCase() ? 'selected' : ''}>${c.name}</option>`).join('')}
+            ${AppState.config.casas.map(c => `<option value="${c.name}" ${String(d.casa).trim().toLowerCase() === String(c.name).trim().toLowerCase() ? 'selected' : ''}>${c.name}</option>`).join('')}
           </select></div>
           <div>
             <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tarjetas Asociadas</label>
@@ -109,10 +118,10 @@ function renderBancosTab(container, header, casas) {
                 <span id="ms-label">${selectedCards.length > 0 ? selectedCards.join(', ') : 'Seleccionar...'}</span>
               </div>
               <div class="ms-options">
-                ${['Amex', 'Visa Iberia', 'Visa', 'Mastercard'].map(t => `
+                ${AppState.config.tarjetas.map(t => `
                   <div class="ms-option">
-                    <input type="checkbox" class="card-cb" value="${t}" ${selectedCards.includes(t) ? 'checked' : ''} onchange="syncCardLabel()"> 
-                    <label>${t}</label>
+                    <input type="checkbox" class="card-cb" value="${t.name}" ${selectedCards.includes(t.name) ? 'checked' : ''} onchange="syncCardLabel()"> 
+                    <label>${t.name}</label>
                   </div>`).join('')}
               </div>
             </div>
@@ -157,7 +166,6 @@ window.saveBank = async function() {
   const i = document.getElementById('new-bank-iban').value;
   const c = document.getElementById('new-bank-casa').value;
   const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(',');
-  
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
   if (AppState.editingBankData && AppState.editingBankData.row) {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
@@ -167,7 +175,7 @@ window.saveBank = async function() {
   } else { 
     await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); 
   }
-  AppState.isAddingBank = false; AppState.editingBankData = null; loadSettingsPage();
+  AppState.isAddingBank = false; loadSettingsPage();
 };
 
 window.deleteBankMaster = async function(row) {
@@ -177,7 +185,7 @@ window.deleteBankMaster = async function(row) {
   }
 };
 
-// --- RESTO DE MÓDULOS (CASAS, CATEGORÍAS, IMPORT) ---
+// --- GESTIÓN DE CASAS ---
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button></div>
@@ -188,6 +196,22 @@ function renderCasasTab(container, header, casas) {
               <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div></div>`).join('')}</div></div>`;
 }
 
+// --- GESTIÓN DE TARJETAS (CARDS) ---
+function renderTarjetasTab(container, header, tarjetas) {
+  container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Tarjetas Master</h3><button onclick="addCardMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Tarjeta</button></div>
+      <div style="display:grid; gap:12px;">${tarjetas.map(t => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
+            <span style="font-weight:600; color:var(--text-primary);">${t.name}</span>
+            <div style="display:flex; gap:16px;"><button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
+              <button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div></div>`).join('')}</div></div>`;
+}
+
+window.addCardMaster = async function() { const n = prompt("Nombre de la Tarjeta (ej. Visa Oro):"); if (n) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, 2, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.renameCardMaster = async function(row, current) { const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCardMaster = async function(row) { if (confirm("¿Eliminar esta tarjeta?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+
+// --- GESTIÓN DE CATEGORÍAS ---
 function renderCategoriasTab(container, header, cats) {
   let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
@@ -215,6 +239,7 @@ function renderCategoriasTab(container, header, cats) {
   container.innerHTML = html + `</div>`;
 }
 
+// --- ARRANQUE ORIGINAL ---
 async function initApp() { try { let retry = 0; while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) { if (retry > 20) throw new Error("API Timeout"); await new Promise(r => setTimeout(r, 200)); retry++; } await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); } catch(e) { console.error("Fallo initApp:", e); } }
 
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
