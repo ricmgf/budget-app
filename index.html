@@ -8,11 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
+  <style>
+    /* Estilos de transición para el Sidebar colapsable */
+    .app-sidebar { transition: width 0.3s ease !important; overflow: hidden; }
+    .sidebar-toggle {
+        position: absolute; top: 15px; right: 10px;
+        background: var(--accent); color: white; border: none;
+        border-radius: 4px; width: 24px; height: 24px; cursor: pointer;
+        z-index: 100; display: flex; align-items: center; justify-content: center;
+    }
+  </style>
 </head>
 <body>
   <div id="signin-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-    <h1 style="margin-bottom:20px; color:#1e293b;">Budget Master</h1>
-    <button id="signin-btn" style="display:none; padding:12px 24px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600;" onclick="handleAuthClick()">Iniciar sesión con Google</button>
+    <h1 style="margin-bottom:20px;">Budget Master</h1>
+    <button id="signin-btn" style="display:none; padding:12px 24px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer;" onclick="handleAuthClick()">Iniciar sesión con Google</button>
   </div>
 
   <div class="app-layout">
@@ -23,13 +33,27 @@
         <h1 class="logo-text">Budget</h1>
       </div>
       <nav class="sidebar-nav">
-        <div class="nav-item" data-page="dashboard" onclick="navigateTo('dashboard')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></div>
-        <div class="nav-item" data-page="review" onclick="navigateTo('review')"><span class="nav-icon">👁️</span><span class="nav-label">Review</span></div>
-        <div class="nav-item" data-page="balances" onclick="navigateTo('balances')"><span class="nav-icon">⚖️</span><span class="nav-label">Balances</span></div>
-        <div class="nav-item" data-page="import" onclick="navigateTo('import')"><span class="nav-icon">📥</span><span class="nav-label">Importar</span></div>
-        <div class="nav-item" data-page="reporting" onclick="navigateTo('reporting')"><span class="nav-icon">📈</span><span class="nav-label">Reporting</span></div>
-        <div class="nav-item" data-page="rules" onclick="navigateTo('rules')"><span class="nav-icon">⚡</span><span class="nav-label">Reglas</span></div>
-        <div class="nav-item" data-page="settings" onclick="navigateTo('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Ajustes</span></div>
+        <div class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+          <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+        </div>
+        <div class="nav-item" data-page="review" onclick="navigateTo('review')">
+          <span class="nav-icon">👁️</span><span class="nav-label">Review</span>
+        </div>
+        <div class="nav-item" data-page="balances" onclick="navigateTo('balances')">
+          <span class="nav-icon">⚖️</span><span class="nav-label">Balances</span>
+        </div>
+        <div class="nav-item" data-page="import" onclick="navigateTo('import')">
+          <span class="nav-icon">📥</span><span class="nav-label">Importar</span>
+        </div>
+        <div class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">
+          <span class="nav-icon">📈</span><span class="nav-label">Reporting</span>
+        </div>
+        <div class="nav-item" data-page="rules" onclick="navigateTo('rules')">
+          <span class="nav-icon">⚡</span><span class="nav-label">Reglas</span>
+        </div>
+        <div class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+          <span class="nav-icon">⚙️</span><span class="nav-label">Ajustes</span>
+        </div>
       </nav>
     </aside>
 
@@ -37,9 +61,9 @@
       <div class="view-wrapper">
         <header class="page-header">
           <div class="header-left">
-            <button class="btn-icon" onclick="prevMonth()">◄</button>
-            <span id="month-display" class="month-label">Cargando...</span>
-            <button class="btn-icon" onclick="nextMonth()">►</button>
+            <button onclick="prevMonth()">◄</button>
+            <span id="month-display" class="month-label"></span>
+            <button onclick="nextMonth()">►</button>
           </div>
         </header>
         
