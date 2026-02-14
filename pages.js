@@ -1,7 +1,7 @@
 /**
- * [MASTER_PAGES_V2.2.0_FULL]
- * REGLA DE ORO: ARCHIVO COMPLETO SIN MUTILACIONES.
- * SISTEMA: Clonación perfecta de Casas para Tarjetas (Columna E).
+ * [MASTER_PAGES_V2.2.1]
+ * REGLA DE ORO: ARCHIVO COMPLETO.
+ * SISTEMA: Interfaz dinámica para Bancos, Categorías, Casas y Tarjetas.
  */
 
 const AppState = {
@@ -27,7 +27,7 @@ const Utils = {
   formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) 
 };
 
-// --- SISTEMA DE NAVEGACIÓN ---
+// --- NAVEGACIÓN ---
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -37,10 +37,7 @@ window.navigateTo = function(p) {
   const nav = document.querySelector(`[data-page="${p}"]`);
   if (nav) nav.classList.add('active');
   
-  const titleMap = { 
-    dashboard: 'Dashboard', review: 'Review', balances: 'Balances', 
-    import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Ajustes' 
-  };
+  const titleMap = { dashboard: 'Dashboard', review: 'Review', balances: 'Balances', import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Ajustes' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titleMap[p];
   
@@ -59,11 +56,11 @@ window.toggleSidebar = function() {
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth = 1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth = 12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 
-// --- MÓDULO DASHBOARD ---
+// --- DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
-  container.innerHTML = '<div style="padding:20px; color:var(--text-secondary);">Cargando Dashboard...</div>';
+  container.innerHTML = '<div style="padding:20px; color:var(--text-secondary);">Cargando...</div>';
   try {
     const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
     const neto = (data.resumen?.totalIngresos || 0) - (data.resumen?.totalGastos || 0);
@@ -82,10 +79,10 @@ async function loadDashboard() {
           <div style="font-size:32px; font-weight:700; color:var(--text-primary); margin-top:8px;">${Utils.formatCurrency((data.plannedGastos || 0) - (data.resumen?.totalGastos || 0))}</div>
         </div>
       </div>`;
-  } catch (e) { console.error("Error Dashboard:", e); }
+  } catch (e) { console.error(e); }
 }
 
-// --- MÓDULO AJUSTES (SETTINGS) ---
+// --- AJUSTES ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   if (!container) return;
@@ -101,7 +98,6 @@ async function loadSettingsPage() {
   else renderBancosTab(container, header);
 }
 
-// Motor de Renderizado Único (Clonación perfecta)
 function renderList(container, header, title, data, addFn, delFn) {
   const list = data || [];
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light);">
@@ -110,7 +106,7 @@ function renderList(container, header, title, data, addFn, delFn) {
       <button onclick="${addFn.name}()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva</button>
     </div>
     <div style="display:grid; gap:12px;">
-      ${list.length === 0 ? `<div style="color:var(--text-secondary); padding:20px; text-align:center;">No hay ${title.toLowerCase()} en el Excel (Columna ${title === 'Casas' ? 'D' : 'E'}).</div>` : 
+      ${list.length === 0 ? `<div style="color:var(--text-secondary); padding:20px; text-align:center;">No hay ${title.toLowerCase()} en el Excel.</div>` : 
         list.map(item => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
           <span style="font-weight:600;">${item.name}</span>
           <button onclick="${delFn.name}(${item.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
@@ -118,7 +114,6 @@ function renderList(container, header, title, data, addFn, delFn) {
     </div></div>`;
 }
 
-// --- GESTIÓN DE BANCOS ---
 function renderBancosTab(container, header) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     let html = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light);">
@@ -157,23 +152,14 @@ function renderBancosTab(container, header) {
           <tbody>
             ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => {
               const cards = a[3] ? a[3].split(',').filter(c => c.trim()) : [];
-              return `<tr>
-                <td style="padding:16px 8px; font-weight:700;">${a[0]}</td>
-                <td style="font-family:monospace; color:var(--text-secondary);">${a[1]}</td>
-                <td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td> 
-                <td><span style="background:var(--bg-canvas); padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700;">${a[2]}</span></td> 
-                <td style="text-align:right;">
-                  <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
-                  <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
-                </td>
-              </tr>`;
+              return `<tr><td style="padding:16px 8px; font-weight:700;">${a[0]}</td><td style="font-family:monospace;">${a[1]}</td><td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td><td><span style="background:var(--bg-canvas); padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700;">${a[2]}</span></td><td style="text-align:right;"><button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button><button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button></td></tr>`;
             }).join('')}
           </tbody></table></div>`;
     container.innerHTML = html;
   });
 }
 
-// --- HANDLERS Y LÓGICA ---
+// --- HANDLERS ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.syncCardLabel = () => {
   const selected = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value);
@@ -189,7 +175,7 @@ window.saveBank = async function() {
   const i = document.getElementById('new-bank-iban').value;
   const c = document.getElementById('new-bank-casa').value;
   const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(',');
-  if (!n || !i) return alert("Nombre e IBAN obligatorios");
+  if (!n || !i) return alert("Faltan datos");
   if (AppState.editingBankData && AppState.editingBankData.row) {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
@@ -200,58 +186,47 @@ window.saveBank = async function() {
 };
 
 window.deleteBankMaster = async function(row) {
-  if (confirm("¿Eliminar este banco?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED'); loadSettingsPage(); }
+  if (confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED'); loadSettingsPage(); }
 };
 
 window.addCardMaster = async function() {
-  const n = prompt("Nombre de la nueva tarjeta:");
-  if (n) { alert("Añádela en la Columna E del Excel y refresca la App."); }
+  const n = prompt("Nombre tarjeta:");
+  if (n) { alert("Añádela en la Columna E del Excel."); }
 };
 
 window.deleteCardMaster = async function(row) {
-  if (confirm("¿Eliminar tarjeta de la configuración?")) { 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, 'DELETED'); 
-    await BudgetLogic.loadConfig(); 
-    loadSettingsPage(); 
-  }
+  if (confirm("¿Eliminar tarjeta?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); }
 };
 
 window.addCasaMaster = async function() {
-  const n = prompt("Nombre de la nueva casa:");
+  const n = prompt("Nombre casa:");
   if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); }
 };
 
 window.deleteCasaMaster = async function(row) {
-  if (confirm("¿Eliminar casa de la configuración?")) { 
-    await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, 'DELETED'); 
-    await BudgetLogic.loadConfig(); 
-    loadSettingsPage(); 
-  }
+  if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); }
 };
 
 function renderCategoriasTab(container, header, cats) {
   let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light);"><h3>Categorías</h3>`;
   Object.keys(cats || {}).forEach(cat => {
-    html += `<div style="margin-bottom:20px; padding:16px; background:var(--bg-canvas); border-radius:12px;"><strong>${cat}</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">
-      ${(cats[cat] || []).map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:12px;">${sub}</span>`).join('')}
-    </div></div>`;
+    html += `<div style="margin-bottom:20px; padding:16px; background:var(--bg-canvas); border-radius:12px;"><strong>${cat}</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">${(cats[cat] || []).map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:12px;">${sub}</span>`).join('')}</div></div>`;
   });
   container.innerHTML = html + `</div>`;
 }
 
-// --- BOOTSTRAP DE LA APP ---
 async function initApp() { 
   try { 
     let retry = 0; 
     while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) { 
-      if (retry > 20) throw new Error("API Timeout"); 
+      if (retry > 20) throw new Error("GAPI Timeout"); 
       await new Promise(r => setTimeout(r, 200)); 
       retry++; 
     } 
     await BudgetLogic.loadConfig(); 
     AppState.initUI(); 
     window.navigateTo('dashboard'); 
-  } catch(e) { console.error("Fallo initApp:", e); } 
+  } catch(e) { console.error("Error initApp:", e); } 
 }
 
 initApp();
