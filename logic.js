@@ -1,6 +1,5 @@
 /**
  * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
- * ⚠️ PROHIBIDO MODIFICAR EL MOTOR DE LÓGICA Y MAPEOS DE COLUMNAS.
  */
 const BudgetLogic = {
   async loadConfig() {
@@ -11,14 +10,17 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
+        // Col A y B: Categorías
         if (row[0] && row[0].trim() !== "" && row[0] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
+        // Col D: Casas
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
+        // Col E: Tarjetas
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
