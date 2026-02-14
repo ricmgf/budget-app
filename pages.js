@@ -1,5 +1,6 @@
 /**
- * [ARCHIVO_MAESTRO_V1.6.7_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.6.8_PROTEGIDO]
+ * REGLA DE ORO: NO MUTILAR.
  */
 
 const AppState = {
@@ -9,7 +10,7 @@ const AppState = {
   currentPage: 'dashboard', 
   settingsTab: 'bancos',
   sidebarCollapsed: false,
-  isAddingBank: false, // Control de formulario nuevo banco
+  isAddingBank: false,
   initUI: function() {
     const el = document.getElementById('month-display');
     if (el) {
@@ -23,7 +24,6 @@ const Utils = {
   formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) 
 };
 
-// --- NAVEGACIÓN ---
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -63,7 +63,6 @@ window.prevMonth = () => {
   if (AppState.currentPage === 'dashboard') loadDashboard(); 
 };
 
-// --- DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
@@ -89,7 +88,6 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
-// --- CONFIGURACIÓN (RESTAURACIÓN TOTAL DE LÓGICA) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -200,6 +198,17 @@ function renderCategoriasTab(container, header, cats) {
   container.innerHTML = html + `</div>`;
 }
 
+function loadImportPage() {
+  document.getElementById('import-content').innerHTML = `
+    <div style="background:white; padding:60px; border-radius:24px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align:center;">
+      <div style="font-size:48px; margin-bottom:24px;">📂</div>
+      <h2 style="margin-bottom:16px; color:var(--text-primary);">Importar Extractos</h2>
+      <p style="color:var(--text-secondary); margin-bottom:32px;">Arrastra tus archivos XLSX aquí o haz clic para seleccionar</p>
+      <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
+      <button onclick="document.getElementById('file-import').click()" style="background:var(--accent); color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
+    </div>`;
+}
+
 // --- FUNCIONES DE ACCIÓN BANCOS ---
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; loadSettingsPage(); };
 
@@ -229,7 +238,7 @@ window.editBankMaster = async function(row, current) {
   }
 };
 
-// --- ARRANQUE (WAIT FOR GAPI) ---
+// --- ARRANQUE ---
 async function initApp() {
   try {
     let retry = 0;
@@ -243,7 +252,6 @@ async function initApp() {
   } catch(e) { console.error("Fallo initApp:", e); }
 }
 
-// --- GLOBALES RESTANTES ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() {
   const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); }
