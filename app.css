@@ -1,89 +1,48 @@
 /* ============================================================
-   Budget App — CSS Design System
-   Desktop-first, spreadsheet-density, dark mode support
+   Budget App — CSS Design System (Restaurado v1.7.6)
    ============================================================ */
 
 :root {
-  --bg-primary: #f7f8fa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #eef0f4;
-  --bg-hover: #e8eaf0;
-  --bg-active: #dce0e8;
-  --text-primary: #1a1d23;
-  --text-secondary: #5a6070;
-  --text-tertiary: #8890a0;
+  --bg-primary: #f7f8fa; --bg-secondary: #ffffff; --bg-tertiary: #eef0f4;
+  --bg-hover: #e8eaf0; --bg-active: #dce0e8;
+  --text-primary: #1a1d23; --text-secondary: #5a6070; --text-tertiary: #8890a0;
   --text-inverse: #ffffff;
-  --border-light: #e2e5eb;
-  --border-medium: #ccd0d8;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-light: #dbeafe;
+  --border-light: #e2e5eb; --border-medium: #ccd0d8;
+  --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #dbeafe;
   --accent-subtle: #eff6ff;
-  --success: #16a34a;
-  --success-light: #dcfce7;
-  --warning: #d97706;
-  --warning-light: #fef3c7;
-  --danger: #dc2626;
-  --danger-light: #fef2f2;
+  --success: #16a34a; --success-light: #dcfce7;
+  --warning: #d97706; --warning-light: #fef3c7;
+  --danger: #dc2626; --danger-light: #fef2f2;
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --text-xs: 11px;
-  --text-sm: 13px;
-  --text-base: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
+  --text-xs: 11px; --text-sm: 13px; --text-base: 14px; --text-lg: 16px; --text-xl: 18px;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 24px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   
-  /* CAMBIO: Sidebar reducido 25% */
+  /* CAMBIO: Sidebar -25% */
   --sidebar-width: 195px;
   --sidebar-collapsed: 64px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body, html {
-  margin: 0; padding: 0; height: 100vh; width: 100vw;
-  font-family: var(--font-sans); background-color: var(--bg-primary);
-  color: var(--text-primary); font-size: var(--text-base);
-  -webkit-font-smoothing: antialiased; overflow: hidden;
-}
-
+body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: var(--font-sans); background-color: var(--bg-primary); color: var(--text-primary); font-size: var(--text-base); -webkit-font-smoothing: antialiased; overflow: hidden; }
 .app-layout { display: flex; height: 100%; width: 100%; overflow: hidden; }
 
 /* === SIDEBAR === */
-.app-sidebar {
-  width: var(--sidebar-width);
-  background-color: #1e293b;
-  color: var(--text-inverse);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-/* Estado Colapsado */
+.app-sidebar { width: var(--sidebar-width); background-color: #1e293b; color: var(--text-inverse); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
 .app-sidebar.collapsed { width: var(--sidebar-collapsed); }
 .app-sidebar.collapsed .nav-label, .app-sidebar.collapsed .logo-text { display: none; }
 .app-sidebar.collapsed .nav-item { justify-content: center; padding: var(--sp-3) 0; }
-.app-sidebar.collapsed .nav-icon { margin: 0; font-size: 20px; }
 
-/* Botón Toggle */
-.sidebar-toggle {
-  position: absolute; top: 18px; right: 12px;
-  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-  color: white; border-radius: 4px; width: 24px; height: 24px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 100;
-}
+.sidebar-toggle { position: absolute; top: 18px; right: 12px; width: 24px; height: 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 100; }
 .sidebar-toggle:hover { background: var(--accent); }
 
 .sidebar-header { padding: var(--sp-6) var(--sp-6) var(--sp-4); display: flex; align-items: center; gap: var(--sp-3); height: 80px; }
 .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 18px; }
-.logo-text { font-size: 20px; font-weight: 700; color: white; }
+.logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: white; }
 
 .sidebar-nav { flex: 1; padding: var(--sp-2); display: flex; flex-direction: column; gap: 2px; }
 .nav-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); color: #94a3b8; text-decoration: none; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s; font-weight: 500; }
@@ -93,18 +52,22 @@ body, html {
 
 /* === MAIN CONTENT === */
 .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; background-color: var(--bg-primary); }
-
-.view-wrapper {
-  /* CAMBIO: Margen ~1cm fijo lateral */
-  padding: var(--sp-6) 40px !important; 
-  width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;
+.view-wrapper { 
+  padding: 24px 40px !important; /* CAMBIO: 1cm visual fijo */
+  width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; 
 }
 
-.card { background-color: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--sp-6); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); margin-bottom: var(--sp-6); }
-.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); }
-.metric-value { font-size: 28px; font-weight: 700; color: var(--text-primary); }
+/* MÉTRICAS DASHBOARD 28PX */
+.metric-value { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: var(--sp-1); }
 
-/* (Resto de estilos originales de tu app.css se mantienen igual) */
-.page { display: none; width: 100%; }
+/* TABLAS Y OTROS ELEMENTOS DEL ZIP */
+.card { background: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--sp-6); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); margin-bottom: var(--sp-6); }
+.data-table-container { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-light); }
+.data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.data-table th { background: var(--bg-tertiary); padding: var(--sp-3); text-align: left; }
+.data-table td { padding: var(--sp-3); border-bottom: 1px solid var(--border-light); }
+.badge { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-accent { background: var(--accent-light); color: var(--accent); }
+.page { display: none; }
 .page.active { display: block; }
-.btn-primary { background-color: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+.btn-primary { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
