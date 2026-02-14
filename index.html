@@ -13,9 +13,9 @@
       --accent: #2563eb; --bg-canvas: #f8fafc; --bg-card: #ffffff;
       --text-primary: #0f172a; --text-secondary: #64748b;
       --border-light: #e2e8f0; 
-      --sidebar-width: 195px; /* CAMBIO: -25% de 260px */
+      --sidebar-width: 195px; /* CAMBIO: -25% */
       --sidebar-collapsed: 64px;
-      --elegant-margin: 40px; /* CAMBIO: Maximización área trabajo (1cm visual) */
+      --elegant-margin: 40px; /* CAMBIO: 1cm visual aprox */
       --positive: #10b981; --negative: #ef4444;
     }
     * { box-sizing: border-box; }
@@ -52,21 +52,26 @@
     
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .month-selector { display: flex; align-items: center; gap: 16px; background: white; padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-light); }
-    .month-label { font-weight: 700; min-width: 120px; text-align: center; }
+    .month-label { font-weight: 700; min-width: 120px; text-align: center; color: var(--text-primary); }
     .month-selector button { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
     .month-selector button:hover { background: #f1f5f9; }
 
     .page { display: none; }
     .page.active { display: block; }
     
-    #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    #signin-btn { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: none; }
+    #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(248, 250, 252, 0.95); z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border-light); text-align: center; }
+    #signin-btn { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: none; margin-top: 20px; }
   </style>
 </head>
 <body>
   <div id="signin-overlay">
-    <h1 style="margin-bottom:24px;">Budget Master</h1>
-    <button id="signin-btn" onclick="handleAuthClick()">Iniciar sesión con Google</button>
+    <div class="login-card">
+      <div class="logo-icon" style="margin: 0 auto 16px;">B</div>
+      <h1 style="margin:0; color: var(--text-primary);">Budget Master</h1>
+      <p style="color: var(--text-secondary);">Identifícate para continuar</p>
+      <button id="signin-btn" onclick="handleAuthClick()">Iniciar sesión con Google</button>
+    </div>
   </div>
 
   <div class="app-layout">
@@ -89,11 +94,10 @@
     <main class="main-content">
       <div class="view-wrapper">
         <header class="page-header">
-          <h2 id="page-title" style="margin:0;">Dashboard</h2>
+          <h2 id="page-title" style="margin:0; color: var(--text-primary);">Dashboard</h2>
           <div class="month-selector"><button onclick="prevMonth()">◄</button><span id="month-display" class="month-label"></span><button onclick="nextMonth()">►</button></div>
           <div style="width:40px;"></div>
         </header>
-        
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
         <div id="page-import" class="page"><div id="import-content"></div></div>
         <div id="page-review" class="page"><div id="review-content"></div></div>
