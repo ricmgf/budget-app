@@ -1,3 +1,6 @@
+/**
+ * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
+ */
 const BudgetLogic = {
   async loadConfig() {
     try {
@@ -7,18 +10,18 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Mapeo de Categorías (Col A y B)
-        if (row[0] && row[0] !== 'DELETED') {
+        // Categorías y Subcategorías (Columna A y B)
+        if (row[0] && row[0].trim() !== "" && row[0] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
         // Columna D: Casas
-        if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
+        if (row[3] && row[3].trim() !== "" && row[3] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
         // Columna E: Tarjetas
-        if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
+        if (row[4] && row[4].trim() !== "" && row[4] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
       });
@@ -33,9 +36,17 @@ const BudgetLogic = {
       const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
       const f = (arr, yr, mo) => arr.slice(1).filter(r => r[1] == yr && r[2] == mo && r[0] !== 'DELETED');
       const actG = f(g, y, m), actI = f(i, y, m);
+      
       const totalG = actG.reduce((acc, r) => acc + parseFloat(r[5] || 0), 0);
       const totalI = actI.reduce((acc, r) => acc + parseFloat(r[5] || 0), 0);
-      return { resumen: { totalGastos: totalG, totalIngresos: totalI }, pendingCount: actG.filter(r => !r[3] || !r[4]).length };
-    } catch (e) { return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 }; }
+
+      return { 
+        resumen: { totalGastos: totalG, totalIngresos: totalI, ahorro: totalI - totalG },
+        pendingCount: actG.filter(r => !r[3] || !r[4]).length
+      };
+    } catch (e) {
+      console.error("Dashboard data fail:", e);
+      return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 };
+    }
   }
 };
