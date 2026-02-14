@@ -1,6 +1,6 @@
 /**
  * [ARCHIVO_RESTAURADO_V1.7.7_FINAL]
- * ⚠️ REGLA DE ORO: NO TOCAR LA ESTRUCTURA NI EL MOTOR DE CARGA.
+ * REGLA DE ORO: NO SIMPLIFICAR.
  */
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
@@ -56,7 +56,7 @@ async function loadDashboard() {
         </div>
         <div class="card">
           <div style="color:var(--text-secondary); font-size:14px;">Neto Mes</div>
-          <div class="metric-value" style="color:${neto >= 0 ? 'var(--success)' : 'var(--danger)'};">${Utils.formatCurrency(neto)}</div>
+          <div class="metric-value" style="color:${neto >= 0 ? '#10b981' : '#ef4444'};">${Utils.formatCurrency(neto)}</div>
         </div>
         <div class="card">
           <div style="color:var(--text-secondary); font-size:14px;">Variación Plan</div>
@@ -69,25 +69,28 @@ async function loadDashboard() {
 function renderBancosTab(container, header, casas) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     container.innerHTML = `${header}<div class="card">
-      <table style="width:100%; border-collapse:collapse; text-align:left;">
-        <thead style="color:var(--text-secondary); border-bottom:1px solid var(--border-light);">
-          <tr><th style="padding:12px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th></tr>
-        </thead>
-        <tbody>
-          ${accs.slice(1).map(a => `
-            <tr style="border-bottom:1px solid var(--border-light);">
-              <td style="padding:12px; font-weight:600;">${a[0]||''}</td>
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead><tr><th>Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th></tr></thead>
+          <tbody>
+            ${accs.slice(1).map(a => `<tr>
+              <td style="font-weight:600;">${a[0]||''}</td>
               <td style="font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td>
               <td>${a[3]||''}</td> <td><span class="badge badge-accent">${a[2]||'Global'}</span></td> </tr>`).join('')}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>`;
   });
 }
 
-// RESTO DE FUNCIONES ORIGINALES (addCategoryMaster, renameCasaMaster, etc.)
+// RESTO DE FUNCIONES GLOBALES DEL ZIP v1.7.6 (addCategory, deleteCasa, handleFileSelection, etc.)
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.handleFileSelection = (e) => { const files = e.target.files; if(files.length > 0) alert(files.length + " archivos listos."); };
+window.addCategoryMaster = async function() { const n = prompt("Cat:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n, "General"]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCasaMaster = async function(row) { if (confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
 async function initApp() {
   try {
