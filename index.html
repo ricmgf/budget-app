@@ -1,93 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budget Master</title>
-  <link rel="icon" type="image/png" href="favicon.png?v=17">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="app.css">
-  <style>
-    :root {
-      --accent: #2563eb; --bg-canvas: #f8fafc; --bg-card: #ffffff;
-      --text-primary: #0f172a; --text-secondary: #64748b;
-      --border-light: #e2e8f0; --sidebar-width: 260px;
-      --elegant-margin: 90px; --positive: #10b981; --negative: #ef4444;
-    }
-    * { box-sizing: border-box; }
-    body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; }
-    .app-layout { display: flex; height: 100%; width: 100%; }
-    
-    .sidebar { width: var(--sidebar-width); background: #fff; border-right: 1px solid var(--border-light); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; }
-    .sidebar-header { padding: 40px 24px; display: flex; align-items: center; gap: 12px; }
-    .logo-img { width: 30px; height: 30px; }
-    .sidebar-nav { padding: 0 12px; flex: 1; }
-    .nav-item { padding: 12px 16px; border: none; background: none; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; width: 100%; display: flex; align-items: center; gap: 10px; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; }
-    .nav-item.active { background: #eff6ff; color: var(--accent); font-weight: 700; }
-
-    .main-content { flex: 1; height: 100%; overflow-y: auto; padding: 40px var(--elegant-margin); display: flex; flex-direction: column; align-items: center; }
-    .view-wrapper { width: 100%; max-width: 1500px; }
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; position: relative; }
-    .month-selector { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; background: #fff; padding: 8px 20px; border-radius: 100px; border: 1px solid var(--border-light); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-    .month-label { font-weight: 700; min-width: 130px; text-align: center; }
-
-    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 24px; }
-    .two-col-equal { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    .card { background: #fff; padding: 28px; border-radius: 20px; border: 1px solid var(--border-light); box-shadow: 0 1px 2px rgba(0,0,0,0.03); margin-bottom: 24px; }
-    .card h3 { margin: 0 0 10px 0; font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }
-    .card h2 { margin: 0; font-size: 28px; font-weight: 700; }
-    
-    .positive { color: var(--positive); } .negative { color: var(--negative); }
-    #signin-overlay { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 2000; }
-    .signin-card { background: var(--bg-canvas); padding: 50px; border-radius: 28px; text-align: center; border: 1px solid var(--border-light); }
-    #signin-btn { width: 100%; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 24px; }
-
-    .page { display: none; } .page.active { display: block; }
-    .chip-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-    .chip { padding: 10px 16px; border: 1px solid var(--border-light); border-radius: 100px; background: #fff; cursor: pointer; }
-    .chip.active { background: var(--accent); color: #fff; }
-    
-    /* Badge para tipos de cuenta */
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; background: #f1f5f9; color: #475569; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Master Enterprise</title>
+    <link rel="stylesheet" href="app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="signin-overlay"><div class="signin-card"><img src="favicon.png" style="width:70px;"><h1 style="margin:16px 0 0;">Budget Master</h1><button id="signin-btn" style="display:none;" onclick="handleAuthClick()">Entrar con Google</button></div></div>
-  <div class="app-layout">
-    <aside class="sidebar">
-      <div class="sidebar-header"><img src="favicon.png" class="logo-img"> <span style="font-weight:700; font-size:20px;">Budget</span></div>
-      <nav class="sidebar-nav">
-        <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">📊 Dashboard</button>
-        <button class="nav-item" data-page="import" onclick="navigateTo('import')">📥 Importar</button>
-        <button class="nav-item" data-page="review" onclick="navigateTo('review')">✏️ Revisar</button>
-        <button class="nav-item" data-page="rules" onclick="navigateTo('rules')">⚙️ Reglas</button>
-        <button class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">📈 Reportes</button>
-        <button class="nav-item" data-page="balances" onclick="navigateTo('balances')">🏦 Saldos</button>
-        <button class="nav-item" data-page="settings" onclick="navigateTo('settings')">🔧 Ajustes</button>
-      </nav>
-    </aside>
-    <main class="main-content">
-      <div class="view-wrapper">
-        <header class="page-header">
-          <h2 id="page-title" style="margin:0;">Dashboard</h2>
-          <div class="month-selector"><button onclick="prevMonth()">◄</button><span id="month-display" class="month-label"></span><button onclick="nextMonth()">►</button></div>
-          <div style="width:40px;"></div>
-        </header>
-        
-        <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
-        <div id="page-import" class="page"><div id="import-content"></div></div>
-        <div id="page-review" class="page"><div id="review-content"></div></div>
-        <div id="page-rules" class="page"><div id="rules-content"></div></div>
-        <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
-        <div id="page-balances" class="page"><div id="balances-content"></div></div>
-        <div id="page-settings" class="page"><div id="settings-content"></div></div>
-      </div>
-    </main>
-  </div>
-  <script src="config.js"></script><script src="api.js"></script><script src="logic.js"></script><script src="pages.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer onload="initGIS()"></script>
-  <script src="https://apis.google.com/js/api.js" onload="initGoogleAuth()" async defer></script>
+    <div class="app-container">
+        <aside class="app-sidebar" id="main-sidebar">
+            <button id="sidebar-toggle" class="sidebar-toggle">‹</button>
+            <div class="sidebar-header">
+                <div class="logo-icon">B</div>
+                <h1>Budget</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item" data-page="dashboard" onclick="navigateTo('dashboard')">
+                    <span class="nav-icon">📊</span><span class="nav-label">Dashboard</span>
+                </div>
+                <div class="nav-item" data-page="review" onclick="navigateTo('review')">
+                    <span class="nav-icon">👁️</span><span class="nav-label">Review</span>
+                </div>
+                <div class="nav-item" data-page="balances" onclick="navigateTo('balances')">
+                    <span class="nav-icon">⚖️</span><span class="nav-label">Balances</span>
+                </div>
+                <div class="nav-item" data-page="import" onclick="navigateTo('import')">
+                    <span class="nav-icon">📥</span><span class="nav-label">Importar</span>
+                </div>
+                <div class="nav-item" data-page="reporting" onclick="navigateTo('reporting')">
+                    <span class="nav-icon">📈</span><span class="nav-label">Reporting</span>
+                </div>
+                <div class="nav-item" data-page="rules" onclick="navigateTo('rules')">
+                    <span class="nav-icon">⚡</span><span class="nav-label">Reglas</span>
+                </div>
+                <div class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+                    <span class="nav-icon">⚙️</span><span class="nav-label">Ajustes</span>
+                </div>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="btn-icon" onclick="prevMonth()">‹</button>
+                    <h2 id="month-display">Cargando...</h2>
+                    <button class="btn-icon" onclick="nextMonth()">›</button>
+                </div>
+            </header>
+            <div class="view-wrapper">
+                <section id="page-dashboard" class="page active"><div id="dashboard-content"></div></section>
+                <section id="page-review" class="page"><div id="review-content"></div></section>
+                <section id="page-balances" class="page"><div id="balances-content"></div></section>
+                <section id="page-import" class="page"><div id="import-content"></div></section>
+                <section id="page-reporting" class="page"><div id="reporting-content"></div></section>
+                <section id="page-rules" class="page"><div id="rules-content"></div></section>
+                <section id="page-settings" class="page"><div id="settings-content"></div></section>
+            </div>
+        </main>
+    </div>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="logic.js"></script>
+    <script src="pages.js"></script>
 </body>
 </html>
