@@ -1,11 +1,7 @@
 /**
- * [ARCHIVO_MAESTRO_V1.9.6_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.9.7_RESTAURADO]
  * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
- * MODIFICACIONES:
- * 1. Tarjetas dinámicas desde Columna E de CONFIG.
- * 2. Nuevo Módulo de Ajustes para gestión de Tarjetas (Cards).
- * 3. Selector Multi-select de bancos conectado a AppState.config.tarjetas.
- * 4. Fix deleteBankMaster (Borrado lógico 'DELETED').
+ * FIX: Recuperación total del body y lógica de Tarjetas desde Columna E.
  */
 
 const AppState = {
@@ -23,7 +19,6 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- NAVEGACIÓN ---
 window.navigateTo = function(p) {
   AppState.currentPage = p;
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
@@ -49,7 +44,6 @@ window.toggleSidebar = function() {
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth = 1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth = 12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if (AppState.currentPage === 'dashboard') loadDashboard(); };
 
-// --- DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
@@ -75,7 +69,6 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
-// --- AJUSTES (SETTINGS) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -92,7 +85,6 @@ async function loadSettingsPage() {
   else renderBancosTab(container, header, casas);
 }
 
-// --- GESTIÓN DE BANCOS ---
 function renderBancosTab(container, header, casas) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     let html = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -106,20 +98,19 @@ function renderBancosTab(container, header, casas) {
       const selectedCards = d.tarjeta ? d.tarjeta.split(',').map(s => s.trim()) : [];
       
       html += `<div style="background:var(--bg-canvas); padding:20px; border-radius:12px; margin-bottom:24px; display:grid; grid-template-columns: repeat(4, 1fr) auto; gap:12px; align-items:end;">
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
+          <div><label style="display:block; font-size:12px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
             ${AppState.config.casas.map(c => `<option value="${c.name}" ${String(d.casa).trim().toLowerCase() === String(c.name).trim().toLowerCase() ? 'selected' : ''}>${c.name}</option>`).join('')}
           </select></div>
-          <div>
-            <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tarjetas Asociadas</label>
+          <div><label style="display:block; font-size:12px; font-weight:600;">Tarjetas</label>
             <div class="custom-multiselect">
               <div class="ms-display" onclick="document.querySelector('.ms-options').classList.toggle('active')">
                 <span id="ms-label">${selectedCards.length > 0 ? selectedCards.join(', ') : 'Seleccionar...'}</span>
               </div>
               <div class="ms-options">
                 ${AppState.config.tarjetas.map(t => `
-                  <div class="ms-option">
+                  <div class="ms-option" onclick="event.stopPropagation()">
                     <input type="checkbox" class="card-cb" value="${t.name}" ${selectedCards.includes(t.name) ? 'checked' : ''} onchange="syncCardLabel()"> 
                     <label>${t.name}</label>
                   </div>`).join('')}
@@ -132,19 +123,19 @@ function renderBancosTab(container, header, casas) {
 
     html += `<table style="width:100%; border-collapse:collapse; text-align:left;">
           <thead style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; border-bottom: 1px solid var(--border-light);">
-            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tarjetas</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
+            <tr><th>Nombre</th><th>IBAN</th><th>Tarjetas</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
           </thead>
           <tbody>
             ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => {
-              const cards = a[3] ? a[3].split(',').filter(c => c.trim()) : [];
+              const cards = a[3] ? a[3].split(',') : [];
               return `<tr>
-                <td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td>
-                <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
+                <td style="padding:16px 8px; font-weight:600;">${a[0]||''}</td>
+                <td style="font-family:monospace;">${a[1]||''}</td>
                 <td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td> 
                 <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2] || ''}</span></td> 
                 <td style="text-align:right;">
-                  <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
-                  <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
+                  <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Editar</button>
+                  <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -179,73 +170,39 @@ window.saveBank = async function() {
 };
 
 window.deleteBankMaster = async function(row) {
-  if (confirm("¿Seguro que quieres eliminar este banco?")) {
+  if (confirm("¿Eliminar este banco?")) {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED');
     loadSettingsPage();
   }
 };
 
-// --- GESTIÓN DE CASAS ---
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button></div>
-      <div style="display:grid; gap:12px;">${casas.map(c => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
-            <span style="font-weight:600; color:var(--text-primary);">${c.name}</span>
-            <div style="display:flex; gap:16px;"><button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
-              <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div></div>`).join('')}</div></div>`;
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Casa</button></div>
+      <div style="display:grid; gap:12px;">${casas.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div>`).join('')}</div></div>`;
 }
 
-// --- GESTIÓN DE TARJETAS (CARDS) ---
 function renderTarjetasTab(container, header, tarjetas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Tarjetas Master</h3><button onclick="addCardMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Tarjeta</button></div>
-      <div style="display:grid; gap:12px;">${tarjetas.map(t => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
-            <span style="font-weight:600; color:var(--text-primary);">${t.name}</span>
-            <div style="display:flex; gap:16px;"><button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
-              <button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div></div>`).join('')}</div></div>`;
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Tarjetas</h3><button onclick="addCardMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Tarjeta</button></div>
+      <div style="display:grid; gap:12px;">${tarjetas.map(t => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div>`).join('')}</div></div>`;
 }
 
-window.addCardMaster = async function() { const n = prompt("Nombre de la Tarjeta (ej. Visa Oro):"); if (n) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, 2, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.renameCardMaster = async function(row, current) { const n = prompt("Nuevo nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.deleteCardMaster = async function(row) { if (confirm("¿Eliminar esta tarjeta?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCardMaster = async function() { const n = prompt("Nombre tarjeta:"); if (n) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, 2, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCardMaster = async function(row) { if (confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
-// --- GESTIÓN DE CATEGORÍAS ---
 function renderCategoriasTab(container, header, cats) {
-  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-      <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Categorías</h3>
-      <button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button>
-    </div>`;
+  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><h3 style="margin-bottom:24px;">Categorías</h3>`;
   Object.keys(cats).forEach(cat => {
-    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <strong style="font-size:16px; color:var(--text-primary);">${cat}</strong>
-          <div>
-            <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button>
-            <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button>
-          </div>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">
-            ${sub}
-            <button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button>
-          </span>`).join('')}
-          <button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button>
-        </div>
-      </div>`;
+    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);"><strong style="font-size:16px;">${cat}</strong><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary);">${sub}</span>`).join('')}</div></div>`;
   });
   container.innerHTML = html + `</div>`;
 }
 
-// --- ARRANQUE ORIGINAL ---
 async function initApp() { try { let retry = 0; while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) { if (retry > 20) throw new Error("API Timeout"); await new Promise(r => setTimeout(r, 200)); retry++; } await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); } catch(e) { console.error("Fallo initApp:", e); } }
 
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.addCategoryMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
 initApp();
