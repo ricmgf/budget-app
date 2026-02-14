@@ -1,5 +1,5 @@
 /**
- * [ARCHIVO_MAESTRO_V1.6.6_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.6.7_PROTEGIDO]
  */
 
 const AppState = {
@@ -9,6 +9,7 @@ const AppState = {
   currentPage: 'dashboard', 
   settingsTab: 'bancos',
   sidebarCollapsed: false,
+  isAddingBank: false, // Control de formulario nuevo banco
   initUI: function() {
     const el = document.getElementById('month-display');
     if (el) {
@@ -88,7 +89,7 @@ async function loadDashboard() {
   } catch (e) { console.error(e); }
 }
 
-// --- CONFIGURACIÓN (RESTAURADA AL 100%) ---
+// --- CONFIGURACIÓN (RESTAURACIÓN TOTAL DE LÓGICA) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -106,26 +107,45 @@ async function loadSettingsPage() {
 
 function renderBancosTab(container, header, casas) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    container.innerHTML = `${header}
+    let html = `${header}
       <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-           <h3 style="margin:0; color:var(--text-primary);">Registro de Bancos</h3>
-           <button onclick="addBankMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nuevo Banco</button>
-        </div>
+           <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Registro de Bancos</h3>
+           <button onclick="toggleAddBankForm()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">${AppState.isAddingBank ? 'Cancelar' : '+ Nuevo Banco'}</button>
+        </div>`;
+
+    if (AppState.isAddingBank) {
+      html += `
+        <div style="background:var(--bg-canvas); padding:20px; border-radius:12px; margin-bottom:24px; display:grid; grid-template-columns: repeat(4, 1fr) auto; gap:12px; align-items:end;">
+          <div><label style="display:block; font-size:12px; margin-bottom:4px;">Nombre</label><input id="new-bank-name" type="text" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px;">IBAN</label><input id="new-bank-iban" type="text" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">${casas.map(c=>`<option value="${c.name}">${c.name}</option>`).join('')}</select></div>
+          <div><label style="display:block; font-size:12px; margin-bottom:4px;">Tipo</label><select id="new-bank-tipo" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"><option value="Corriente">Corriente</option><option value="Ahorro">Ahorro</option><option value="Inversión">Inversión</option></select></div>
+          <button onclick="saveNewBank()" style="background:var(--positive); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">Guardar</button>
+        </div>`;
+    }
+
+    html += `
         <table style="width:100%; border-collapse:collapse; text-align:left;">
           <thead style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; border-bottom: 1px solid var(--border-light);">
-            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th><th>Acciones</th></tr>
+            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tipo</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
           </thead>
           <tbody>
             ${accs.slice(1).map((a, i) => `
               <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:16px 8px; font-weight:600;">${a[0]||''}</td>
+                <td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td>
                 <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
-                <td>${a[3]||''}</td> <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2]||'Global'}</span></td> <td><button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></td>
+                <td style="color:var(--text-secondary);">${a[3]||'Corriente'}</td> 
+                <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2]||'Sin Casa'}</span></td> 
+                <td style="text-align:right;">
+                  <button onclick="editBankMaster(${i+2}, '${a[0]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
+                  <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
+                </td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
+    container.innerHTML = html;
   });
 }
 
@@ -133,7 +153,7 @@ function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}
     <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0; color:var(--text-primary);">Mis Casas</h3>
+        <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Mis Casas</h3>
         <button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button>
       </div>
       <div style="display:grid; gap:12px;">
@@ -153,7 +173,7 @@ function renderCategoriasTab(container, header, cats) {
   let html = header + `
     <div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-        <h3 style="margin:0; color:var(--text-primary);">Estructura de Categorías</h3>
+        <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Estructura de Categorías</h3>
         <button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button>
       </div>`;
   
@@ -180,18 +200,36 @@ function renderCategoriasTab(container, header, cats) {
   container.innerHTML = html + `</div>`;
 }
 
-function loadImportPage() {
-  document.getElementById('import-content').innerHTML = `
-    <div style="background:white; padding:60px; border-radius:24px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align:center;">
-      <div style="font-size:48px; margin-bottom:24px;">📂</div>
-      <h2 style="margin-bottom:16px; color:var(--text-primary);">Importar Extractos</h2>
-      <p style="color:var(--text-secondary); margin-bottom:32px;">Arrastra tus archivos XLSX aquí o haz clic para seleccionar</p>
-      <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
-      <button onclick="document.getElementById('file-import').click()" style="background:var(--accent); color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
-    </div>`;
-}
+// --- FUNCIONES DE ACCIÓN BANCOS ---
+window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; loadSettingsPage(); };
 
-// --- ARRANQUE (RESTAURADO) ---
+window.saveNewBank = async function() {
+  const n = document.getElementById('new-bank-name').value;
+  const i = document.getElementById('new-bank-iban').value;
+  const c = document.getElementById('new-bank-casa').value;
+  const t = document.getElementById('new-bank-tipo').value;
+  if (!n || !i) return alert("Nombre e IBAN obligatorios");
+  await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]);
+  AppState.isAddingBank = false;
+  loadSettingsPage();
+};
+
+window.deleteBankMaster = async function(row) {
+  if (confirm("¿Eliminar este banco?")) {
+    await SheetsAPI.deleteRow(CONFIG.SHEETS.ACCOUNTS, row);
+    loadSettingsPage();
+  }
+};
+
+window.editBankMaster = async function(row, current) {
+  const n = prompt("Nuevo nombre del banco:", current);
+  if (n && n !== current) {
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, n);
+    loadSettingsPage();
+  }
+};
+
+// --- ARRANQUE (WAIT FOR GAPI) ---
 async function initApp() {
   try {
     let retry = 0;
@@ -205,7 +243,7 @@ async function initApp() {
   } catch(e) { console.error("Fallo initApp:", e); }
 }
 
-// --- GLOBALES ---
+// --- GLOBALES RESTANTES ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() {
   const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); }
