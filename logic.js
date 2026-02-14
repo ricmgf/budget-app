@@ -1,12 +1,11 @@
 /**
  * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
- * ⚠️ BASADO EN TU ZIP: Solo inyectamos Tarjetas (Columna E).
+ * ⚠️ PROHIBIDO MODIFICAR EL MOTOR DE LÓGICA Y MAPEOS DE COLUMNAS.
  */
 const BudgetLogic = {
   async loadConfig() {
     try {
       const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
-      // Inyección manual de 'tarjetas' en tu array original
       const cfg = { categorias: {}, cuentas: [], casas: [], tarjetas: [] };
       if (!rows || rows.length <= 1) return cfg;
 
@@ -17,11 +16,11 @@ const BudgetLogic = {
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Casas (Tu lógica original)
+        // Columna D: Casas (Legacy Fix)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna E: Tarjetas (Inyección idéntica a Casas)
+        // Columna E: Tarjetas (Inyección manual limpia)
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
