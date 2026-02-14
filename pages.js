@@ -87,16 +87,36 @@ async function loadDashboard() {
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   if (!container) return;
-  
+
+  const config = AppState.config || {};
+  const cats = config.categorias || {};
+  const casas = config.casas || [];
+  const tarjetas = config.tarjetas || [];
+
   const header = `<div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
     ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
   </div>`;
 
-  const config = AppState.config;
-  if (AppState.settingsTab === 'casas') renderGenericList(container, header, 'Casas', config.casas, addCasaMaster, deleteCasaMaster);
-  else if (AppState.settingsTab === 'tarjetas') renderGenericList(container, header, 'Tarjetas', config.tarjetas, addCardMaster, deleteCardMaster);
-  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header, config.categorias);
+  if (AppState.settingsTab === 'casas') renderGenericList(container, header, 'Casas', casas, addCasaMaster, deleteCasaMaster);
+  else if (AppState.settingsTab === 'tarjetas') renderGenericList(container, header, 'Tarjetas', tarjetas, addCardMaster, deleteCardMaster);
+  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header, cats);
   else renderBancosTab(container, header);
+}
+
+function renderGenericList(container, header, title, data, addFn, delFn) {
+  const list = data || [];
+  container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h3 style="margin:0; font-weight:700;">Gestión de ${title}</h3>
+      <button onclick="${addFn.name}()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva</button>
+    </div>
+    <div style="display:grid; gap:12px;">
+      ${list.length === 0 ? `<div style="color:var(--text-secondary); padding:20px; text-align:center;">No hay ${title.toLowerCase()} configuradas en el Excel.</div>` : 
+        list.map(item => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
+          <span style="font-weight:600;">${item.name}</span>
+          <button onclick="${delFn.name}(${item.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
+        </div>`).join('')}
+    </div></div>`;
 }
 
 function renderGenericList(container, header, title, data, addFn, delFn) {
