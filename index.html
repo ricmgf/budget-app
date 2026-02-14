@@ -21,42 +21,24 @@
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; }
     .app-layout { display: flex; height: 100%; width: 100%; overflow: hidden; }
-    
-    .app-sidebar { 
-      width: var(--sidebar-width); background-color: #1e293b; color: white; 
-      display: flex; flex-direction: column; flex-shrink: 0; position: relative;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    .app-sidebar { width: var(--sidebar-width); background-color: #1e293b; color: white; display: flex; flex-direction: column; flex-shrink: 0; position: relative; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .app-sidebar.collapsed { width: var(--sidebar-collapsed); }
     .app-sidebar.collapsed .nav-label, .app-sidebar.collapsed .logo-text { display: none; }
-    
-    .sidebar-toggle {
-      position: absolute; top: 12px; right: 12px; width: 24px; height: 24px;
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      color: white; border-radius: 4px; cursor: pointer; display: flex;
-      align-items: center; justify-content: center; font-size: 14px; z-index: 120;
-    }
-
+    .sidebar-toggle { position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; z-index: 120; }
     .sidebar-header { padding: 60px 24px 16px; display: flex; align-items: center; gap: 12px; }
     .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; }
     .logo-text { font-size: 20px; font-weight: 700; color: white; }
-
     .sidebar-nav { flex: 1; padding: 16px 8px; display: flex; flex-direction: column; gap: 4px; }
     .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: #94a3b8; text-decoration: none; border-radius: 8px; cursor: pointer; transition: 0.2s; }
     .nav-item:hover, .nav-item.active { background-color: rgba(255,255,255,0.08); color: white; }
     .nav-icon { font-size: 18px; width: 24px; text-align: center; }
-
     .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
     .view-wrapper { padding: 24px var(--elegant-margin); width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; }
-    
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .month-selector { display: flex; align-items: center; gap: 16px; background: white; padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-light); }
     .month-label { font-weight: 700; min-width: 120px; text-align: center; color: var(--text-primary); }
-    .month-selector button { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
-
     .page { display: none; }
     .page.active { display: block; }
-    
     #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #ffffff !important; z-index: 50000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border-light); text-align: center; }
     #signin-btn { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: none; margin-top: 20px; }
@@ -71,14 +53,10 @@
       <button id="signin-btn" onclick="handleAuthClick()">Iniciar sesión con Google</button>
     </div>
   </div>
-
   <div class="app-layout">
     <aside class="app-sidebar" id="main-sidebar">
       <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()">‹</button>
-      <div class="sidebar-header">
-        <div class="logo-icon">B</div>
-        <h1 class="logo-text">Budget</h1>
-      </div>
+      <div class="sidebar-header"><div class="logo-icon">B</div><h1 class="logo-text">Budget</h1></div>
       <nav class="sidebar-nav">
         <div class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></div>
         <div class="nav-item" data-page="review" onclick="navigateTo('review')"><span class="nav-icon">👁️</span><span class="nav-label">Review</span></div>
