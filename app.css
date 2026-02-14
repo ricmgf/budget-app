@@ -16,7 +16,6 @@
   --positive: #10b981;
   --negative: #ef4444;
   --radius-md: 12px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
@@ -26,69 +25,50 @@ body, html {
   background-color: var(--bg-primary); overflow: hidden; 
 }
 
-/* === ESTRUCTURA Y MÁRGENES === */
-.app-layout { display: flex; height: 100%; width: 100%; }
-
+/* === SIDEBAR Y MENÚS === */
 .app-sidebar { 
   width: var(--sidebar-width); background: #1e293b; color: white;
   display: flex; flex-direction: column; padding: 24px 16px; 
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; 
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; z-index: 100;
 }
 .app-sidebar.collapsed { width: var(--sidebar-collapsed) !important; padding: 24px 12px; }
 .app-sidebar.collapsed .sidebar-text, .app-sidebar.collapsed span { display: none !important; }
 
-.main-content { flex: 1; overflow-y: auto; padding: 40px; }
-
-/* CONTENEDOR DE ELEGANCIA (Evita que se estire infinito) */
-.view-wrapper { 
-  max-width: 1100px; margin: 0 auto; width: 100%; 
+.nav-item { 
+  display: flex; align-items: center; padding: 12px; color: #94a3b8; 
+  text-decoration: none; border-radius: 8px; margin-bottom: 4px; 
+  transition: 0.2s; background: none; border: none; width: 100%; cursor: pointer; font-size: 14px;
 }
+.nav-item.active { background: rgba(255,255,255,0.1); color: white; font-weight: 700; }
 
-/* === COMPONENTES TIPO CARD (PARA BANCOS/CATEGORÍAS) === */
+/* === ESTRUCTURA CENTRADA (MARGEN GRIS ELEGANTE) === */
+.main-content { flex: 1; overflow-y: auto; padding: 40px; }
+.view-wrapper { max-width: 1100px; margin: 0 auto; width: 100%; }
+
+/* === BANCOS Y TABLAS (ESTILO BLANCO) === */
 .card { 
   background: var(--bg-secondary); border-radius: var(--radius-md); 
   border: 1px solid var(--border-light); padding: 24px; 
-  box-shadow: var(--shadow-sm); margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px;
 }
 
 .settings-row { 
-  background: var(--bg-secondary); padding: 16px 20px; 
-  border-bottom: 1px solid var(--border-light); 
+  background: white; padding: 16px 20px; border-bottom: 1px solid var(--border-light); 
   display: flex; justify-content: space-between; align-items: center; 
 }
-.settings-row:last-child { border-bottom: none; }
-
-/* === BOTONES Y TAGS === */
-.btn { 
-  padding: 10px 20px; border-radius: 8px; font-weight: 700; 
-  cursor: pointer; border: none; transition: all 0.2s; 
-  display: inline-flex; align-items: center; gap: 8px; font-size: 14px;
-}
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { background: #1d4ed8; }
 
 .tag-card { 
   background: #eff6ff; color: var(--accent); padding: 4px 12px; 
   border-radius: 20px; font-size: 11px; font-weight: 600; 
-  border: 1px solid #dbeafe; margin-right: 4px;
+  border: 1px solid #dbeafe; margin-right: 4px; display: inline-flex; align-items: center;
 }
 
-/* === MULTISELECT === */
-.custom-multiselect { position: relative; min-width: 200px; }
-.ms-display { 
-  background: white; border: 1px solid var(--border-medium); 
-  padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; 
-}
-.ms-options { 
-  position: absolute; top: 105%; left: 0; right: 0; background: white; 
-  border: 1px solid var(--border-medium); border-radius: 10px; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; z-index: 99; padding: 8px; 
-}
+.btn { padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-size: 14px; }
+.btn-primary { background: var(--accent); color: white; }
+.input { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-medium); font-size: 13px; outline: none; }
+
+/* === MULTISELECT TARJETAS === */
+.custom-multiselect { position: relative; }
+.ms-display { background: white; border: 1px solid var(--border-medium); padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.ms-options { position: absolute; top: 105%; left: 0; right: 0; background: white; border: 1px solid var(--border-medium); border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; z-index: 99; padding: 8px; max-height: 200px; overflow-y: auto; }
 .ms-options.active { display: block; }
-
-.nav-item { 
-  display: flex; align-items: center; padding: 12px; color: #94a3b8; 
-  text-decoration: none; border-radius: 8px; margin-bottom: 4px; 
-  transition: 0.2s; background: none; border: none; width: 100%; cursor: pointer;
-}
-.nav-item.active { background: rgba(255,255,255,0.1); color: white; }
