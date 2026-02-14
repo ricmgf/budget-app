@@ -12,17 +12,30 @@
     :root {
       --accent: #2563eb; --bg-canvas: #f8fafc; --bg-card: #ffffff;
       --text-primary: #0f172a; --text-secondary: #64748b;
-      --border-light: #e2e8f0; --sidebar-width: 260px;
+      --border-light: #e2e8f0; --sidebar-width: 195px;
       --elegant-margin: 90px; --positive: #10b981; --negative: #ef4444;
     }
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; }
-    .app-layout { display: flex; height: 100%; width: 100%; }
     
-    /* Overlay de Autenticación */
-    #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #ffffff !important; z-index: 50000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1 !important; }
+    /* --- ESTILO DE LA GALLETA DE LOGIN --- */
+    #signin-overlay { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background-color: var(--bg-canvas) !important; 
+      z-index: 50000; display: flex; align-items: center; justify-content: center; 
+    }
+    .login-card { 
+      background: white; 
+      padding: 48px; 
+      border-radius: 24px; 
+      border: 1px solid var(--border-light); 
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); 
+      text-align: center; 
+      max-width: 400px; 
+      width: 90%;
+    }
 
-    /* Estilos base de la estructura original */
+    .app-layout { display: flex; height: 100%; width: 100%; }
     .app-sidebar { width: var(--sidebar-width); background: var(--bg-card); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 24px 16px; transition: all 0.3s ease; }
     .main-content { flex: 1; overflow-y: auto; padding: var(--elegant-margin); position: relative; }
     .view-wrapper { max-width: 1200px; margin: 0 auto; width: 100%; }
@@ -41,14 +54,18 @@
 <body>
 
   <div id="signin-overlay">
-    <div style="text-align: center;">
-      <img src="favicon.png" alt="Logo" style="width: 64px; margin-bottom: 24px;">
-      <h2 style="margin-bottom: 8px; font-weight: 700;">Budget Master</h2>
-      <p style="color: var(--text-secondary); margin-bottom: 32px;">Inicia sesión para gestionar tus finanzas</p>
-      <button id="signin-btn" onclick="handleAuthClick()" style="display: none; background: #000; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 15px;">
+    <div class="login-card">
+      <img src="favicon.png" alt="Logo" style="width: 56px; margin-bottom: 24px;">
+      <h2 style="margin-bottom: 8px; font-weight: 700; color: var(--text-primary);">Budget Master</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 32px; font-size: 14px;">Inicia sesión para gestionar tus finanzas</p>
+      
+      <button id="signin-btn" onclick="handleAuthClick()" style="display: none; background: #000; color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; width: 100%; transition: transform 0.1s;">
         Continuar con Google
       </button>
-      <div id="auth-loading" style="color: var(--text-secondary); font-size: 14px;">Iniciando sistema...</div>
+      
+      <div id="auth-loading" style="color: var(--text-secondary); font-size: 13px;">
+        <span class="spinner"></span> Conectando con Google...
+      </div>
     </div>
   </div>
 
@@ -94,25 +111,26 @@
     </main>
   </div>
 
-  <script src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
-  <script src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <script src="config.js" type="text/javascript"></script>
   <script src="api.js" type="text/javascript"></script>
   <script src="logic.js" type="text/javascript"></script>
   <script src="pages.js" type="text/javascript"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script async defer src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
+
   <script>
-    // Helper para gestionar el estado del botón de login
     function checkGapiReady() {
-      if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+      if (typeof gapi !== 'undefined' && typeof google !== 'undefined' && typeof gapiInited !== 'undefined' && gapiInited && gisInited) {
         const loading = document.getElementById('auth-loading');
         if (loading) loading.style.display = 'none';
+        const btn = document.getElementById('signin-btn');
+        if (btn) btn.style.display = 'block';
       } else {
-        setTimeout(checkGapiReady, 200);
+        setTimeout(checkGapiReady, 300);
       }
     }
     checkGapiReady();
