@@ -1,10 +1,7 @@
 /**
- * [ARCHIVO_MAESTRO_V1.8.7_ESTABLE]
- * CAMBIOS: 
- * 1. Eliminado campo "Tipo".
- * 2. Añadido campo "Tarjeta Asociada" (Amex, Visa Iberia, Visa, Mastercard).
- * 3. Reparado botón deleteBankMaster.
- * 4. ARRANQUE PRESERVADO.
+ * [ARCHIVO_MAESTRO_V1.8.8_PROTEGIDO]
+ * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
+ * CAMBIOS: Campo "Tarjeta Asociada" + deleteBankMaster reparado.
  */
 
 const AppState = {
@@ -34,6 +31,7 @@ window.navigateTo = function(p) {
   if (document.getElementById('page-title')) document.getElementById('page-title').textContent = titleMap[p];
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
+  else if (p === 'import') loadImportPage();
 };
 
 window.toggleSidebar = function() {
@@ -153,6 +151,19 @@ window.deleteBankMaster = async function(row) {
   }
 };
 
+window.loadImportPage = function() {
+  document.getElementById('import-content').innerHTML = `
+    <div style="background:white; padding:60px; border-radius:24px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align:center;">
+      <div style="font-size:48px; margin-bottom:24px;">📂</div>
+      <h2 style="margin-bottom:16px; color:var(--text-primary);">Importar Extractos</h2>
+      <p style="color:var(--text-secondary); margin-bottom:32px;">Arrastra tus archivos XLSX aquí o haz clic para seleccionar</p>
+      <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
+      <button onclick="document.getElementById('file-import').click()" style="background:var(--accent); color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
+    </div>`;
+};
+
+function handleFileSelection(e) { const files = e.target.files; if (!files.length) return; alert(`${files.length} archivos seleccionados.`); }
+
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button></div>
@@ -164,11 +175,28 @@ function renderCasasTab(container, header, casas) {
 }
 
 function renderCategoriasTab(container, header, cats) {
-  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><h3 style="margin-bottom:24px;">Categorías</h3>`;
+  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Categorías</h3>
+      <button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button>
+    </div>`;
   Object.keys(cats).forEach(cat => {
     html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><strong style="font-size:16px; color:var(--text-primary);">${cat}</strong></div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary);">${sub}</span>`).join('')}</div></div>`;
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:16px; color:var(--text-primary);">${cat}</strong>
+          <div>
+            <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button>
+            <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button>
+          </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">
+            ${sub}
+            <button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button>
+          </span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button>
+        </div>
+      </div>`;
   });
   container.innerHTML = html + `</div>`;
 }
@@ -179,5 +207,5 @@ window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); }
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-
+window.addCategoryMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 initApp();
