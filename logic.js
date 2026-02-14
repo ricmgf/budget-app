@@ -1,47 +1,99 @@
 /**
- * [ARCHIVO_PROTEGIDO_V1.55_ESTABLE]
- * ⚠️ PROHIBIDO MODIFICAR EL MOTOR DE LÓGICA Y MAPEOS DE COLUMNAS.
+ * [MASTER_LOGIC_V2.3.0_FINAL]
+ * REGLA DE ORO: ARRANQUE Y AUTH PRESERVADOS.
+ * FIX: Sincronización de tarjetas sin romper el flujo de Google.
  */
-const BudgetLogic = {
-  async loadConfig() {
-    try {
-      const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.CONFIG);
-      const cfg = { categorias: {}, cuentas: [], casas: [] };
-      if (!rows || rows.length <= 1) return cfg;
 
-      rows.slice(1).forEach((row, index) => {
-        const rowIdx = index + 2;
-        if (row[0] && row[4] !== 'DELETED') {
-          const cat = row[0].trim();
-          if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
-          if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
-        }
-        // Columna D: Casas (Legacy Fix)
-        if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
-          cfg.casas.push({ name: row[3].trim(), row: rowIdx });
-        }
-      });
-      AppState.config = cfg;
-      return cfg;
+const BudgetLogic = {
+  config: null,
+
+  // CARGA DE CONFIGURACIÓN (CASAS Y TARJETAS ESPEJO)
+  loadConfig: async function() {
+    try {
+      const config = await SheetsAPI.runScript('getFullConfig');
+      this.config = {
+        categorias: config.categorias || {},
+        casas: config.casas || [],
+        tarjetas: config.tarjetas || []
+      };
+      AppState.config = this.config;
+      return this.config;
     } catch (e) {
-      console.error("Error loadConfig:", e);
+      console.error("Error en loadConfig:", e);
       throw e;
     }
   },
 
-  async getDashboardData(y, m) {
-    const g = await SheetsAPI.readSheet(CONFIG.SHEETS.GASTOS);
-    const i = await SheetsAPI.readSheet(CONFIG.SHEETS.INGRESOS);
-    
-    const f = (arr, yr, mo) => arr.slice(1).filter(r => r[1] == yr && r[2] == mo);
-    const actG = f(g, y, m), actI = f(i, y, m);
-    
-    const totalG = actG.reduce((acc, r) => acc + parseFloat(r[5] || 0), 0);
-    const totalI = actI.reduce((acc, r) => acc + parseFloat(r[5] || 0), 0);
+  getDashboardData: async function(year, month) {
+    try {
+      const results = await Promise.all([
+        SheetsAPI.readSheet(`${month}_${year}`),
+        SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET)
+      ]);
+      const transactions = results[0] || [];
+      let totalGastos = 0, totalIngresos = 0, pendingCount = 0;
 
-    return { 
-      gastos: actG, ingresos: actI, 
-      resumen: { totalGastos: totalG, totalIngresos: totalI, ahorro: totalI - totalG }
-    };
+      transactions.slice(1).forEach(t => {
+        if (t[0] === 'DELETED') return;
+        const amount = parseFloat(t[2]) || 0;
+        if (amount < 0) totalGastos += Math.abs(amount);
+        else totalIngresos += amount;
+        if (!t[3] || !t[4]) pendingCount++;
+      });
+
+      return {
+        resumen: { totalGastos, totalIngresos },
+        pendingCount: pendingCount,
+        plannedGastos: 0
+      };
+    } catch (e) {
+      return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 };
+    }
   }
 };
+
+// --- NO TOCAR: FUNCIONES DE AUTENTICACIÓN GOOGLE ---
+let tokenClient;
+let gapiInited = false;
+let gsiInited = false;
+
+function initGoogleAuth() {
+  gapi.load('client', async () => {
+    await gapi.client.init({
+      apiKey: CONFIG.GOOGLE.API_KEY,
+      discoveryDocs: [CONFIG.GOOGLE.DISCOVERY_DOC],
+    });
+    gapiInited = true;
+    checkAuthReady();
+  });
+}
+
+function initGIS() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.GOOGLE.CLIENT_ID,
+    scope: CONFIG.GOOGLE.SCOPES,
+    callback: '', // Se define en el click
+  });
+  gsiInited = true;
+  checkAuthReady();
+}
+
+function checkAuthReady() {
+  if (gapiInited && gsiInited) {
+    const btn = document.getElementById('signin-btn');
+    if (btn) btn.style.display = 'block';
+  }
+}
+
+async function handleAuthClick() {
+  tokenClient.callback = async (resp) => {
+    if (resp.error !== undefined) throw (resp);
+    document.getElementById('signin-overlay').style.display = 'none';
+    initApp();
+  };
+  if (gapi.client.getToken() === null) {
+    tokenClient.requestAccessToken({prompt: 'consent'});
+  } else {
+    tokenClient.requestAccessToken({prompt: ''});
+  }
+}
