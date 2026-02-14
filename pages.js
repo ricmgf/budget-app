@@ -1,7 +1,6 @@
 /**
- * [ARCHIVO_MAESTRO_V1.9.1_PROTEGIDO]
- * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
- * FIX: Multi-select real con checkboxes y cierre al clicar fuera.
+ * [ARCHIVO_MAESTRO_V2.0_FINAL]
+ * FIX CRÍTICO: Exposición global de todas las funciones para evitar ReferenceError.
  */
 
 const AppState = {
@@ -19,12 +18,12 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- SIDEBAR Y NAVEGACIÓN ---
+// --- PUENTE GLOBAL ---
 window.toggleSidebar = function() {
   const sidebar = document.querySelector('.app-sidebar');
-  const btn = document.getElementById('sidebar-toggle');
   AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
   if (sidebar) sidebar.classList.toggle('collapsed');
+  const btn = document.getElementById('sidebar-toggle');
   if (btn) btn.innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
 };
 
@@ -36,12 +35,12 @@ window.navigateTo = function(p) {
   if (target) target.classList.add('active');
   const navBtn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
   if (navBtn) navBtn.classList.add('active');
-  document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
+  const title = document.getElementById('page-title');
+  if (title) title.textContent = p.charAt(0).toUpperCase() + p.slice(1);
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
 };
 
-// --- RENDER DASHBOARD ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
@@ -59,14 +58,20 @@ async function loadDashboard() {
     </div>`;
 }
 
-// --- MÓDULO BANCOS (CON CASA Y TARJETAS) ---
+async function loadSettingsPage() {
+  const container = document.getElementById('settings-content');
+  const header = `<div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
+    ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
+  </div>`;
+  if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header);
+  else if (AppState.settingsTab === 'bancos') renderBancosTab(container, header);
+  else if (AppState.settingsTab === 'casas') renderCasasTab(container, header);
+  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(container, header);
+}
+
 function renderBancosTab(container, header) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    let html = `${header}<div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
-      <h3>Gestión de Bancos</h3>
-      <button onclick="toggleAddBankForm()" class="nav-item active" style="width:auto; padding:10px 20px;">+ Nuevo Banco</button>
-    </div>`;
-    
+    let html = `${header}<div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Bancos</h3><button onclick="toggleAddBankForm()" class="tag-card" style="padding:10px 20px; background:var(--accent); color:white; border:none; cursor:pointer;">+ Nuevo Banco</button></div>`;
     if (AppState.isAddingBank) {
       const d = AppState.editingBankData || { row: null, name: '', iban: '', casa: '', tarjeta: '' };
       const selCards = d.tarjeta ? d.tarjeta.split(',').map(s => s.trim()) : [];
@@ -79,10 +84,9 @@ function renderBancosTab(container, header) {
           <div class="ms-display" onclick="document.getElementById('ms-box').classList.toggle('active')"><span id="ms-label">${selCards.length > 0 ? selCards.join(', ') : 'Seleccionar...'}</span></div>
           <div id="ms-box" class="ms-options" onclick="event.stopPropagation()">${AppState.config.tarjetas.map(t => `<div class="ms-option"><input type="checkbox" class="card-cb" value="${t.name}" ${selCards.includes(t.name)?'checked':''} onchange="syncCardLabel()"> ${t.name}</div>`).join('')}</div>
         </div>
-        <button onclick="saveBank()" class="nav-item active" style="width:auto; padding:10px 20px; background:var(--positive);">OK</button>
+        <button onclick="saveBank()" style="background:var(--positive); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer;">OK</button>
       </div>`;
     }
-    
     html += `<table style="width:100%; text-align:left; border-collapse:collapse;">
       <thead style="font-size:11px; color:var(--text-secondary); border-bottom:1px solid var(--border-light);">
         <tr><th style="padding:12px;">BANCO</th><th>IBAN</th><th>CASA</th><th>TARJETAS</th><th style="text-align:right;">ACCIONES</th></tr>
@@ -103,10 +107,9 @@ function renderBancosTab(container, header) {
   });
 }
 
-// --- CATEGORÍAS (CON ASPAS ×) ---
 function renderCategoriasTab(container, header) {
   const cats = AppState.config.categorias;
-  let html = header + `<div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Categorías</h3><button onclick="addCategoryMaster()" class="nav-item active" style="width:auto;">+ Nueva</button></div>`;
+  let html = header + `<div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Categorías</h3><button onclick="addCategoryMaster()" class="tag-card" style="background:var(--accent); color:white; border:none; cursor:pointer;">+ Nueva</button></div>`;
   Object.keys(cats).forEach(cat => {
     html += `<div class="settings-row" style="flex-direction:column; align-items:start; gap:12px;">
       <div style="display:flex; justify-content:space-between; width:100%;"><strong>${cat}</strong>
@@ -124,7 +127,6 @@ window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); }
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
 window.syncCardLabel = () => { const sel = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value); document.getElementById('ms-label').textContent = sel.length > 0 ? sel.join(', ') : 'Seleccionar...'; };
 window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
-
 window.saveBank = async () => {
   const n = document.getElementById('new-bank-name').value, i = document.getElementById('new-bank-iban').value, c = document.getElementById('new-bank-casa').value;
   const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(', ');
@@ -140,14 +142,26 @@ window.saveBank = async () => {
 window.addCategoryMaster = async () => { const n = prompt("Categoría:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCategoryMaster = async (cat) => { const n = prompt("Nuevo nombre:", cat); if(n && n!==cat) { alert("Use el Excel para renombrar esta versión."); } };
 window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteSubcategory = async (cat, sub) => { if(confirm(`¿Borrar ${sub}?`)) { alert("Requiere localización de fila. Use el Excel."); } };
+window.deleteCategoryMaster = async (cat) => { if(confirm(`¿Borrar ${cat}?`)) { alert("Use el Excel."); } };
 
 window.addCardMaster = async () => { const n = prompt("Tarjeta:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.addCasaMaster = async () => { const n = prompt("Casa:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCardMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 7, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCasaMaster = async () => { const n = prompt("Casa:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteBankMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED'); loadSettingsPage(); } };
 
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth=1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth=12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
+
+function renderTarjetasTab(container, header) {
+  container.innerHTML = `${header}<div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Tarjetas</h3><button onclick="addCardMaster()" class="tag-card" style="background:var(--accent); color:white; border:none; cursor:pointer;">+ Nueva</button></div>
+    ${AppState.config.tarjetas.map(t => `<div class="settings-row"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Borrar</button></div>`).join('')}`;
+}
+
+function renderCasasTab(container, header) {
+  container.innerHTML = `${header}<div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Casas</h3><button onclick="addCasaMaster()" class="tag-card" style="background:var(--accent); color:white; border:none; cursor:pointer;">+ Nueva</button></div>
+    ${AppState.config.casas.map(c => `<div class="settings-row"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Borrar</button></div>`).join('')}`;
+}
 
 async function initApp() { await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); }
