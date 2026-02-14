@@ -118,7 +118,10 @@ function renderBancosTab(container, header, casas) {
           <tbody>
             ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => {
               const cards = a[3] ? a[3].split(',').filter(c => c.trim()) : [];
-              return `<tr><td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td><td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td><td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td><td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2] || ''}</span></td><td style="text-align:right;"><button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Editar</button><button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></td></tr>`;
+              return `<tr><td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td><td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td><td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td> <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2] || ''}</span></td> <td style="text-align:right;">
+                  <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
+                  <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
+                </td></tr>`;
             }).join('')}
           </tbody></table></div>`;
     container.innerHTML = html;
@@ -139,30 +142,37 @@ window.saveBank = async function() {
   const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(',');
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
   if (AppState.editingBankData && AppState.editingBankData.row) {
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n); await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c); await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
   } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
   AppState.isAddingBank = false; loadSettingsPage();
 };
 
-window.deleteBankMaster = async function(row) { if (confirm("¿Eliminar banco?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED'); loadSettingsPage(); } };
+window.deleteBankMaster = async function(row) {
+  if (confirm("¿Seguro que quieres eliminar este banco?")) {
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED');
+    loadSettingsPage();
+  }
+};
 
 function renderCasasTab(container, header, casas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Casa</button></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Mis Casas</h3><button onclick="addCasaMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Casa</button></div>
       <div style="display:grid; gap:12px;">${casas.map(c => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div>`).join('')}</div></div>`;
 }
 
 function renderTarjetasTab(container, header, tarjetas) {
   container.innerHTML = `${header}<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Tarjetas</h3><button onclick="addCardMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Tarjeta</button></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Tarjetas Master</h3><button onclick="addCardMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Tarjeta</button></div>
       <div style="display:grid; gap:12px;">${tarjetas.map(t => `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div>`).join('')}</div></div>`;
 }
 
 function renderCategoriasTab(container, header, cats) {
-  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); shadow: 0 1px 3px rgba(0,0,0,0.1);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3>Categorías</h3><button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">+ Nueva Categoría</button></div>`;
+  let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;"><h3 style="margin:0; color:var(--text-primary); font-weight:700;">Categorías</h3><button onclick="addCategoryMaster()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">+ Nueva Categoría</button></div>`;
   Object.keys(cats).forEach(cat => {
-    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><strong style="font-size:16px;">${cat}</strong><div><button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button><button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button></div></div><div style="display:flex; flex-wrap:wrap; gap:8px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">${sub}<button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button></span>`).join('')}<button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button></div></div>`;
+    html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><strong style="font-size:16px; color:var(--text-primary);">${cat}</strong><div><button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; margin-right:10px;">Editar</button><button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-size:13px;">Eliminar</button></div></div><div style="display:flex; flex-wrap:wrap; gap:8px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary); display:flex; align-items:center;">${sub}<button onclick="deleteSubcategory('${cat}','${sub}')" style="background:none; border:none; color:var(--negative); margin-left:6px; cursor:pointer; font-size:14px;">×</button></span>`).join('')}<button onclick="addSubcategory('${cat}')" style="background:none; border: 1px dashed var(--accent); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:13px; cursor:pointer;">+ Sub</button></div></div>`;
   });
   container.innerHTML = html + `</div>`;
 }
