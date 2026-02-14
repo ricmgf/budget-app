@@ -1,87 +1,169 @@
-/* ============================================================
-   Budget App — CSS Design System (AUDITADO TOTAL)
-   ============================================================ */
+/**
+ * [ARCHIVO_MAESTRO_V2.2_AUDITADO]
+ * REGLA DE ORO: NO MUTILAR.
+ * Sidebar, Multiselect y Puente Global restaurados al 100%.
+ */
+const AppState = {
+  config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
+  currentPage: 'dashboard', settingsTab: 'bancos', sidebarCollapsed: false,
+  isAddingBank: false, editingBankData: null,
+  initUI: function() {
+    const el = document.getElementById('month-display');
+    if (el) {
+      const mNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
+    }
+  }
+};
 
-:root {
-  --bg-primary: #f7f8fa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
-  --accent: #2563eb;
-  --sidebar-width: 195px;
-  --sidebar-collapsed: 64px;
-  --positive: #10b981;
-  --negative: #ef4444;
-  --radius-md: 12px;
+const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
+
+// --- NAVEGACIÓN Y SIDEBAR ---
+window.toggleSidebar = function() {
+  const sidebar = document.querySelector('.app-sidebar');
+  AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
+  if (sidebar) sidebar.classList.toggle('collapsed');
+  const btn = document.getElementById('sidebar-toggle');
+  if (btn) btn.innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
+};
+
+window.navigateTo = function(p) {
+  AppState.currentPage = p;
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+  
+  const target = document.getElementById(`page-${p}`);
+  if (target) target.classList.add('active');
+  
+  const navBtn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
+  if (navBtn) navBtn.classList.add('active');
+  
+  const title = document.getElementById('page-title');
+  if (title) title.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+  
+  if (p === 'dashboard') loadDashboard();
+  else if (p === 'settings') loadSettingsPage();
+};
+
+async function loadDashboard() {
+  const container = document.getElementById('dashboard-content');
+  const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
+  container.innerHTML = `
+    <div class="view-wrapper">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Neto Mensual</div>
+          <div style="font-size:36px; font-weight:800; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'};">${Utils.formatCurrency(neto)}</div>
+        </div>
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Pendientes</div>
+          <div style="font-size:36px; font-weight:800; color:var(--accent);">${data.pendingCount}</div>
+        </div>
+      </div>
+    </div>`;
 }
 
-* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-
-body, html { 
-  margin: 0; padding: 0; height: 100vh; width: 100vw; 
-  font-family: 'DM Sans', sans-serif !important; 
-  background-color: var(--bg-primary); overflow: hidden; 
+async function loadSettingsPage() {
+  const container = document.getElementById('settings-content');
+  const header = `<div class="view-wrapper">
+    <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
+      ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
+    </div>
+    <div id="settings-view"></div>
+  </div>`;
+  container.innerHTML = header;
+  const view = document.getElementById('settings-view');
+  if (AppState.settingsTab === 'bancos') renderBancosTab(view);
+  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(view);
+  else if (AppState.settingsTab === 'casas') renderCasasTab(view);
+  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(view);
 }
 
-/* === SIDEBAR === */
-.app-sidebar { 
-  width: var(--sidebar-width); background: #1e293b; color: white;
-  display: flex; flex-direction: column; padding: 24px 16px; 
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; z-index: 100;
-}
-.app-sidebar.collapsed { width: var(--sidebar-collapsed) !important; padding: 24px 12px; }
-.app-sidebar.collapsed .sidebar-text, .app-sidebar.collapsed span { display: none !important; }
-
-.nav-item { 
-  display: flex; align-items: center; padding: 12px; color: #94a3b8; 
-  text-decoration: none; border-radius: 8px; margin-bottom: 4px; 
-  transition: 0.2s; background: none; border: none; width: 100%; cursor: pointer; font-size: 14px;
-}
-.nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
-.nav-item.active { background: rgba(255,255,255,0.1); color: white; font-weight: 700; }
-
-/* === ESTRUCTURA DE PANTALLA === */
-.main-content { flex: 1; overflow-y: auto; padding: 40px 20px; }
-.view-wrapper { max-width: 1100px; margin: 0 auto; width: 100%; }
-
-/* === CARDS Y TABLAS === */
-.card { 
-  background: var(--bg-secondary); border-radius: var(--radius-md); 
-  border: 1px solid var(--border-light); padding: 32px; 
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 24px;
-}
-
-.settings-row { 
-  background: white; padding: 16px 24px; border-bottom: 1px solid var(--border-light); 
-  display: flex; justify-content: space-between; align-items: center; 
-}
-.settings-row:last-child { border-bottom: none; }
-
-.tag-card { 
-  background: #eff6ff; color: var(--accent); padding: 6px 14px; 
-  border-radius: 20px; font-size: 11px; font-weight: 700; 
-  border: 1px solid #dbeafe; margin-right: 6px; display: inline-flex; align-items: center;
+function renderBancosTab(container) {
+  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
+    let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:32px; align-items:center;">
+      <h3 style="margin:0;">Bancos</h3><button onclick="toggleAddBankForm()" class="btn btn-primary">+ Nuevo</button></div>`;
+    
+    if (AppState.isAddingBank) {
+      const d = AppState.editingBankData || { name: '', iban: '', casa: '', tarjeta: '' };
+      const selCards = d.tarjeta ? d.tarjeta.split(',').map(s => s.trim()) : [];
+      html += `<div style="background:var(--bg-tertiary); padding:24px; border-radius:12px; margin-bottom:32px; display:grid; grid-template-columns:repeat(4, 1fr) auto; gap:16px; align-items:end; border:2px solid var(--accent);">
+        <div><label style="font-size:11px; font-weight:800;">NOMBRE</label><input id="new-bank-name" value="${d.name}" class="input"></div>
+        <div><label style="font-size:11px; font-weight:800;">IBAN</label><input id="new-bank-iban" value="${d.iban}" class="input"></div>
+        <div><label style="font-size:11px; font-weight:800;">CASA</label><select id="new-bank-casa" class="input">${AppState.config.casas.map(c => `<option value="${c.name}" ${d.casa==c.name?'selected':''}>${c.name}</option>`).join('')}</select></div>
+        <div class="custom-multiselect"><label style="font-size:11px; font-weight:800;">TARJETAS</label>
+          <div class="ms-display" onclick="document.getElementById('ms-box').classList.toggle('active')"><span id="ms-label">${selCards.length > 0 ? selCards.join(', ') : 'Seleccionar...'}</span></div>
+          <div id="ms-box" class="ms-options" onclick="event.stopPropagation()">${AppState.config.tarjetas.map(t => `<div class="ms-option"><input type="checkbox" class="card-cb" value="${t.name}" ${selCards.includes(t.name)?'checked':''} onchange="syncCardLabel()"> ${t.name}</div>`).join('')}</div>
+        </div>
+        <button onclick="saveBank()" class="btn btn-primary" style="background:var(--positive);">OK</button>
+      </div>`;
+    }
+    
+    html += `<table style="width:100%; border-collapse:collapse; text-align:left;">
+      <thead style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;">
+        <tr><th style="padding:12px;">BANCO</th><th>IBAN</th><th>TARJETAS</th><th>CASA</th><th style="text-align:right;">ACCIONES</th></tr>
+      </thead>
+      <tbody>${accs.slice(1).filter(a => a[0]!=='DELETED').map((a, i) => `
+        <tr style="border-top:1px solid var(--border-light);">
+          <td style="padding:20px 12px; font-weight:700;">${a[0]}</td>
+          <td style="font-family:monospace; font-size:12px; color:var(--text-secondary);">${a[1]}</td>
+          <td>${(a[3]||'').split(',').map(c => c.trim() ? `<span class="tag-card">${c}</span>` : '').join('')}</td>
+          <td><span class="tag-card" style="background:#f1f5f9; color:#475569; border:none;">${a[2] || '-'}</span></td>
+          <td style="text-align:right;"><button onclick="editBankMaster(${i+2},'${a[0]}','${a[1]}','${a[2]}','${a[3]||''}')" style="background:none; border:none; color:var(--accent); font-weight:700; cursor:pointer;">Editar</button></td>
+        </tr>`).join('')}</tbody></table></div>`;
+    container.innerHTML = html;
+  });
 }
 
-.btn { 
-  padding: 10px 20px; border-radius: 8px; font-weight: 700; 
-  cursor: pointer; border: none; font-size: 14px; transition: 0.2s;
+function renderCategoriasTab(container) {
+  const cats = AppState.config.categorias;
+  let html = `<div class="card"><h3>Categorías</h3>`;
+  Object.keys(cats).forEach(cat => {
+    html += `<div class="settings-row">
+      <div style="flex:1;">
+        <div style="font-weight:700; margin-bottom:8px;">${cat}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 12px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
+        </div>
+      </div>
+      <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
+    </div>`;
+  });
+  container.innerHTML = html + `</div>`;
 }
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { background: #1d4ed8; }
 
-.input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-medium); font-size: 13px; outline: none; }
+// --- PUENTE GLOBAL (WINDOW) ---
+window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
+window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
+window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
+window.syncCardLabel = () => { 
+  const sel = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value);
+  const lbl = document.getElementById('ms-label');
+  if (lbl) lbl.textContent = sel.length > 0 ? sel.join(', ') : 'Seleccionar...';
+};
 
-/* === MULTISELECT === */
-.custom-multiselect { position: relative; }
-.ms-display { background: white; border: 1px solid var(--border-medium); padding: 10px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-.ms-options { 
-  position: absolute; top: 105%; left: 0; right: 0; background: white; 
-  border: 1px solid var(--border-medium); border-radius: 12px; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; z-index: 1000; padding: 12px; max-height: 250px; overflow-y: auto;
-}
-.ms-options.active { display: block; }
-.ms-option { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; }
+window.saveBank = async () => {
+  const n = document.getElementById('new-bank-name').value, i = document.getElementById('new-bank-iban').value, c = document.getElementById('new-bank-casa').value;
+  const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(', ');
+  if (!n) return alert("El nombre es obligatorio");
+  if (AppState.editingBankData?.row) {
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
+  } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
+  AppState.isAddingBank = false; loadSettingsPage();
+};
+
+window.renameCategoryMaster = async (cat) => { const n = prompt("Nuevo nombre para " + cat + ":", cat); if(n && n!==cat) { alert("Use el Excel para renombrar esta versión."); } };
+window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.deleteSubcategory = async (cat, sub) => { if(confirm(`¿Borrar ${sub}?`)) { alert("Use el Excel."); } };
+
+window.renderTarjetasTab = (v) => { v.innerHTML = `<div class="card"><h3>Tarjetas</h3>${AppState.config.tarjetas.map(t => `<div class="settings-row"><span>${t.name}</span><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; };
+window.renderCasasTab = (v) => { v.innerHTML = `<div class="card"><h3>Casas</h3>${AppState.config.casas.map(c => `<div class="settings-row"><span>${c.name}</span><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div>`).join('')}</div>`; };
+
+window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth=1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
+window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth=12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
+async function initApp() { await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); }
