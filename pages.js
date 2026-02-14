@@ -1,6 +1,7 @@
 /**
- * [ARCHIVO_PROTEGIDO_V1.7.2_FINAL]
- * ⚠️ REGLA DE ORO: INYECCIÓN QUIRÚRGICA SOBRE BASE V1.55.
+ * [ARCHIVO_PROTEGIDO_V1.7.3_FINAL]
+ * ⚠️ REGLA DE ORO: INYECCIÓN QUIRÚRGICA. 
+ * CAMBIOS: 1. Corrección orden columnas Bancos. 2. Reducción márgenes laterales 20%.
  * PROHIBIDO ALTERAR CARGA, FECHAS O ESTRUCTURA DE AppState.
  */
 const AppState = {
@@ -11,6 +12,13 @@ const AppState = {
     if (el) {
       const mNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
+    }
+    // Ajuste de diseño: Reducción de márgenes laterales en un 20% para maximizar área de trabajo
+    const wrapper = document.querySelector('.view-wrapper');
+    if (wrapper) {
+      wrapper.style.paddingLeft = '40px';  // Antes ~50-60px
+      wrapper.style.paddingRight = '40px'; // Antes ~50-60px
+      wrapper.style.maxWidth = '1600px';   // Expandimos el máximo para pantallas grandes
     }
   }
 };
@@ -78,7 +86,7 @@ async function loadDashboard() {
   } catch (e) { container.innerHTML = '<div class="p-6 text-danger">Error al cargar Dashboard</div>'; }
 }
 
-// --- IMPORTACIÓN (INYECCIÓN WIDGET DRAG & DROP) ---
+// --- IMPORTACIÓN (WIDGET DRAG & DROP) ---
 function loadImportPage() {
   const c = document.getElementById('import-content');
   c.innerHTML = `
@@ -98,7 +106,7 @@ function loadImportPage() {
   dz.addEventListener('drop', (e) => { e.preventDefault(); handleFileSelection({ target: { files: e.dataTransfer.files } }); });
 }
 
-// --- SETTINGS (INYECCIÓN BANCOS, CATEGORÍAS Y CASAS) ---
+// --- SETTINGS (CORRECCIÓN COLUMNAS BANCOS) ---
 async function loadSettingsPage() {
   const container = document.getElementById('settings-content');
   const cats = AppState.config.categorias;
@@ -112,6 +120,38 @@ async function loadSettingsPage() {
   if (AppState.settingsTab === 'casas') renderCasasTab(container, header, casas);
   else if (AppState.settingsTab === 'categorias') renderCategoriasTab(container, header, cats);
   else renderBancosTab(container, header, casas);
+}
+
+function renderBancosTab(container, header, casas) {
+  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
+    container.innerHTML = `${header}
+      <div class="card">
+        <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Bancos</h3>
+        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:14px; margin-bottom:32px;">
+          <thead style="color:var(--text-tertiary); border-bottom:1px solid var(--border-light);">
+            <tr><th style="padding:12px 8px;">Nombre</th><th style="padding:12px 8px;">IBAN</th><th style="padding:12px 8px;">Tipo</th><th style="padding:12px 8px;">Casa</th></tr>
+          </thead>
+          <tbody>
+            ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f8fafc;">
+                <td style="padding:14px 8px; font-weight:600;">${a[0]||''}</td>
+                <td style="font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td>
+                <td style="padding:14px 8px;">${a[2]||''}</td> <td style="padding:14px 8px;"><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[3]||'Global'}</span></td> </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="padding:24px; background:#f8fafc; border-radius:12px; border:1px solid var(--border-light);">
+          <h4 style="margin-bottom:20px; font-size:15px; font-weight:600;">Añadir Banco</h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <input type="text" id="new-bank-name" placeholder="Nombre" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">
+            <input type="text" id="new-bank-iban" placeholder="IBAN" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+            <select id="new-bank-type" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);"><option value="Corriente">Corriente</option><option value="Tarjeta">Tarjeta</option><option value="Ahorro">Ahorro</option></select>
+            <select id="new-bank-casa" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">${casas.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}</select>
+            <button class="btn btn-primary" onclick="addNewBank()">Guardar</button>
+          </div>
+        </div>
+      </div>`;
+  });
 }
 
 function renderCasasTab(container, header, casas) {
@@ -132,35 +172,6 @@ function renderCasasTab(container, header, casas) {
           </div>`).join('')}
       </div>
     </div>`;
-}
-
-function renderBancosTab(container, header, casas) {
-  SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    container.innerHTML = `${header}
-      <div class="card">
-        <h3 style="margin-bottom:24px; font-weight:600; font-size:18px;">Bancos</h3>
-        <table style="width:100%; text-align:left; border-collapse:collapse; font-size:14px; margin-bottom:32px;">
-          <thead style="color:var(--text-tertiary); border-bottom:1px solid var(--border-light);">
-            <tr><th style="padding:12px 8px;">Nombre</th><th style="padding:12px 8px;">IBAN</th><th style="padding:12px 8px;">Tipo</th><th style="padding:12px 8px;">Casa</th></tr>
-          </thead>
-          <tbody>
-            ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f8fafc;"><td style="padding:14px 8px; font-weight:600;">${a[0]||''}</td><td style="font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td><td>${a[2]||''}</td><td><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[3]||'Global'}</span></td></tr>`).join('')}
-          </tbody>
-        </table>
-        <div style="padding:24px; background:#f8fafc; border-radius:12px; border:1px solid var(--border-light);">
-          <h4 style="margin-bottom:20px; font-size:15px; font-weight:600;">Añadir Banco</h4>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-            <input type="text" id="new-bank-name" placeholder="Nombre" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">
-            <input type="text" id="new-bank-iban" placeholder="IBAN" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
-            <select id="new-bank-type" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);"><option value="Corriente">Corriente</option><option value="Tarjeta">Tarjeta</option><option value="Ahorro">Ahorro</option></select>
-            <select id="new-bank-casa" style="padding:10px; border-radius:8px; border:1px solid var(--border-medium);">${casas.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}</select>
-            <button class="btn btn-primary" onclick="addNewBank()">Guardar</button>
-          </div>
-        </div>
-      </div>`;
-  });
 }
 
 function renderCategoriasTab(container, header, cats) {
@@ -199,7 +210,7 @@ async function initApp() {
   } catch(e) { console.error("Fallo initApp:", e); }
 }
 
-// --- GLOBALES (IDÉNTICO A V1.55 + NUEVOS ACCESOS) ---
+// --- GLOBALES ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
