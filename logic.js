@@ -11,17 +11,17 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Columna A y B: Categorías y Subcategorías
+        // Categorías (Col A y B)
         if (row[0] && row[0].trim() !== "" && row[0] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
           if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
-        // Columna D: Casas (Flags en Col F)
+        // Casas (Col D)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
           cfg.casas.push({ name: row[3].trim(), row: rowIdx });
         }
-        // Columna E: Tarjetas (Flags en Col G)
+        // Tarjetas (Col E)
         if (row[4] && row[4].trim() !== "" && row[6] !== 'DELETED') {
           cfg.tarjetas.push({ name: row[4].trim(), row: rowIdx });
         }
