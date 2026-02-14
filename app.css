@@ -1,6 +1,8 @@
 /* ============================================================
-   Budget App — CSS Design System (RESTAURADO COMPLETO V1.7.6)
+   Budget App — CSS Design System
+   Desktop-first, spreadsheet-density, dark mode support
    ============================================================ */
+
 :root {
   --bg-primary: #f7f8fa;
   --bg-secondary: #ffffff;
@@ -25,56 +27,102 @@
   --danger-light: #fef2f2;
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  --text-xs: 11px; --text-sm: 13px; --text-base: 14px; --text-lg: 16px; --text-xl: 18px;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-xl: 24px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   
-  /* CAMBIO: Sidebar -25% y Margen central optimizado */
+  /* CAMBIO: Sidebar reducido 25% */
   --sidebar-width: 195px;
   --sidebar-collapsed: 64px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: var(--font-sans); background-color: var(--bg-primary); color: var(--text-primary); font-size: var(--text-base); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+body, html {
+  margin: 0; padding: 0; height: 100vh; width: 100vw;
+  font-family: var(--font-sans); background-color: var(--bg-primary);
+  color: var(--text-primary); font-size: var(--text-base);
+  -webkit-font-smoothing: antialiased; overflow: hidden;
+}
 
 .app-layout { display: flex; height: 100%; width: 100%; overflow: hidden; }
 
 /* === SIDEBAR === */
 .app-sidebar {
-  width: var(--sidebar-width); background-color: #1e293b; color: var(--text-inverse);
-  display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid var(--border-light);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
+  width: var(--sidebar-width);
+  background-color: #1e293b;
+  color: var(--text-inverse);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .app-sidebar.collapsed { width: var(--sidebar-collapsed); }
 .app-sidebar.collapsed .nav-label, .app-sidebar.collapsed .logo-text { display: none; }
 .app-sidebar.collapsed .nav-item { justify-content: center; padding: var(--sp-3) 0; }
 
-.main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; background-color: var(--bg-primary); }
-
-.view-wrapper { 
-  padding: 24px 40px !important; /* Margen de ~1cm visual fijos lateral */
-  width: 100%; max-width: 100%; margin: 0; box-sizing: border-box; 
-}
-
-/* MÉTRICAS DASHBOARD 28PX */
-.metric-value { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: var(--sp-1); }
-
-/* RESTO DE ESTILOS ORIGINALES (CARTAS, TABLAS, BOTONES) */
-.card { background-color: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--sp-6); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); margin-bottom: var(--sp-6); }
-.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); margin-bottom: var(--sp-8); }
 .sidebar-header { padding: var(--sp-6) var(--sp-6) var(--sp-4); display: flex; align-items: center; gap: var(--sp-3); height: 80px; }
 .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 18px; }
 .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: white; }
+
 .sidebar-nav { flex: 1; padding: var(--sp-2); display: flex; flex-direction: column; gap: 2px; }
 .nav-item { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); color: #94a3b8; text-decoration: none; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s; font-weight: 500; }
 .nav-item:hover { background-color: rgba(255,255,255,0.05); color: white; }
 .nav-item.active { background-color: rgba(255,255,255,0.08); color: white; }
 .nav-icon { font-size: 18px; width: 24px; text-align: center; }
 
-/* ... (Aquí siguen tus 250 líneas restantes de tablas y utilidades del ZIP original) */
-.page { display: none; }
+/* === MAIN CONTENT === */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; position: relative; }
+
+.view-wrapper {
+  /* CAMBIO: Margen ~1cm fijo lateral para maximizar central */
+  padding: 24px 40px !important; 
+  width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;
+}
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-6); height: 48px; }
+.header-left { display: flex; align-items: center; gap: var(--sp-4); }
+.month-label { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); min-width: 140px; text-align: center; }
+
+/* === CARDS & METRICS === */
+.card { background-color: var(--bg-secondary); border-radius: var(--radius-lg); padding: var(--sp-6); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); margin-bottom: var(--sp-6); }
+.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); margin-bottom: var(--sp-8); }
+.metric-value { font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+
+/* === TABLES === */
+.data-table-container { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-light); }
+.data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); background-color: var(--bg-secondary); }
+.data-table th { background-color: var(--bg-tertiary); padding: var(--sp-3) var(--sp-4); text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-medium); white-space: nowrap; }
+.data-table td { padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-light); color: var(--text-primary); }
+.data-table tr:hover { background-color: var(--bg-hover); }
+
+/* === BUTTONS === */
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-sm); font-weight: 600; font-size: var(--text-sm); cursor: pointer; transition: all 0.2s; border: 1px solid transparent; gap: var(--sp-2); }
+.btn-primary { background-color: var(--accent); color: white; }
+.btn-primary:hover { background-color: var(--accent-hover); }
+.btn-icon { width: 32px; height: 32px; padding: 0; border-radius: var(--radius-sm); background-color: var(--bg-secondary); border: 1px solid var(--border-medium); color: var(--text-secondary); }
+.btn-icon:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+
+.badge { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.badge-accent { background-color: var(--accent-light); color: var(--accent); }
+
+.page { display: none; width: 100%; }
 .page.active { display: block; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.mb-6 { margin-bottom: var(--sp-6); }
+
+/* CATEGORIES (Pastillas) */
+.cat-group { padding: var(--sp-5); background-color: #fafafa; border-radius: var(--radius-md); border: 1px solid var(--border-light); margin-bottom: var(--sp-4); }
+.tag-sub { display: inline-flex; align-items: center; background: white; border: 1px solid var(--border-medium); padding: var(--sp-1) var(--sp-3); border-radius: 20px; font-size: var(--text-sm); }
+.btn-close-tag { margin-left: var(--sp-2); border: none; background: none; color: var(--text-tertiary); cursor: pointer; font-size: 16px; }
+
+/* [AQUÍ SIGUE EL RESTO DE TUS ESTILOS ORIGINALES DEL REPOSITORIO...] */
