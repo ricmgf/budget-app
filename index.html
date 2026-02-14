@@ -12,8 +12,10 @@
     :root {
       --accent: #2563eb; --bg-canvas: #f1f5f9; --bg-card: #ffffff;
       --text-primary: #0f172a; --text-secondary: #64748b;
-      --border-light: #e2e8f0; --sidebar-width: 195px;
-      --sidebar-collapsed: 68px; --elegant-margin: 60px; 
+      --border-light: #e2e8f0; 
+      --sidebar-width: 220px;
+      --sidebar-collapsed: 68px;
+      --elegant-padding: 40px; /* Reducido para que no sea enorme */
       --positive: #10b981; --negative: #ef4444;
     }
     * { box-sizing: border-box; }
@@ -23,29 +25,41 @@
     .login-card { background: #ffffff; padding: 40px; border-radius: 20px; border: 1px solid var(--border-light); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; }
 
     .app-layout { display: flex; height: 100%; width: 100%; }
-    .app-sidebar { width: var(--sidebar-width); background: var(--bg-card); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 24px 16px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
-    .app-sidebar.collapsed { width: var(--sidebar-collapsed); }
-    .app-sidebar.collapsed span, .app-sidebar.collapsed .sidebar-header-text { display: none; }
     
-    .main-content { flex: 1; overflow-y: auto; padding: var(--elegant-margin); position: relative; transition: all 0.3s ease; }
+    /* SIDEBAR MEJORADO */
+    .app-sidebar { 
+      width: var(--sidebar-width); background: var(--bg-card); border-right: 1px solid var(--border-light); 
+      display: flex; flex-direction: column; padding: 24px 16px; 
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; 
+    }
+    .app-sidebar.collapsed { width: var(--sidebar-collapsed); padding: 24px 12px; }
+    .app-sidebar.collapsed .sidebar-text, .app-sidebar.collapsed .sidebar-header-text { display: none; }
+    
+    #sidebar-toggle {
+      position: absolute; right: -12px; top: 32px; width: 24px; height: 24px;
+      background: white; border: 1px solid var(--border-light); border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      z-index: 100; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* CONTENIDO CENTRAL */
+    .main-content { flex: 1; overflow-y: auto; padding: var(--elegant-padding); transition: all 0.3s ease; }
     .view-wrapper { max-width: 1100px; margin: 0 auto; width: 100%; }
     .page { display: none; }
     .page.active { display: block; }
     
-    .nav-item { display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 4px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; font-size: 14px; }
+    .nav-item { display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 4px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; font-size: 14px; gap: 12px; }
     .nav-item:hover { background: #f1f5f9; color: var(--text-primary); }
     .nav-item.active { background: #eff6ff; color: var(--accent); }
-
-    /* MULTISELECT CSS */
+    
+    /* MULTISELECT & TAGS */
+    .tag-card { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #475569; margin-right: 4px; border: 1px solid #e2e8f0; }
     .custom-multiselect { position: relative; width: 100%; }
     .ms-display { background: white; border: 1px solid var(--border-light); padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
     .ms-options { position: absolute; top: 105%; left: 0; right: 0; background: white; border: 1px solid var(--border-light); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 8px; }
     .ms-options.active { display: block; }
     .ms-option { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; }
     .ms-option:hover { background: #f8fafc; }
-    .tag-card { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #475569; margin-right: 4px; border: 1px solid #e2e8f0; }
-
-    #sidebar-toggle { position: absolute; right: -12px; top: 32px; width: 24px; height: 24px; background: white; border: 1px solid var(--border-light); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
   </style>
 </head>
 <body>
@@ -64,38 +78,32 @@
       <button id="sidebar-toggle" onclick="toggleSidebar()">‹</button>
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding: 0 12px;">
         <img src="favicon.png" style="width: 28px; min-width: 28px;">
-        <span class="sidebar-header-text" style="font-weight: 700; font-size: 18px; letter-spacing: -0.5px;">Budget Master</span>
+        <span class="sidebar-text" style="font-weight: 700; font-size: 18px; letter-spacing: -0.5px;">Budget Master</span>
       </div>
       <nav style="flex: 1;">
-        <button class="nav-item active" onclick="navigateTo('dashboard')"><span>Resumen</span></button>
-        <button class="nav-item" onclick="navigateTo('import')"><span>Importar</span></button>
-        <button class="nav-item" onclick="navigateTo('review')"><span>Revisión</span></button>
-        <button class="nav-item" onclick="navigateTo('reporting')"><span>Informes</span></button>
-        <button class="nav-item" onclick="navigateTo('balances')"><span>Balances</span></button>
+        <button class="nav-item active" onclick="navigateTo('dashboard')"><i>📊</i><span class="sidebar-text">Resumen</span></button>
+        <button class="nav-item" onclick="navigateTo('import')"><i>📥</i><span class="sidebar-text">Importar</span></button>
+        <button class="nav-item" onclick="navigateTo('review')"><i>🔍</i><span class="sidebar-text">Revisión</span></button>
+        <button class="nav-item" onclick="navigateTo('reporting')"><i>📈</i><span class="sidebar-text">Informes</span></button>
         <div class="sidebar-header-text" style="margin: 24px 12px 12px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Configuración</div>
-        <button class="nav-item" onclick="navigateTo('rules')"><span>Reglas</span></button>
-        <button class="nav-item" onclick="navigateTo('settings')"><span>Ajustes</span></button>
+        <button class="nav-item" onclick="navigateTo('rules')"><i>⚙️</i><span class="sidebar-text">Reglas</span></button>
+        <button class="nav-item" onclick="navigateTo('settings')"><i>🛠️</i><span class="sidebar-text">Ajustes</span></button>
       </nav>
     </aside>
 
     <main class="main-content">
       <div class="view-wrapper">
         <header class="page-header">
-          <h2 id="page-title" style="margin:0; font-weight: 800; font-size: 28px; letter-spacing: -0.02em;">Dashboard</h2>
+          <h2 id="page-title" style="margin:0; font-weight: 800; font-size: 28px;">Dashboard</h2>
           <div class="month-selector">
-            <button onclick="prevMonth()" style="border:none; background:none; cursor:pointer; color: var(--text-secondary);">◄</button>
+            <button onclick="prevMonth()" style="border:none; background:none; cursor:pointer;">◄</button>
             <span id="month-display" class="month-label"></span>
-            <button onclick="nextMonth()" style="border:none; background:none; cursor:pointer; color: var(--text-secondary);">►</button>
+            <button onclick="nextMonth()" style="border:none; background:none; cursor:pointer;">►</button>
           </div>
         </header>
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
-        <div id="page-import" class="page"><div id="import-content"></div></div>
-        <div id="page-review" class="page"><div id="review-content"></div></div>
-        <div id="page-rules" class="page"><div id="rules-content"></div></div>
-        <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
-        <div id="page-balances" class="page"><div id="balances-content"></div></div>
         <div id="page-settings" class="page"><div id="settings-content"></div></div>
-      </div>
+        </div>
     </main>
   </div>
 
@@ -103,16 +111,12 @@
   <script src="api.js"></script>
   <script src="logic.js"></script>
   <script src="pages.js"></script>
-  <script async defer src="https://apis.google.com/js/api.js"></script>
-  <script async defer src="https://accounts.google.com/gsi/client"></script>
+  <script async defer src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
+  <script async defer src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
   <script>
     function bootstrapApp() {
-      const isGapiLoaded = typeof gapi !== 'undefined';
-      const isGsiLoaded = typeof google !== 'undefined' && google.accounts;
       const areLocalsLoaded = typeof initGoogleAuth === 'function';
-      if (isGapiLoaded && isGsiLoaded && areLocalsLoaded) {
-        if (!window.gapiInited) initGoogleAuth();
-        if (!window.gisInited) initGIS();
+      if (areLocalsLoaded) {
         const checkReady = setInterval(() => {
           if (window.gapiInited && window.gisInited) {
             document.getElementById('auth-loading').style.display = 'none';
