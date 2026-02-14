@@ -1,6 +1,6 @@
 /**
- * [ARCHIVO_MAESTRO_V1.7.8_PROTEGIDO]
- * VERIFICACIÓN MANUAL REALIZADA: Dashboard, Importar, Bancos, Categorías y Casas.
+ * [ARCHIVO_MAESTRO_V1.7.9_PROTEGIDO]
+ * REGLA DE ORO: NO MUTILAR. VERIFICACIÓN FÍSICA DE IMPORTACIÓN Y COMBOS DE BANCOS.
  */
 
 const AppState = {
@@ -94,10 +94,10 @@ function renderBancosTab(container, header, casas) {
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
-            ${casas.map(c => `<option value="${c.name}" ${d.casa === c.name ? 'selected' : ''}>${c.name}</option>`).join('')}
+            ${casas.map(c => `<option value="${c.name}" ${String(d.casa).trim() === String(c.name).trim() ? 'selected' : ''}>${c.name}</option>`).join('')}
           </select></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tipo</label><select id="new-bank-tipo" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
-            ${['Corriente', 'Ahorro', 'Inversión'].map(t => `<option value="${t}" ${d.tipo === t ? 'selected' : ''}>${t}</option>`).join('')}
+            ${['Corriente', 'Ahorro', 'Inversión', 'Credit'].map(t => `<option value="${t}" ${String(d.tipo).trim() === String(t).trim() ? 'selected' : ''}>${t}</option>`).join('')}
           </select></div>
           <button onclick="saveBank()" style="background:var(--positive); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">${d.row ? 'Actualizar' : 'Guardar'}</button>
         </div>`;
@@ -148,7 +148,7 @@ window.loadImportPage = function() {
       <input type="file" id="file-import" style="display:none" onchange="handleFileSelection(event)" multiple>
       <button onclick="document.getElementById('file-import').click()" style="background:var(--accent); color:white; border:none; padding:12px 32px; border-radius:12px; cursor:pointer; font-weight:600;">Seleccionar Archivos</button>
     </div>`;
-}
+};
 
 function handleFileSelection(e) { const files = e.target.files; if (!files.length) return; alert(`${files.length} archivos seleccionados.`); }
 
@@ -158,16 +158,24 @@ function renderCasasTab(container, header, casas) {
       <div style="display:grid; gap:12px;">${casas.map(c => `
           <div style="display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--bg-canvas); border-radius:12px;">
             <span style="font-weight:600; color:var(--text-primary);">${c.name}</span>
-            <div style="display:flex; gap:16px;"><button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
-              <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button></div></div>`).join('')}</div></div>`;
+            <div style="display:flex; gap:16px;">
+              <button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">Renombrar</button>
+              <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer;">Eliminar</button>
+            </div>
+          </div>`).join('')}</div></div>`;
 }
 
 function renderCategoriasTab(container, header, cats) {
   let html = header + `<div style="background:white; padding:24px; border-radius:16px; border:1px solid var(--border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><h3 style="margin-bottom:24px;">Categorías</h3>`;
   Object.keys(cats).forEach(cat => {
     html += `<div style="margin-bottom:24px; padding:20px; background:var(--bg-canvas); border-radius:16px; border: 1px solid var(--border-light);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><strong style="font-size:16px; color:var(--text-primary);">${cat}</strong></div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary);">${sub}</span>`).join('')}</div></div>`;
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:16px; color:var(--text-primary);">${cat}</strong>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(sub => `<span style="background:white; border: 1px solid var(--border-light); padding:4px 12px; border-radius:20px; font-size:13px; color:var(--text-secondary);">${sub}</span>`).join('')}
+        </div>
+      </div>`;
   });
   container.innerHTML = html + `</div>`;
 }
