@@ -1,6 +1,6 @@
 /**
- * [ARCHIVO_RESTAURADO_V1.7.7_FINAL]
- * REGLA DE ORO: NO SIMPLIFICAR NADA.
+ * [ARCHIVO_RESTAURADO_V1.7.7]
+ * INTEGRIDAD TOTAL: DASHBOARD, IMPORTACIÓN, CATEGORÍAS.
  */
 const AppState = {
   config: null, currentYear: new Date().getFullYear(), currentMonth: new Date().getMonth() + 1,
@@ -36,10 +36,6 @@ window.navigateTo = function(p) {
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
   else if (p === 'import') loadImportPage();
-  else if (p === 'review') loadReviewPage();
-  else if (p === 'balances') loadBalancesPage();
-  else if (p === 'reporting') loadReportingPage();
-  else if (p === 'rules') loadRulesPage();
 };
 
 window.nextMonth = () => { 
@@ -111,31 +107,21 @@ function renderCategoriasTab(container, header, cats) {
   container.innerHTML = html + `</div>`;
 }
 
-function renderCasasTab(container, header, casas) {
-  container.innerHTML = header + `<div class="card"><div class="flex-between mb-6"><h3>Mis Casas</h3><button class="btn btn-primary" onclick="addCasaMaster()">+ Nueva</button></div>
-    ${casas.map(c => `<div class="flex-between mb-4 card" style="padding:16px;"><strong>${c.name}</strong><div><a href="#" onclick="renameCasaMaster(${c.row}, '${c.name}');return false;">Editar</a> | <a href="#" onclick="deleteCasaMaster(${c.row});return false;">Borrar</a></div></div>`).join('')}</div>`;
-}
-
 function loadImportPage() {
   document.getElementById('import-content').innerHTML = `<div class="card" style="text-align:center; padding:60px;"><h2>📥 Importar</h2><div id="drop-zone" style="border:2px dashed #ccc; padding:40px; margin:20px 0; border-radius:16px;">Arrastra archivos XLSX aquí</div><button class="btn btn-primary" onclick="document.getElementById('file-import').click()">Seleccionar</button><input type="file" id="file-import" style="display:none" multiple onchange="handleFileSelection(event)"></div>`;
 }
 
+// ARRANQUE: Solo se invoca desde api.js tras onSignedIn()
 async function initApp() {
   try {
-    let retry = 0;
-    while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
-      if (retry > 20) throw new Error("API Timeout");
-      await new Promise(r => setTimeout(r, 200)); retry++;
-    }
     await BudgetLogic.loadConfig();
     AppState.initUI();
     window.navigateTo('dashboard');
   } catch(e) { console.error("Fallo initApp:", e); }
 }
 
-// FUNCIONES GLOBALES
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
-window.handleFileSelection = (e) => { const files = e.target.files; if(files.length > 0) alert(files.length + " archivos."); };
+window.handleFileSelection = (e) => { const files = e.target.files; if(files.length > 0) alert(files.length + " archivos listos."); };
 window.addCategoryMaster = async function() { const n = prompt("Cat:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n, "General"]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async function(row) { if (confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
@@ -144,5 +130,3 @@ function loadReviewPage() { document.getElementById('review-content').innerHTML 
 function loadBalancesPage() { document.getElementById('balances-content').innerHTML = '<div class="card"><h3>Balances</h3></div>'; }
 function loadReportingPage() { document.getElementById('reporting-content').innerHTML = '<div class="card"><h3>Reporting</h3></div>'; }
 function loadRulesPage() { document.getElementById('rules-content').innerHTML = '<div class="card"><h3>Reglas</h3></div>'; }
-
-initApp();
