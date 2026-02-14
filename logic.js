@@ -1,13 +1,10 @@
 /**
- * [MASTER_LOGIC_V2.3.0_FINAL]
- * REGLA DE ORO: ARRANQUE Y AUTH PRESERVADOS.
- * FIX: Sincronización de tarjetas sin romper el flujo de Google.
+ * [MASTER_LOGIC_V2.3.5_RESTAURADO]
+ * REGLA DE ORO: AUTH GOOGLE PRESERVADA.
  */
 
 const BudgetLogic = {
   config: null,
-
-  // CARGA DE CONFIGURACIÓN (CASAS Y TARJETAS ESPEJO)
   loadConfig: async function() {
     try {
       const config = await SheetsAPI.runScript('getFullConfig');
@@ -19,11 +16,10 @@ const BudgetLogic = {
       AppState.config = this.config;
       return this.config;
     } catch (e) {
-      console.error("Error en loadConfig:", e);
+      console.error("Error loadConfig:", e);
       throw e;
     }
   },
-
   getDashboardData: async function(year, month) {
     try {
       const results = await Promise.all([
@@ -32,7 +28,6 @@ const BudgetLogic = {
       ]);
       const transactions = results[0] || [];
       let totalGastos = 0, totalIngresos = 0, pendingCount = 0;
-
       transactions.slice(1).forEach(t => {
         if (t[0] === 'DELETED') return;
         const amount = parseFloat(t[2]) || 0;
@@ -40,19 +35,12 @@ const BudgetLogic = {
         else totalIngresos += amount;
         if (!t[3] || !t[4]) pendingCount++;
       });
-
-      return {
-        resumen: { totalGastos, totalIngresos },
-        pendingCount: pendingCount,
-        plannedGastos: 0
-      };
-    } catch (e) {
-      return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 };
-    }
+      return { resumen: { totalGastos, totalIngresos }, pendingCount: pendingCount };
+    } catch (e) { return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 }; }
   }
 };
 
-// --- NO TOCAR: FUNCIONES DE AUTENTICACIÓN GOOGLE ---
+// --- NO TOCAR: SISTEMA DE LOGIN GOOGLE ---
 let tokenClient;
 let gapiInited = false;
 let gsiInited = false;
@@ -72,7 +60,7 @@ function initGIS() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CONFIG.GOOGLE.CLIENT_ID,
     scope: CONFIG.GOOGLE.SCOPES,
-    callback: '', // Se define en el click
+    callback: '',
   });
   gsiInited = true;
   checkAuthReady();
