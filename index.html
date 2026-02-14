@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="app.css">
   <style>
     :root {
-      --accent: #2563eb; --bg-canvas: #f8fafc; --bg-card: #ffffff;
+      --accent: #2563eb; --bg-canvas: #f1f5f9; --bg-card: #ffffff;
       --text-primary: #0f172a; --text-secondary: #64748b;
       --border-light: #e2e8f0; --sidebar-width: 195px;
       --elegant-margin: 90px; --positive: #10b981; --negative: #ef4444;
@@ -18,20 +18,20 @@
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; }
     
-    /* --- ESTILO DE LA GALLETA DE LOGIN --- */
+    /* --- DISEÑO DE LA GALLETA (Login Card) --- */
     #signin-overlay { 
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
       background-color: var(--bg-canvas) !important; 
       z-index: 50000; display: flex; align-items: center; justify-content: center; 
     }
     .login-card { 
-      background: white; 
-      padding: 48px; 
-      border-radius: 24px; 
+      background: #ffffff; 
+      padding: 40px; 
+      border-radius: 20px; 
       border: 1px solid var(--border-light); 
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); 
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); 
       text-align: center; 
-      max-width: 400px; 
+      max-width: 360px; 
       width: 90%;
     }
 
@@ -55,16 +55,16 @@
 
   <div id="signin-overlay">
     <div class="login-card">
-      <img src="favicon.png" alt="Logo" style="width: 56px; margin-bottom: 24px;">
-      <h2 style="margin-bottom: 8px; font-weight: 700; color: var(--text-primary);">Budget Master</h2>
-      <p style="color: var(--text-secondary); margin-bottom: 32px; font-size: 14px;">Inicia sesión para gestionar tus finanzas</p>
+      <img src="favicon.png" alt="Logo" style="width: 50px; margin-bottom: 20px;">
+      <h2 style="margin: 0 0 8px 0; font-weight: 700; color: var(--text-primary); font-size: 22px;">Budget Master</h2>
+      <p style="color: var(--text-secondary); margin-bottom: 30px; font-size: 14px;">Inicia sesión para continuar</p>
       
-      <button id="signin-btn" onclick="handleAuthClick()" style="display: none; background: #000; color: #fff; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; width: 100%; transition: transform 0.1s;">
+      <button id="signin-btn" onclick="handleAuthClick()" style="display: none; background: #000; color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; width: 100%;">
         Continuar con Google
       </button>
       
       <div id="auth-loading" style="color: var(--text-secondary); font-size: 13px;">
-        <span class="spinner"></span> Conectando con Google...
+        Conectando servicios...
       </div>
     </div>
   </div>
@@ -119,21 +119,37 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <script async defer src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
-  <script async defer src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
+  <script async defer src="https://apis.google.com/js/api.js"></script>
+  <script async defer src="https://accounts.google.com/gsi/client"></script>
 
   <script>
-    function checkGapiReady() {
-      if (typeof gapi !== 'undefined' && typeof google !== 'undefined' && typeof gapiInited !== 'undefined' && gapiInited && gisInited) {
-        const loading = document.getElementById('auth-loading');
-        if (loading) loading.style.display = 'none';
-        const btn = document.getElementById('signin-btn');
-        if (btn) btn.style.display = 'block';
+    /**
+     * Sistema de arranque seguro:
+     * Espera a que las librerías de Google y tus funciones locales estén listas.
+     */
+    function bootstrapApp() {
+      const isGapiLoaded = typeof gapi !== 'undefined';
+      const isGsiLoaded = typeof google !== 'undefined' && google.accounts;
+      const areLocalsLoaded = typeof initGoogleAuth === 'function';
+
+      if (isGapiLoaded && isGsiLoaded && areLocalsLoaded) {
+        // Inicializamos manualmente ya que el 'onload' del HTML puede fallar por timing
+        if (!window.gapiInited) initGoogleAuth();
+        if (!window.gisInited) initGIS();
+        
+        // Verificador final para mostrar el botón
+        const checkReady = setInterval(() => {
+          if (window.gapiInited && window.gisInited) {
+            document.getElementById('auth-loading').style.display = 'none';
+            document.getElementById('signin-btn').style.display = 'block';
+            clearInterval(checkReady);
+          }
+        }, 200);
       } else {
-        setTimeout(checkGapiReady, 300);
+        setTimeout(bootstrapApp, 200);
       }
     }
-    checkGapiReady();
+    bootstrapApp();
   </script>
 </body>
 </html>
