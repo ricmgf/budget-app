@@ -12,25 +12,16 @@
     :root {
       --accent: #2563eb; --bg-canvas: #f1f5f9; --bg-card: #ffffff;
       --text-primary: #0f172a; --text-secondary: #64748b;
-      --border-light: #e2e8f0; 
-      --sidebar-width: 195px;
-      --sidebar-collapsed: 68px;
-      --elegant-margin: 30px; /* Margen gris reducido */
+      --border-light: #e2e8f0; --sidebar-width: 195px;
+      --sidebar-collapsed: 64px;
       --positive: #10b981; --negative: #ef4444;
     }
-    * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-    body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; color: var(--text-primary); }
+    /* FUENTE FORZADA UNIVERSAL */
+    * { box-sizing: border-box; font-family: 'DM Sans', sans-serif !important; -webkit-font-smoothing: antialiased; }
+    body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; background-color: var(--bg-canvas); overflow: hidden; }
     
-    /* --- LOGIN CARD --- */
-    #signin-overlay { 
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background-color: var(--bg-canvas) !important; 
-      z-index: 50000; display: flex; align-items: center; justify-content: center; 
-    }
-    .login-card { 
-      background: #ffffff; padding: 40px; border-radius: 20px; border: 1px solid var(--border-light); 
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%;
-    }
+    #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-canvas) !important; z-index: 50000; display: flex; align-items: center; justify-content: center; }
+    .login-card { background: #ffffff; padding: 40px; border-radius: 20px; border: 1px solid var(--border-light); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08); text-align: center; max-width: 360px; width: 90%; }
 
     .app-layout { display: flex; height: 100%; width: 100%; }
     .app-sidebar { width: var(--sidebar-width); background: var(--bg-card); border-right: 1px solid var(--border-light); display: flex; flex-direction: column; padding: 24px 16px; transition: all 0.3s ease; position: relative; }
@@ -39,34 +30,29 @@
     
     #sidebar-toggle { position: absolute; right: -12px; top: 32px; width: 24px; height: 24px; background: white; border: 1px solid var(--border-light); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-    /* CONTENIDO CENTRAL AJUSTADO */
-    .main-content { flex: 1; overflow-y: auto; padding: var(--elegant-margin); position: relative; }
-    .view-wrapper { max-width: 1300px; margin: 0 auto; width: 100%; }
+    /* MARGEN DE 1CM EXACTO */
+    .main-content { flex: 1; overflow-y: auto; padding: 0; position: relative; }
+    .view-wrapper { width: calc(100% - 2cm); margin: 40px auto; }
     .page { display: none; }
     .page.active { display: block; }
     
-    .nav-item { display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 4px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; gap: 10px; }
+    .nav-item { display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 4px; font-weight: 500; transition: all 0.2s; cursor: pointer; border: none; background: none; width: 100%; font-size: 14px; }
     .nav-item:hover { background: #f1f5f9; color: var(--text-primary); }
     .nav-item.active { background: #eff6ff; color: var(--accent); }
     
     /* PÍLDORA DE FECHA CENTRADA */
-    .page-header { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 40px; }
-    .month-selector { 
-      display: flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; 
-      border-radius: 100px; border: 1px solid var(--border-light); 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.03); 
-    }
-    .month-label { font-weight: 700; min-width: 150px; text-align: center; font-size: 14px; color: var(--text-primary); text-transform: capitalize; }
-    .header-title-row { width: 100%; display: flex; justify-content: flex-start; }
-    .page-title-text { margin: 0; font-weight: 800; font-size: 32px; letter-spacing: -0.03em; }
+    .page-header { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-bottom: 32px; }
+    .month-selector { display: flex; align-items: center; gap: 12px; background: white; padding: 8px 20px; border-radius: 100px; border: 1px solid var(--border-light); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .month-label { font-weight: 700; min-width: 140px; text-align: center; font-size: 15px; }
 
-    /* TAGS Y MULTISELECT */
-    .tag-card { background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #475569; margin-right: 4px; border: 1px solid #e2e8f0; }
+    /* ESTILOS DE FILAS ELEGANTES */
+    .settings-row { background: white; padding: 16px 24px; border-radius: 12px; border: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .tag-card { background: #f1f5f9; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #475569; margin-right: 6px; border: 1px solid #e2e8f0; }
     .custom-multiselect { position: relative; width: 100%; }
-    .ms-display { background: white; border: 1px solid var(--border-light); padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: inherit; }
-    .ms-options { position: absolute; top: 105%; left: 0; right: 0; background: white; border: 1px solid var(--border-light); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 8px; max-height: 250px; overflow-y: auto; }
+    .ms-display { background: white; border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 8px; font-size: 14px; min-height: 40px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .ms-options { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border-light); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: none; z-index: 1000; padding: 8px; margin-top: 4px; }
     .ms-options.active { display: block; }
-    .ms-option { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .ms-option { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -84,9 +70,70 @@
     <aside id="main-sidebar" class="app-sidebar">
       <button id="sidebar-toggle" onclick="toggleSidebar()">‹</button>
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 32px; padding: 0 12px;">
-        <img src="favicon.png" style="width: 28px; min-width: 28px;">
-        <span class="sidebar-text" style="font-weight: 700; font-size: 18px; letter-spacing: -0.5px;">Budget Master</span>
+        <img src="favicon.png" style="width: 28px;">
+        <span class="sidebar-header-text" style="font-weight: 700; font-size: 18px; letter-spacing: -0.5px;">Budget Master</span>
       </div>
       <nav style="flex: 1;">
-        <button class="nav-item active" id="nav-dashboard" onclick="navigateTo('dashboard')"><i>📊</i><span class="sidebar-text">Resumen</span></button>
-        <button class="nav-item" id="
+        <button class="nav-item active" id="nav-dashboard" onclick="navigateTo('dashboard')"><span>Resumen</span></button>
+        <button class="nav-item" id="nav-import" onclick="navigateTo('import')"><span>Importar</span></button>
+        <button class="nav-item" id="nav-review" onclick="navigateTo('review')"><span>Revisión</span></button>
+        <button class="nav-item" id="nav-reporting" onclick="navigateTo('reporting')"><span>Informes</span></button>
+        <button class="nav-item" id="nav-balances" onclick="navigateTo('balances')"><span>Balances</span></button>
+        <div class="sidebar-header-text" style="margin: 24px 12px 12px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Configuración</div>
+        <button class="nav-item" id="nav-rules" onclick="navigateTo('rules')"><span>Reglas</span></button>
+        <button class="nav-item" id="nav-settings" onclick="navigateTo('settings')"><span>Ajustes</span></button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <div class="view-wrapper">
+        <header class="page-header">
+          <div class="month-selector">
+            <button onclick="prevMonth()" style="border:none; background:none; cursor:pointer;">◄</button>
+            <span id="month-display" class="month-label"></span>
+            <button onclick="nextMonth()" style="border:none; background:none; cursor:pointer;">►</button>
+          </div>
+          <h2 id="page-title" style="margin:0; width: 100%; text-align: left; font-weight: 800; font-size: 32px;">Dashboard</h2>
+        </header>
+        
+        <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
+        <div id="page-import" class="page"><div id="import-content"></div></div>
+        <div id="page-review" class="page"><div id="review-content"></div></div>
+        <div id="page-rules" class="page"><div id="rules-content"></div></div>
+        <div id="page-reporting" class="page"><div id="reporting-content"></div></div>
+        <div id="page-balances" class="page"><div id="balances-content"></div></div>
+        <div id="page-settings" class="page"><div id="settings-content"></div></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="logic.js"></script>
+  <script src="pages.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script async defer src="https://apis.google.com/js/api.js"></script>
+  <script async defer src="https://accounts.google.com/gsi/client"></script>
+  
+  <script>
+    /** SISTEMA DE CARGA ORIGINAL - NO TOCAR **/
+    function bootstrapApp() {
+      const isGapiLoaded = typeof gapi !== 'undefined';
+      const isGsiLoaded = typeof google !== 'undefined' && google.accounts;
+      const areLocalsLoaded = typeof initGoogleAuth === 'function';
+      if (isGapiLoaded && isGsiLoaded && areLocalsLoaded) {
+        if (!window.gapiInited) initGoogleAuth();
+        if (!window.gisInited) initGIS();
+        const checkReady = setInterval(() => {
+          if (window.gapiInited && window.gisInited) {
+            document.getElementById('auth-loading').style.display = 'none';
+            document.getElementById('signin-btn').style.display = 'block';
+            clearInterval(checkReady);
+          }
+        }, 200);
+      } else { setTimeout(bootstrapApp, 200); }
+    }
+    bootstrapApp();
+  </script>
+</body>
+</html>
