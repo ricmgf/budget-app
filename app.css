@@ -1,5 +1,5 @@
 /* ============================================================
-   Budget App — CSS Design System (AUDITADO COMPLETO)
+   Budget App — CSS Design System (AUDITADO ÍNTEGRO)
    ============================================================ */
 
 :root {
@@ -8,47 +8,38 @@
   --bg-tertiary: #eef0f4;
   --bg-hover: #e8eaf0;
   --bg-active: #dce0e8;
-  --text-primary: #1a1d23;
-  --text-secondary: #5a6070;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
   --text-tertiary: #8890a0;
-  --text-inverse: #ffffff;
-  --border-light: #e2e5eb;
+  --border-light: #e2e8f0;
   --border-medium: #ccd0d8;
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --accent-light: #dbeafe;
   --accent-subtle: #eff6ff;
-  --success: #16a34a;
+  --positive: #10b981;
   --warning: #d97706;
-  --danger: #dc2626;
+  --negative: #ef4444;
   --sidebar-width: 195px;
   --sidebar-collapsed: 64px;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-6: 24px;
 }
 
-* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; font-family: 'DM Sans', sans-serif !important; }
 
 body, html { 
   margin: 0; padding: 0; height: 100vh; width: 100vw; 
-  font-family: 'DM Sans', sans-serif; background-color: var(--bg-primary); 
-  color: var(--text-primary); overflow: hidden; 
+  background-color: var(--bg-canvas); overflow: hidden; 
 }
 
 /* === SIDEBAR COMPLETO Y COLAPSABLE === */
 .app-sidebar { 
-  width: var(--sidebar-width); background: var(--bg-secondary); 
+  width: var(--sidebar-width); background: var(--bg-card); 
   border-right: 1px solid var(--border-light); display: flex; 
-  flex-direction: column; padding: var(--sp-6) var(--sp-4); 
+  flex-direction: column; padding: 24px 16px; 
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; 
 }
 
-.app-sidebar.collapsed { width: var(--sidebar-collapsed) !important; padding: var(--sp-6) var(--sp-3); }
+.app-sidebar.collapsed { width: var(--sidebar-collapsed) !important; padding: 24px 12px; }
 .app-sidebar.collapsed .sidebar-text, 
 .app-sidebar.collapsed .sidebar-header-text,
 .app-sidebar.collapsed span { display: none !important; }
@@ -57,40 +48,38 @@ body, html {
 .custom-multiselect { position: relative; width: 100%; }
 .ms-display { 
   background: white; border: 1px solid var(--border-medium); 
-  padding: 8px 12px; border-radius: var(--radius-sm); font-size: 13px; 
+  padding: 8px 12px; border-radius: 8px; font-size: 13px; 
   cursor: pointer; display: flex; justify-content: space-between; align-items: center;
 }
 .ms-options { 
   position: absolute; top: 105%; left: 0; right: 0; 
   background: white; border: 1px solid var(--border-medium); 
-  border-radius: var(--radius-md); box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-  display: none; z-index: 9999; padding: var(--sp-2); max-height: 200px; overflow-y: auto;
+  border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+  display: none; z-index: 9999; padding: 8px; max-height: 200px; overflow-y: auto;
 }
 .ms-options.active { display: block; }
 .ms-option { 
-  display: flex; align-items: center; gap: 8px; padding: 6px; 
-  border-radius: 4px; cursor: pointer; font-size: 12px; 
+  display: flex; align-items: center; gap: 10px; padding: 8px; 
+  border-radius: 6px; cursor: pointer; font-size: 13px; 
 }
-.ms-option:hover { background: var(--bg-primary); }
+.ms-option:hover { background: var(--bg-canvas); }
 
-/* === TABLAS Y FILAS === */
+/* === COMPONENTES DE FILAS === */
 .settings-row { 
-  background: var(--bg-secondary); padding: var(--sp-4) var(--sp-6); 
-  border-radius: var(--radius-md); border: 1px solid var(--border-light); 
-  display: flex; justify-content: space-between; align-items: center; 
-  margin-bottom: var(--sp-3); width: 100%; 
+  background: white; padding: 16px 24px; border-radius: 12px; 
+  border: 1px solid var(--border-light); display: flex; 
+  justify-content: space-between; align-items: center; 
+  margin-bottom: 12px; width: 100%; 
 }
 
 .tag-card { 
-  background: var(--bg-tertiary); padding: 4px 12px; 
-  border-radius: 20px; font-size: 11px; font-weight: 600; 
-  color: var(--text-secondary); margin-right: 6px; 
-  border: 1px solid var(--border-light); 
+  background: #f1f5f9; padding: 4px 12px; border-radius: 20px; 
+  font-size: 12px; font-weight: 600; color: #475569; 
+  margin-right: 6px; border: 1px solid #e2e8f0; 
 }
 
 .input { 
-  width: 100%; padding: var(--sp-2) var(--sp-3); 
-  border-radius: var(--radius-sm); border: 1px solid var(--border-medium); 
-  background-color: var(--bg-secondary); font-size: 13px; outline: none; 
+  width: 100%; padding: 8px 12px; border-radius: 8px; 
+  border: 1px solid var(--border-medium); background-color: white; 
+  font-size: 14px; outline: none; 
 }
-.input:focus { border-color: var(--accent); }
