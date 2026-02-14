@@ -1,7 +1,7 @@
 /**
- * [ARCHIVO_PROTEGIDO_V1.7.4_FINAL]
+ * [ARCHIVO_PROTEGIDO_V1.7.5_FINAL]
  * ⚠️ REGLA DE ORO: INYECCIÓN QUIRÚRGICA SOBRE BASE V1.55.
- * CAMBIOS: 1. Corrección Mapeo Bancos. 2. Optimización área de trabajo (Margen Izq -20%, Der -35%).
+ * CAMBIOS: 1. Corrección Mapeo Bancos. 2. Reducción Márgenes (Izq -20%, Der -35%).
  * PROHIBIDO ALTERAR CARGA, FECHAS O ESTRUCTURA DE AppState.
  */
 const AppState = {
@@ -13,13 +13,12 @@ const AppState = {
       const mNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       el.textContent = `${mNames[this.currentMonth]} ${this.currentYear}`;
     }
-    // MAXIMIZACIÓN DE ÁREA DE TRABAJO (Ajuste Quirúrgico de Márgenes)
+    // MAXIMIZACIÓN DE ÁREA DE TRABAJO (Ajuste Forzado de Márgenes)
     const wrapper = document.querySelector('.view-wrapper');
     if (wrapper) {
-      wrapper.style.paddingLeft = '40px';   // Reducción ~20% (de 50px a 40px)
-      wrapper.style.paddingRight = '32px';  // Reducción ~35% (de 50px a 32px)
-      wrapper.style.maxWidth = '1650px';    // Expansión horizontal máxima
-      wrapper.style.margin = '0 auto';
+      wrapper.style.setProperty('padding-left', '35px', 'important');  // Reducción Izquierda
+      wrapper.style.setProperty('padding-right', '25px', 'important'); // Reducción Derecha (Máximo espacio)
+      wrapper.style.setProperty('max-width', '98%', 'important');      // Expansión total
     }
   }
 };
@@ -59,7 +58,7 @@ window.prevMonth = function() {
   if (AppState.currentPage === 'dashboard') loadDashboard();
 };
 
-// --- DASHBOARD (INYECCIÓN DE ESTILOS 28PX Y COLORES) ---
+// --- DASHBOARD (ESTILOS 28PX Y COLORES) ---
 async function loadDashboard() {
   const container = document.getElementById('dashboard-content');
   if (!container) return;
@@ -135,8 +134,8 @@ function renderBancosTab(container, header, casas) {
           <tbody>
             ${accs.slice(1).map(a => `<tr style="border-bottom:1px solid #f8fafc;">
                 <td style="padding:14px 8px; font-weight:600;">${a[0]||''}</td>
-                <td style="font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td>
-                <td style="padding:14px 8px;">${a[3]||''}</td> <td style="padding:14px 8px;"><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[2]||'Global'}</span></td> </tr>`).join('')}
+                <td style="padding:14px 8px; font-family:var(--font-mono); font-size:12px;">${a[1]||''}</td>
+                <td style="padding:14px 8px;">${a[2]||''}</td> <td style="padding:14px 8px;"><span style="background:var(--accent-subtle); color:var(--accent); padding:2px 8px; border-radius:4px; font-size:12px;">${a[3]||'Global'}</span></td> </tr>`).join('')}
           </tbody>
         </table>
         <div style="padding:24px; background:#f8fafc; border-radius:12px; border:1px solid var(--border-light);">
