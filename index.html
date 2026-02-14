@@ -11,12 +11,12 @@
   <style>
     :root {
       --accent: #2563eb; --bg-canvas: #f8fafc; --bg-card: #ffffff;
-      --text-primary: #1a1d23; --text-secondary: #5a6070;
+      --text-primary: #0f172a; --text-secondary: #64748b;
       --border-light: #e2e8f0; 
-      --sidebar-width: 195px; /* Ajuste -25% solicitado */
+      --sidebar-width: 195px; /* Ajuste -25% */
       --sidebar-collapsed: 64px;
-      --elegant-margin: 40px; /* Margen 1cm visual solicitado */
-      --positive: #16a34a; --negative: #dc2626;
+      --elegant-margin: 40px; /* Margen 1cm visual aprox */
+      --positive: #10b981; --negative: #ef4444;
     }
     * { box-sizing: border-box; }
     body, html { margin: 0; padding: 0; height: 100vh; width: 100vw; font-family: 'DM Sans', sans-serif; background-color: var(--bg-canvas); overflow: hidden; }
@@ -38,6 +38,7 @@
       align-items: center; justify-content: center; font-size: 14px; z-index: 120;
     }
 
+    /* Bajado para evitar colisión con toggle */
     .sidebar-header { padding: 60px 24px 16px; display: flex; align-items: center; gap: 12px; }
     .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; }
     .logo-text { font-size: 20px; font-weight: 700; color: white; }
@@ -59,7 +60,7 @@
     .page { display: none; }
     .page.active { display: block; }
     
-    /* LOGIN OPACO TOTAL */
+    /* LOGIN OPACO TOTAL (SIN TRANSPARENCIAS) */
     #signin-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f8fafc; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .login-card { background: white; padding: 40px; border-radius: 24px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border-light); text-align: center; }
     #signin-btn { padding: 12px 24px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: none; margin-top: 20px; }
@@ -74,6 +75,7 @@
       <button id="signin-btn" onclick="handleAuthClick()">Iniciar sesión con Google</button>
     </div>
   </div>
+
   <div class="app-layout">
     <aside class="app-sidebar" id="main-sidebar">
       <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()">‹</button>
