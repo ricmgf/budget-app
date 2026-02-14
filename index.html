@@ -17,8 +17,7 @@
 
   <div class="app-layout">
     <aside class="app-sidebar" id="main-sidebar">
-      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()" style="position: absolute; top: 15px; right: 10px; background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; width: 24px; height: 24px; cursor: pointer; z-index: 100;">‹</button>
-      
+      <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()">‹</button>
       <div class="sidebar-header">
         <div class="logo-icon">B</div>
         <h1 class="logo-text">Budget</h1>
@@ -43,7 +42,6 @@
             <button class="btn-icon" onclick="nextMonth()">►</button>
           </div>
         </header>
-        
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
         <div id="page-import" class="page"><div id="import-content"></div></div>
         <div id="page-review" class="page"><div id="review-content"></div></div>
@@ -61,6 +59,5 @@
   <script src="pages.js"></script>
   <script async defer src="https://apis.google.com/js/api.js" onload="initGoogleAuth()"></script>
   <script async defer src="https://accounts.google.com/gsi/client" onload="initGIS()"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>
