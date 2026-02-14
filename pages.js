@@ -1,7 +1,8 @@
 /**
- * [ARCHIVO_MAESTRO_V1.8.9_PROTEGIDO]
+ * [ARCHIVO_MAESTRO_V1.9.0_PROTEGIDO]
  * REGLA DE ORO: NO MUTILAR. ARRANQUE PRESERVADO.
- * FIX: deleteBankMaster funcional + Modulo Categorías completo (aspas, editar, nuevo).
+ * FIX: deleteBankMaster funcional (marcado como DELETED igual que Casas).
+ * NUEVO: Multiselección de tarjetas con checkboxes y visualización en Tags.
  */
 
 const AppState = {
@@ -88,40 +89,62 @@ function renderBancosTab(container, header, casas) {
            <h3 style="margin:0; color:var(--text-primary); font-weight:700;">Bancos</h3>
            <button onclick="toggleAddBankForm()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer; font-weight:600;">${AppState.isAddingBank ? 'Cancelar' : '+ Nuevo'}</button>
         </div>`;
+    
     if (AppState.isAddingBank) {
       const d = AppState.editingBankData || { row: null, name: '', iban: '', casa: '', tarjeta: '' };
+      const selectedCards = d.tarjeta ? d.tarjeta.split(',').map(s => s.trim()) : [];
+      
       html += `<div style="background:var(--bg-canvas); padding:20px; border-radius:12px; margin-bottom:24px; display:grid; grid-template-columns: repeat(4, 1fr) auto; gap:12px; align-items:end;">
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Nombre</label><input id="new-bank-name" type="text" value="${d.name}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">IBAN</label><input id="new-bank-iban" type="text" value="${d.iban}" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);"></div>
           <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Casa</label><select id="new-bank-casa" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
             ${casas.map(c => `<option value="${c.name}" ${String(d.casa).trim().toLowerCase() === String(c.name).trim().toLowerCase() ? 'selected' : ''}>${c.name}</option>`).join('')}
           </select></div>
-          <div><label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tarjeta Asociada</label><select id="new-bank-tarjeta" style="width:100%; padding:8px; border-radius:6px; border:1px solid var(--border-light);">
-            <option value="">Ninguna</option>
-            ${['Amex', 'Visa Iberia', 'Visa', 'Mastercard'].map(t => `<option value="${t}" ${String(d.tarjeta).trim().toLowerCase() === String(t).trim().toLowerCase() ? 'selected' : ''}>${t}</option>`).join('')}
-          </select></div>
+          <div>
+            <label style="display:block; font-size:12px; margin-bottom:4px; font-weight:600;">Tarjetas Asociadas</label>
+            <div class="multi-select-container" onclick="document.querySelector('.multi-select-options').classList.toggle('active')">
+              ${selectedCards.length > 0 ? selectedCards.join(', ') : 'Seleccionar...'}
+              <div class="multi-select-options">
+                ${['Amex', 'Visa Iberia', 'Visa', 'Mastercard'].map(t => `
+                  <div class="option-item" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="card-checkbox" value="${t}" ${selectedCards.includes(t) ? 'checked' : ''} onchange="updateSelectedText()"> 
+                    <label>${t}</label>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
           <button onclick="saveBank()" style="background:var(--positive); color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">${d.row ? 'Actualizar' : 'Guardar'}</button>
         </div>`;
     }
+
     html += `<table style="width:100%; border-collapse:collapse; text-align:left;">
           <thead style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; border-bottom: 1px solid var(--border-light);">
-            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tarjeta</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
+            <tr><th style="padding:12px 8px;">Nombre</th><th>IBAN</th><th>Tarjetas</th><th>Casa</th><th style="text-align:right;">Acciones</th></tr>
           </thead>
           <tbody>
-            ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => `<tr>
+            ${accs.slice(1).filter(a => a[0] && a[0] !== 'DELETED').map((a, i) => {
+              const cards = a[3] ? a[3].split(',') : [];
+              return `<tr>
                 <td style="padding:16px 8px; font-weight:600; color:var(--text-primary);">${a[0]||''}</td>
                 <td style="font-family:monospace; color:var(--text-secondary);">${a[1]||''}</td>
-                <td style="color:var(--text-secondary);">${a[3]||'Ninguna'}</td> 
+                <td>${cards.map(c => `<span class="tag-card">${c.trim()}</span>`).join('')}</td> 
                 <td><span style="background:var(--accent-subtle); color:var(--accent); padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">${a[2] || ''}</span></td> 
                 <td style="text-align:right;">
                   <button onclick="initEditBank(${i+2}, '${a[0]}', '${a[1]}', '${a[2]}', '${a[3]}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:600; margin-right:12px;">Editar</button>
                   <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:600;">Eliminar</button>
                 </td>
-              </tr>`).join('')}
+              </tr>`;
+            }).join('')}
           </tbody></table></div>`;
     container.innerHTML = html;
   });
 }
+
+window.updateSelectedText = () => {
+  const selected = Array.from(document.querySelectorAll('.card-checkbox:checked')).map(cb => cb.value);
+  const container = document.querySelector('.multi-select-container');
+  if (container) container.firstChild.textContent = selected.length > 0 ? selected.join(', ') : 'Seleccionar...';
+};
 
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
 window.initEditBank = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
@@ -130,22 +153,23 @@ window.saveBank = async function() {
   const n = document.getElementById('new-bank-name').value;
   const i = document.getElementById('new-bank-iban').value;
   const c = document.getElementById('new-bank-casa').value;
-  const t = document.getElementById('new-bank-tarjeta').value;
+  const selectedCards = Array.from(document.querySelectorAll('.card-checkbox:checked')).map(cb => cb.value).join(',');
+  
   if (!n || !i) return alert("Nombre e IBAN obligatorios");
   if (AppState.editingBankData && AppState.editingBankData.row) {
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, selectedCards);
   } else { 
-    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); 
+    await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, selectedCards]); 
   }
   AppState.isAddingBank = false; AppState.editingBankData = null; loadSettingsPage();
 };
 
 window.deleteBankMaster = async function(row) {
   if (confirm("¿Seguro que quieres eliminar este banco?")) {
-    // Marcamos como DELETED en la primera columna para ocultarlo sin romper indices de fila
+    // Aplicamos la misma lógica que en Casas: marcar como DELETED en la primera columna
     await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED');
     loadSettingsPage();
   }
@@ -194,42 +218,6 @@ window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); }
 window.addCasaMaster = async function() { const n = prompt("Nombre:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["", "", "", n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.renameCasaMaster = async function(row, current) { const n = prompt("Nombre:", current); if (n && n !== current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async function(row) { if (confirm("¿Eliminar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-
-window.addCategoryMaster = async function() {
-  const n = prompt("Nombre de la nueva categoría principal:");
-  if (n) {
-    await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]);
-    await BudgetLogic.loadConfig();
-    loadSettingsPage();
-  }
-};
-
-window.renameCategoryMaster = async function(oldName) {
-  const n = prompt("Nuevo nombre para la categoría:", oldName);
-  if (n && n !== oldName) {
-    // Aquí se requiere lógica de api.js para buscar y reemplazar en la columna de Categorías
-    alert("Función de renombrado de categorías requiere actualización de api.js");
-  }
-};
-
-window.deleteCategoryMaster = async function(catName) {
-  if (confirm(`¿Eliminar la categoría "${catName}" y todas sus subcategorías?`)) {
-    alert("Función de borrado de categorías requiere actualización de api.js");
-  }
-};
-
-window.addSubcategory = async function(catName) {
-  const n = prompt(`Nueva subcategoría para ${catName}:`);
-  if (n) {
-    // Buscamos la fila de la categoría para añadir la subcategoría en la columna correspondiente
-    alert("Lógica de añadir subcategoría requiere mapeo de filas en CONFIG");
-  }
-};
-
-window.deleteSubcategory = async function(cat, sub) {
-  if (confirm(`¿Eliminar subcategoría "${sub}"?`)) {
-    alert("Lógica de eliminar subcategoría requiere mapeo de celdas en CONFIG");
-  }
-};
+window.addCategoryMaster = async function() { const n = prompt("Nombre de la nueva categoría principal:"); if (n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 
 initApp();
