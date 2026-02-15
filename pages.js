@@ -30,11 +30,20 @@ window.navigateTo = function(p) {
   if (target) target.classList.add('active');
   const nav = document.querySelector(`[data-page="${p}"]`);
   if (nav) nav.classList.add('active');
-  const titleMap = { dashboard: 'Dashboard', review: 'Review', balances: 'Balances', import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Settings' };
+  const titleMap = { dashboard: 'Dashboard', budget: 'Budget', review: 'Review', balances: 'Balances', import: 'Importar', reporting: 'Reporting', rules: 'Reglas', settings: 'Settings' };
   if (document.getElementById('page-title')) document.getElementById('page-title').textContent = titleMap[p] || p;
+
+  // Toggle full-width mode for budget
+  const mainContent = document.querySelector('.main-content');
+  if (mainContent) {
+    if (p === 'budget') mainContent.classList.add('full-width');
+    else mainContent.classList.remove('full-width');
+  }
+
   if (p === 'dashboard') loadDashboard();
   else if (p === 'settings') loadSettingsPage();
   else if (p === 'import') loadImportPage();
+  else if (p === 'budget') BudgetGrid.init();
 };
 
 window.toggleSidebar = function() {

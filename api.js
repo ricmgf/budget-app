@@ -29,11 +29,34 @@ function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'})
 function onSignedIn() { document.getElementById('signin-overlay').style.display = 'none'; initApp(); }
 
 var SheetsAPI = {
-  readSheet: async (s) => (await gapi.client.sheets.spreadsheets.values.get({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A:Z`})).result.values || [],
+  readSheet: async (s) => (await gapi.client.sheets.spreadsheets.values.get({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A:AZ`})).result.values || [],
+  readRange: async (s, range) => (await gapi.client.sheets.spreadsheets.values.get({spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!${range}`})).result.values || [],
   appendRow: async (s, data) => gapi.client.sheets.spreadsheets.values.append({
     spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A1`, valueInputOption: 'USER_ENTERED', resource: {values: [data]}
   }),
+  batchAppend: async (s, rows) => gapi.client.sheets.spreadsheets.values.append({
+    spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!A1`, valueInputOption: 'USER_ENTERED', resource: {values: rows}
+  }),
   updateCell: async (s, r, c, v) => gapi.client.sheets.spreadsheets.values.update({
     spreadsheetId: CONFIG.SPREADSHEET_ID, range: `${s}!${String.fromCharCode(64 + c)}${r}`, valueInputOption: 'USER_ENTERED', resource: {values: [[v]]}
-  })
+  }),
+  batchUpdate: async (s, updates) => {
+    // updates = [{row, col, value}, ...] — col is 1-based
+    const data = updates.map(u => ({
+      range: `${s}!${String.fromCharCode(64 + u.col)}${u.row}`,
+      values: [[u.value]]
+    }));
+    return gapi.client.sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: CONFIG.SPREADSHEET_ID,
+      resource: { valueInputOption: 'USER_ENTERED', data: data }
+    });
+  },
+  updateRow: async (s, row, values) => {
+    return gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: CONFIG.SPREADSHEET_ID,
+      range: `${s}!A${row}`,
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [values] }
+    });
+  }
 };
