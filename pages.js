@@ -1,5 +1,5 @@
 /**
- * [ARCHIVO_MAESTRO_V2.5_FINAL]
+ * [ARCHIVO_MAESTRO_V2.5_RESTAURADO]
  * REGLA DE ORO: NO MUTILAR.
  */
 
@@ -18,40 +18,67 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- RENDERS DE MÓDULOS ---
-function renderTarjetasTab(v) { 
-  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Tarjetas</h3><button onclick="addCardMaster()" class="btn btn-primary">+ Nueva</button></div>${AppState.config.tarjetas.map(t => `<div class="settings-row"><span>${t.name}</span><div style="display:flex; gap:12px;"><button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div></div>`).join('')}</div>`; 
-}
+// --- NAVEGACIÓN Y SIDEBAR ---
+window.toggleSidebar = function() {
+  const sidebar = document.querySelector('.app-sidebar');
+  AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
+  if (sidebar) sidebar.classList.toggle('collapsed');
+  document.getElementById('sidebar-toggle').innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
+};
 
-function renderCasasTab(v) { 
-  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Casas</h3><button onclick="addCasaMaster()" class="btn btn-primary">+ Nueva</button></div>${AppState.config.casas.map(c => `<div class="settings-row"><span>${c.name}</span><div style="display:flex; gap:12px;"><button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div></div>`).join('')}</div>`; 
-}
+window.navigateTo = function(p) {
+  AppState.currentPage = p;
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+  const target = document.getElementById(`page-${p}`);
+  if (target) target.classList.add('active');
+  const btn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
+  if (btn) btn.classList.add('active');
+  document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
+  if (p === 'dashboard') loadDashboard();
+  else if (p === 'settings') loadSettingsPage();
+};
 
-function renderCategoriasTab(container) {
-  const cats = AppState.config.categorias;
-  let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px;"><h3>Categorías</h3><button onclick="addCategoryMaster()" class="btn btn-primary">+ Nueva</button></div>`;
-  Object.keys(cats).forEach(cat => {
-    html += `<div class="settings-row">
-      <div style="flex:1;">
-        <div style="font-weight:700; margin-bottom:8px;">${cat}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
-          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
+async function loadDashboard() {
+  const container = document.getElementById('dashboard-content');
+  const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
+  container.innerHTML = `
+    <div class="view-wrapper">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Neto Mensual</div>
+          <div style="font-size:36px; font-weight:800; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'};">${Utils.formatCurrency(neto)}</div>
+        </div>
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Pendientes</div>
+          <div style="font-size:36px; font-weight:800; color:var(--accent);">${data.pendingCount}</div>
         </div>
       </div>
-      <div style="display:flex; gap:12px;">
-        <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
-        <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
-      </div>
     </div>`;
-  });
-  container.innerHTML = html + `</div>`;
+}
+
+// --- AJUSTES Y MÓDULOS ---
+async function loadSettingsPage() {
+  const container = document.getElementById('settings-content');
+  const header = `<div class="view-wrapper">
+    <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
+      ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
+    </div>
+    <div id="settings-view"></div>
+  </div>`;
+  container.innerHTML = header;
+  const view = document.getElementById('settings-view');
+  if (AppState.settingsTab === 'bancos') renderBancosTab(view);
+  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(view);
+  else if (AppState.settingsTab === 'casas') renderCasasTab(view);
+  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(view);
 }
 
 function renderBancosTab(container) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
     let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:32px; align-items:center;">
-      <h3 style="margin:0;">Bancos</h3><button onclick="toggleAddBankForm()" class="btn btn-primary">+ Nuevo</button></div>`;
+      <h3 style="margin:0;">Bancos</h3><button onclick="toggleAddBankForm()" class="btn btn-primary">+ Nuevo Banco</button></div>`;
     
     if (AppState.isAddingBank) {
       const d = AppState.editingBankData || { name: '', iban: '', casa: '', tarjeta: '' };
@@ -78,74 +105,71 @@ function renderBancosTab(container) {
           <td style="font-family:monospace; color:var(--text-secondary); font-size:12px;">${a[1]}</td>
           <td>${(a[3]||'').split(',').map(c => c.trim() ? `<span class="tag-card">${c}</span>` : '').join('')}</td>
           <td><span class="tag-card" style="background:#f1f5f9; color:#475569; border:none;">${a[2] || '-'}</span></td>
-          <td style="text-align:right;"><button onclick="editBankMaster(${i+2},'${a[0]}','${a[1]}','${a[2]}','${a[3]||''}')" style="background:none; border:none; color:var(--accent); font-weight:700; cursor:pointer; margin-right:12px;">Editar</button><button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); font-weight:700; cursor:pointer;">Borrar</button></td>
+          <td style="text-align:right;">
+            <button onclick="editBankMaster(${i+2},'${a[0]}','${a[1]}','${a[2]}','${a[3]||''}')" style="background:none; border:none; color:var(--accent); font-weight:700; cursor:pointer; margin-right:12px;">Editar</button>
+            <button onclick="deleteBankMaster(${i+2})" style="background:none; border:none; color:var(--negative); font-weight:700; cursor:pointer;">Borrar</button>
+          </td>
         </tr>`).join('')}</tbody></table></div>`;
     container.innerHTML = html;
   });
 }
 
-async function loadDashboard() {
-  const container = document.getElementById('dashboard-content');
-  const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-  const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
-  container.innerHTML = `
-    <div class="view-wrapper">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
-        <div class="card" style="padding:40px;">
-          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Neto Mensual</div>
-          <div style="font-size:36px; font-weight:800; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'};">${Utils.formatCurrency(neto)}</div>
-        </div>
-        <div class="card" style="padding:40px;">
-          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Pendientes</div>
-          <div style="font-size:36px; font-weight:800; color:var(--accent);">${data.pendingCount}</div>
+function renderCategoriasTab(container) {
+  const cats = AppState.config.categorias;
+  let html = `<div class="card">
+    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
+      <h3 style="margin:0;">Categorías</h3>
+      <button onclick="addCategoryMaster()" class="btn btn-primary">+ Nueva Categoría</button>
+    </div>`;
+  Object.keys(cats).forEach(cat => {
+    html += `<div class="settings-row">
+      <div style="flex:1;">
+        <div style="font-weight:700; margin-bottom:8px;">${cat}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
         </div>
       </div>
+      <div style="display:flex; gap:12px;">
+        <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
+        <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
+      </div>
     </div>`;
+  });
+  container.innerHTML = html + `</div>`;
 }
 
-async function loadSettingsPage() {
-  const container = document.getElementById('settings-content');
-  const header = `<div class="view-wrapper">
-    <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
-      ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
-    </div>
-    <div id="settings-view"></div>
-  </div>`;
-  container.innerHTML = header;
-  const view = document.getElementById('settings-view');
-  if (AppState.settingsTab === 'bancos') renderBancosTab(view);
-  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(view);
-  else if (AppState.settingsTab === 'casas') renderCasasTab(view);
-  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(view);
+function renderCasasTab(container) {
+  let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
+      <h3 style="margin:0;">Casas</h3><button onclick="addCasaMaster()" class="btn btn-primary">+ Nueva Casa</button></div>`;
+  AppState.config.casas.forEach(c => {
+    html += `<div class="settings-row"><span style="font-weight:700;">${c.name}</span>
+      <div style="display:flex; gap:12px;">
+        <button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
+        <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
+      </div></div>`;
+  });
+  container.innerHTML = html + `</div>`;
 }
 
-// --- NAVEGACIÓN Y CORE ---
-window.toggleSidebar = function() {
-  const sidebar = document.querySelector('.app-sidebar');
-  AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
-  if (sidebar) sidebar.classList.toggle('collapsed');
-  const btn = document.getElementById('sidebar-toggle');
-  if (btn) btn.innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
-};
-
-window.navigateTo = function(p) {
-  AppState.currentPage = p;
-  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-  const target = document.getElementById(`page-${p}`);
-  if (target) target.classList.add('active');
-  const btn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
-  if (btn) btn.classList.add('active');
-  document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
-  if (p === 'dashboard') loadDashboard();
-  else if (p === 'settings') loadSettingsPage();
-};
+function renderTarjetasTab(container) {
+  let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
+      <h3 style="margin:0;">Tarjetas</h3><button onclick="addCardMaster()" class="btn btn-primary">+ Nueva Tarjeta</button></div>`;
+  AppState.config.tarjetas.forEach(t => {
+    html += `<div class="settings-row"><span style="font-weight:700;">${t.name}</span>
+      <div style="display:flex; gap:12px;">
+        <button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
+        <button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
+      </div></div>`;
+  });
+  container.innerHTML = html + `</div>`;
+}
 
 // --- PUENTE GLOBAL ---
 window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
 window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
-window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
 window.syncCardLabel = () => { const sel = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value); document.getElementById('ms-label').textContent = sel.length > 0 ? sel.join(', ') : 'Seleccionar...'; };
+window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
 window.saveBank = async () => {
   const n = document.getElementById('new-bank-name').value, i = document.getElementById('new-bank-iban').value, c = document.getElementById('new-bank-casa').value;
   const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(', ');
@@ -163,27 +187,13 @@ window.renameCardMaster = async (row, current) => { const n = prompt("Editar Tar
 window.renameCasaMaster = async (row, current) => { const n = prompt("Editar Casa:", current); if(n && n!==current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.addCategoryMaster = async () => { const n = prompt("Nueva Categoría:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.deleteSubcategory = async (cat, sub) => { if(confirm(`¿Borrar ${sub}?`)) { alert("Use el Excel."); } };
-window.addCardMaster = async () => { const n = prompt("Nombre:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.addCasaMaster = async () => { const n = prompt("Nombre:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCardMaster = async () => { const n = prompt("Nombre Tarjeta:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.addCasaMaster = async () => { const n = prompt("Nombre Casa:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCardMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 7, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteCasaMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
 window.deleteBankMaster = async (row) => { if(confirm("¿Borrar?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, row, 1, 'DELETED'); loadSettingsPage(); } };
 
+async function initApp() { await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); }
+
 window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth=1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
 window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth=12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
-
-// --- INICIALIZACIÓN ---
-async function initApp() { 
-  try {
-    let retry = 0;
-    while (typeof gapi === 'undefined' || !gapi.client || !gapi.client.sheets) {
-      if (retry > 20) throw new Error("API Timeout");
-      await new Promise(r => setTimeout(r, 200));
-      retry++;
-    }
-    await BudgetLogic.loadConfig(); 
-    AppState.initUI(); 
-    window.navigateTo('dashboard'); 
-  } catch(e) { console.error("Fallo initApp:", e); }
-}
