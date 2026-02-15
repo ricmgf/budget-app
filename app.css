@@ -1,7 +1,6 @@
 /* ============================================================
-   Budget App — CSS Design System (AUDITADO TOTAL)
+   Budget App — CSS Design System (AUDITADO TOTAL V2.6)
    ============================================================ */
-
 :root {
   --bg-primary: #f7f8fa;
   --bg-secondary: #ffffff;
@@ -27,14 +26,14 @@ body, html {
 
 .app-layout { display: flex; height: 100%; width: 100%; }
 
-/* === SIDEBAR RESTAURADO === */
+/* === SIDEBAR === */
 .app-sidebar { 
   width: var(--sidebar-width); background: #1e293b; color: white;
   display: flex; flex-direction: column; padding: 24px 16px; 
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; z-index: 100;
 }
 .app-sidebar.collapsed { width: var(--sidebar-collapsed) !important; padding: 24px 12px; }
-.app-sidebar.collapsed .sidebar-text, .app-sidebar.collapsed span, .app-sidebar.collapsed .nav-text { display: none !important; }
+.app-sidebar.collapsed span, .app-sidebar.collapsed .sidebar-text { display: none !important; }
 
 .nav-item { 
   display: flex; align-items: center; padding: 12px; color: #94a3b8; 
@@ -67,9 +66,7 @@ body, html {
   border: 1px solid #dbeafe; margin-right: 4px; display: inline-flex; align-items: center;
 }
 
-.input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-medium); font-size: 13px; outline: none; }
-
-/* === MULTISELECT FLOTANTE === */
+/* === FIX MULTISELECT FLOTANTE === */
 .custom-multiselect { position: relative; width: 100%; }
 .ms-display { 
   background: white; border: 1px solid var(--border-medium); 
