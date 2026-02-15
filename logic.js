@@ -95,11 +95,19 @@ const BudgetLogic = {
   async loadBankSummary(year) {
     const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.BANK_SUMMARY);
     if (!rows || rows.length <= 1) return [];
-    return rows.slice(1).filter(r => r[0] && r[2] == year).map((r, i) => ({
-      id: r[0], bank: r[1], year: parseInt(r[2]), month: parseInt(r[3]),
-      saldoInicio: parseFloat(r[4]) || 0, mesCerrado: r[13] === 'TRUE',
-      sheetRow: i + 2
-    }));
+    const results = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] || r[2] != year) continue;
+      results.push({
+        id: r[0], bank: r[1], year: parseInt(r[2]), month: parseInt(r[3]),
+        saldoInicio: this.toNum(r[4]), mesCerrado: r[13] === 'TRUE' || r[13] === true,
+        buffer: this.toNum(r[15]),       // col P (16th, 0-based index 15)
+        saldoCuenta: this.toNum(r[16]),  // col Q (17th, 0-based index 16)
+        sheetRow: i + 1
+      });
+    }
+    return results;
   },
 
   generateId(prefix) {

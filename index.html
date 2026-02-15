@@ -49,8 +49,6 @@
     .nav-item.active { background: #eff6ff; color: var(--accent); }
     
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-    .month-selector { display: flex; align-items: center; gap: 16px; background: white; padding: 8px 16px; border-radius: 12px; border: 1px solid var(--border-light); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .month-label { font-weight: 700; min-width: 140px; text-align: center; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -96,12 +94,6 @@
       <div class="view-wrapper">
         <header class="page-header">
           <h2 id="page-title" style="margin:0;">Dashboard</h2>
-          <div class="month-selector">
-            <button onclick="prevMonth()" style="border:none; background:none; cursor:pointer;">◄</button>
-            <span id="month-display" class="month-label"></span>
-            <button onclick="nextMonth()" style="border:none; background:none; cursor:pointer;">►</button>
-          </div>
-          <div style="width:40px;"></div>
         </header>
         
         <div id="page-dashboard" class="page active"><div id="dashboard-content"></div></div>
