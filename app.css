@@ -215,29 +215,62 @@ body { font-family: var(--font-sans); background-color: var(--bg-primary); color
   border-collapse: collapse; font-size: 12px;
 }
 
-/* Section Headers (GASTOS, TARJETAS, INGRESOS) */
+/* Section header in grid */
 .bg-section-header td {
   padding: 10px 12px; font-size: 14px; font-weight: 700;
   color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.03em;
   background: var(--bg-tertiary); border-bottom: 2px solid var(--accent);
-  border-left: 3px solid var(--accent);
 }
-.bg-section-header .section-actions {
-  display: flex; gap: 8px; align-items: center;
+.td-section-label {
+  border-left: 3px solid var(--accent) !important;
+  position: sticky; left: 0; z-index: 2; background: var(--bg-tertiary) !important;
 }
-.bg-section-header .section-actions button {
-  background: var(--accent); color: white; border: none;
-  padding: 4px 12px; border-radius: 6px; cursor: pointer;
-  font-size: 11px; font-weight: 700; font-family: inherit;
-}
+.bg-section-cell { background: var(--bg-tertiary); border-bottom: 2px solid var(--accent); }
 
-/* Card group header (Visa, Amex inside Tarjetas) */
-.bg-card-group td {
-  padding: 8px 12px; font-size: 13px; font-weight: 600;
-  color: var(--text-primary); background: #f8fafc;
-  border-bottom: 1px solid var(--border-light); cursor: pointer;
+/* Add row buttons — frozen in left panel */
+.bg-add-row td { border-bottom: 1px solid var(--border-light); }
+.td-add-btn {
+  position: sticky; left: 0; z-index: 2; background: white !important;
+  cursor: pointer; padding: 6px 12px !important;
 }
-.bg-card-group .card-toggle { color: var(--accent); margin-right: 6px; font-size: 11px; }
+.td-add-btn:hover { background: var(--accent-subtle) !important; }
+.add-row-label {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  display: flex; align-items: center; gap: 4px;
+}
+.td-add-extract .add-row-label { color: #6366f1; }
+
+/* Totals row */
+.bg-total-row td {
+  font-weight: 700; font-size: 12px;
+  background: #f8fafc !important; border-top: 1px solid var(--border-medium);
+  border-bottom: 2px solid var(--border-light);
+  color: var(--text-primary);
+}
+.td-total-label {
+  position: sticky; left: 0; z-index: 2; background: #f8fafc !important;
+  font-weight: 700; padding-left: 12px !important;
+  border-right: 1px solid var(--border-light);
+}
+.td-total { font-weight: 700; background: #f8fafc !important; }
+
+/* Summary rows */
+.bg-summary-row td {
+  font-weight: 600; font-size: 12px;
+  background: var(--accent-subtle) !important;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-light);
+}
+.td-summary-label {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--accent-subtle) !important;
+  font-weight: 700; padding-left: 12px !important;
+  border-right: 1px solid var(--accent-light);
+}
+.td-summary {
+  background: var(--accent-subtle) !important;
+  font-weight: 600;
+}
 
 /* Month Header */
 .budget-grid thead th {
@@ -307,21 +340,8 @@ body { font-family: var(--font-sans); background-color: var(--bg-primary); color
   border-left: 3px solid var(--danger);
 }
 
-/* Totals rows */
-.bg-total-row td {
-  font-weight: 700; font-size: 12px;
-  background: #f8fafc !important; border-top: 1px solid var(--border-medium);
-  border-bottom: 2px solid var(--border-light);
-  color: var(--text-primary);
-}
-
-/* Summary section */
-.bg-summary-row td {
-  font-weight: 600; font-size: 12px;
-  background: var(--accent-subtle) !important;
-  color: var(--accent);
-  border-bottom: 1px solid var(--accent-light);
-}
+/* Concept text */
+.concept-text { display: block; overflow: hidden; text-overflow: ellipsis; }
 
 /* Editable cell */
 .budget-grid td.editable { cursor: pointer; }
