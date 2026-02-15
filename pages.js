@@ -1,7 +1,7 @@
 /**
- * [ARCHIVO_MAESTRO_V2.3_FINAL]
+ * [ARCHIVO_MAESTRO_V2.6_ESTABLE]
  * REGLA DE ORO: NO MUTILAR.
- * Restaurados botones de creación y edición en todos los módulos.
+ * FIX: Exposición global de funciones para evitar desaparición de contenido.
  */
 
 const AppState = {
@@ -19,79 +19,32 @@ const AppState = {
 
 const Utils = { formatCurrency: (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n || 0) };
 
-// --- RENDERS DE MÓDULOS ---
+// --- RENDERS DE MÓDULOS (EXPUESTOS A WINDOW) ---
 
-function renderCategoriasTab(container) {
-  const cats = AppState.config.categorias;
-  let html = `<div class="card">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
-      <h3 style="margin:0;">Categorías</h3>
-      <button onclick="addCategoryMaster()" class="btn btn-primary">+ Nueva Categoría</button>
-    </div>`;
-  
-  Object.keys(cats).forEach(cat => {
-    html += `<div class="settings-row">
-      <div style="flex:1;">
-        <div style="font-weight:700; margin-bottom:8px;">${cat}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
-          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
+window.loadDashboard = async function() {
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+  const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
+  const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
+  container.innerHTML = `
+    <div class="view-wrapper">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Neto Mensual</div>
+          <div style="font-size:36px; font-weight:800; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'};">${Utils.formatCurrency(neto)}</div>
+        </div>
+        <div class="card" style="padding:40px;">
+          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Pendientes</div>
+          <div style="font-size:36px; font-weight:800; color:var(--accent);">${data.pendingCount}</div>
         </div>
       </div>
-      <div style="display:flex; gap:12px;">
-        <button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
-        <button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
-      </div>
     </div>`;
-  });
-  container.innerHTML = html + `</div>`;
-}
+};
 
-function renderCasasTab(container) {
-  let html = `<div class="card">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
-      <h3 style="margin:0;">Casas</h3>
-      <button onclick="addCasaMaster()" class="btn btn-primary">+ Nueva Casa</button>
-    </div>`;
-  
-  AppState.config.casas.forEach(c => {
-    html += `<div class="settings-row">
-      <span style="font-weight:700;">${c.name}</span>
-      <div style="display:flex; gap:12px;">
-        <button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
-        <button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
-      </div>
-    </div>`;
-  });
-  container.innerHTML = html + `</div>`;
-}
-
-function renderTarjetasTab(container) {
-  let html = `<div class="card">
-    <div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;">
-      <h3 style="margin:0;">Tarjetas</h3>
-      <button onclick="addCardMaster()" class="btn btn-primary">+ Nueva Tarjeta</button>
-    </div>`;
-  
-  AppState.config.tarjetas.forEach(t => {
-    html += `<div class="settings-row">
-      <span style="font-weight:700;">${t.name}</span>
-      <div style="display:flex; gap:12px;">
-        <button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button>
-        <button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button>
-      </div>
-    </div>`;
-  });
-  container.innerHTML = html + `</div>`;
-}
-
-function renderBancosTab(container) {
+window.renderBancosTab = function(container) {
   SheetsAPI.readSheet(CONFIG.SHEETS.ACCOUNTS).then(accs => {
-    let html = `<div class="card">
-      <div style="display:flex; justify-content:space-between; margin-bottom:32px; align-items:center;">
-        <h3 style="margin:0;">Bancos</h3>
-        <button onclick="toggleAddBankForm()" class="btn btn-primary">+ Nuevo Banco</button>
-      </div>`;
+    let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:32px; align-items:center;">
+      <h3 style="margin:0;">Bancos</h3><button onclick="toggleAddBankForm()" class="btn btn-primary">+ Nuevo Banco</button></div>`;
     
     if (AppState.isAddingBank) {
       const d = AppState.editingBankData || { name: '', iban: '', casa: '', tarjeta: '' };
@@ -125,46 +78,35 @@ function renderBancosTab(container) {
         </tr>`).join('')}</tbody></table></div>`;
     container.innerHTML = html;
   });
-}
-
-// --- NAVEGACIÓN Y PUENTE GLOBAL ---
-
-window.setSettingsTab = (t) => { AppState.settingsTab = t; loadSettingsPage(); };
-window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; loadSettingsPage(); };
-window.syncCardLabel = () => { const sel = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value); document.getElementById('ms-label').textContent = sel.length > 0 ? sel.join(', ') : 'Seleccionar...'; };
-
-window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; loadSettingsPage(); };
-
-window.saveBank = async () => {
-  const n = document.getElementById('new-bank-name').value, i = document.getElementById('new-bank-iban').value, c = document.getElementById('new-bank-casa').value;
-  const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(', ');
-  if (AppState.editingBankData?.row) {
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
-    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
-  } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
-  AppState.isAddingBank = false; loadSettingsPage();
 };
 
-// Acciones para Categorías, Casas y Tarjetas
-window.addCategoryMaster = async () => { const n = prompt("Nueva Categoría:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.renameCategoryMaster = async (cat) => { const n = prompt("Nuevo nombre para " + cat + ":", cat); if(n && n!==cat) { alert("Use el Excel para renombrar esta versión."); } };
-window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.renderCategoriasTab = function(container) {
+  const cats = AppState.config.categorias;
+  let html = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;"><h3>Categorías</h3><button onclick="addCategoryMaster()" class="btn btn-primary">+ Nueva Categoría</button></div>`;
+  Object.keys(cats).forEach(cat => {
+    html += `<div class="settings-row"><div style="flex:1;"><div style="font-weight:700; margin-bottom:8px;">${cat}</div><div style="display:flex; flex-wrap:wrap; gap:8px;">
+          ${cats[cat].map(s => `<span class="tag-card">${s} <button onclick="deleteSubcategory('${cat}','${s}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:bold; margin-left:4px;">×</button></span>`).join('')}
+          <button onclick="addSubcategory('${cat}')" style="border:1px dashed var(--accent); background:none; color:var(--accent); padding:2px 10px; border-radius:12px; cursor:pointer; font-size:10px; font-weight:700;">+ Sub</button>
+        </div></div><div style="display:flex; gap:12px;"><button onclick="renameCategoryMaster('${cat}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button><button onclick="deleteCategoryMaster('${cat}')" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div></div>`;
+  });
+  container.innerHTML = html + `</div>`;
+};
 
-window.addCardMaster = async () => { const n = prompt("Nombre Tarjeta:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.renameCardMaster = async (row, current) => { const n = prompt("Editar Tarjeta:", current); if(n && n!==current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 5, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.deleteCardMaster = async (row) => { if(confirm("¿Borrar tarjeta?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 7, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.renderCasasTab = function(v) { 
+  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;"><h3>Casas</h3><button onclick="addCasaMaster()" class="btn btn-primary">+ Nueva Casa</button></div>${AppState.config.casas.map(c => `<div class="settings-row"><span style="font-weight:700;">${c.name}</span><div style="display:flex; gap:12px;"><button onclick="renameCasaMaster(${c.row}, '${c.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button><button onclick="deleteCasaMaster(${c.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div></div>`).join('')}</div>`; 
+};
 
-window.addCasaMaster = async () => { const n = prompt("Nombre Casa:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, ["","","",n]); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.renameCasaMaster = async (row, current) => { const n = prompt("Editar Casa:", current); if(n && n!==current) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 4, n); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
-window.deleteCasaMaster = async (row) => { if(confirm("¿Borrar casa?")) { await SheetsAPI.updateCell(CONFIG.SHEETS.CONFIG, row, 6, 'DELETED'); await BudgetLogic.loadConfig(); loadSettingsPage(); } };
+window.renderTarjetasTab = function(v) { 
+  v.innerHTML = `<div class="card"><div style="display:flex; justify-content:space-between; margin-bottom:24px; align-items:center;"><h3>Tarjetas</h3><button onclick="addCardMaster()" class="btn btn-primary">+ Nueva Tarjeta</button></div>${AppState.config.tarjetas.map(t => `<div class="settings-row"><span style="font-weight:700;">${t.name}</span><div style="display:flex; gap:12px;"><button onclick="renameCardMaster(${t.row}, '${t.name}')" style="background:none; border:none; color:var(--accent); cursor:pointer; font-weight:700;">Editar</button><button onclick="deleteCardMaster(${t.row})" style="background:none; border:none; color:var(--negative); cursor:pointer; font-weight:700;">Borrar</button></div></div>`).join('')}</div>`; 
+};
 
+// --- NAVEGACIÓN Y CORE ---
 window.toggleSidebar = function() {
   const sidebar = document.querySelector('.app-sidebar');
   AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
   if (sidebar) sidebar.classList.toggle('collapsed');
-  document.getElementById('sidebar-toggle').innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
+  const btn = document.getElementById('sidebar-toggle');
+  if (btn) btn.innerHTML = AppState.sidebarCollapsed ? '›' : '‹';
 };
 
 window.navigateTo = function(p) {
@@ -176,31 +118,13 @@ window.navigateTo = function(p) {
   const btn = document.getElementById(`nav-${p}`) || document.querySelector(`[onclick*="navigateTo('${p}')"]`);
   if (btn) btn.classList.add('active');
   document.getElementById('page-title').textContent = p.charAt(0).toUpperCase() + p.slice(1);
-  if (p === 'dashboard') loadDashboard();
-  else if (p === 'settings') loadSettingsPage();
+  if (p === 'dashboard') window.loadDashboard();
+  else if (p === 'settings') window.loadSettingsPage();
 };
 
-async function loadDashboard() {
-  const container = document.getElementById('dashboard-content');
-  const data = await BudgetLogic.getDashboardData(AppState.currentYear, AppState.currentMonth);
-  const neto = data.resumen.totalIngresos - data.resumen.totalGastos;
-  container.innerHTML = `
-    <div class="view-wrapper">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
-        <div class="card" style="padding:40px;">
-          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Neto Mensual</div>
-          <div style="font-size:36px; font-weight:800; color:${neto >= 0 ? 'var(--positive)' : 'var(--negative)'};">${Utils.formatCurrency(neto)}</div>
-        </div>
-        <div class="card" style="padding:40px;">
-          <div style="color:var(--text-secondary); font-size:12px; font-weight:800; text-transform:uppercase; margin-bottom:8px;">Pendientes</div>
-          <div style="font-size:36px; font-weight:800; color:var(--accent);">${data.pendingCount}</div>
-        </div>
-      </div>
-    </div>`;
-}
-
-async function loadSettingsPage() {
+window.loadSettingsPage = async function() {
   const container = document.getElementById('settings-content');
+  if (!container) return;
   const header = `<div class="view-wrapper">
     <div style="display:flex; gap:32px; border-bottom:1px solid var(--border-light); margin-bottom:32px;">
       ${['bancos', 'categorias', 'casas', 'tarjetas'].map(t => `<a href="#" onclick="setSettingsTab('${t}'); return false;" style="padding:12px 0; font-weight:700; text-decoration:none; color:${AppState.settingsTab === t ? 'var(--accent)' : 'var(--text-secondary)'}; border-bottom: 2px solid ${AppState.settingsTab === t ? 'var(--accent)' : 'transparent'}">${t.toUpperCase()}</a>`).join('')}
@@ -209,13 +133,33 @@ async function loadSettingsPage() {
   </div>`;
   container.innerHTML = header;
   const view = document.getElementById('settings-view');
-  if (AppState.settingsTab === 'bancos') renderBancosTab(view);
-  else if (AppState.settingsTab === 'categorias') renderCategoriasTab(view);
-  else if (AppState.settingsTab === 'casas') renderCasasTab(view);
-  else if (AppState.settingsTab === 'tarjetas') renderTarjetasTab(view);
-}
+  if (AppState.settingsTab === 'bancos') window.renderBancosTab(view);
+  else if (AppState.settingsTab === 'categorias') window.renderCategoriasTab(view);
+  else if (AppState.settingsTab === 'casas') window.renderCasasTab(view);
+  else if (AppState.settingsTab === 'tarjetas') window.renderTarjetasTab(view);
+};
 
-window.nextMonth = () => { AppState.currentMonth === 12 ? (AppState.currentMonth=1, AppState.currentYear++) : AppState.currentMonth++; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
-window.prevMonth = () => { AppState.currentMonth === 1 ? (AppState.currentMonth=12, AppState.currentYear--) : AppState.currentMonth--; AppState.initUI(); if(AppState.currentPage==='dashboard') loadDashboard(); };
+// --- PUENTE GLOBAL ---
+window.setSettingsTab = (t) => { AppState.settingsTab = t; window.loadSettingsPage(); };
+window.toggleAddBankForm = () => { AppState.isAddingBank = !AppState.isAddingBank; AppState.editingBankData = null; window.loadSettingsPage(); };
+window.editBankMaster = (row, n, i, c, t) => { AppState.isAddingBank = true; AppState.editingBankData = { row, name: n, iban: i, casa: c, tarjeta: t }; window.loadSettingsPage(); };
+window.syncCardLabel = () => { const sel = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value); document.getElementById('ms-label').textContent = sel.length > 0 ? sel.join(', ') : 'Seleccionar...'; };
 
-async function initApp() { await BudgetLogic.loadConfig(); AppState.initUI(); window.navigateTo('dashboard'); }
+window.saveBank = async () => {
+  const n = document.getElementById('new-bank-name').value, i = document.getElementById('new-bank-iban').value, c = document.getElementById('new-bank-casa').value;
+  const t = Array.from(document.querySelectorAll('.card-cb:checked')).map(cb => cb.value).join(', ');
+  if (AppState.editingBankData?.row) {
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 1, n);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 2, i);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 3, c);
+    await SheetsAPI.updateCell(CONFIG.SHEETS.ACCOUNTS, AppState.editingBankData.row, 4, t);
+  } else { await SheetsAPI.appendRow(CONFIG.SHEETS.ACCOUNTS, [n, i, c, t]); }
+  AppState.isAddingBank = false; window.loadSettingsPage();
+};
+
+// Acciones Maestras
+window.addCategoryMaster = async () => { const n = prompt("Categoría:"); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [n]); await BudgetLogic.loadConfig(); window.loadSettingsPage(); } };
+window.renameCategoryMaster = async (cat) => { const n = prompt("Nuevo nombre:", cat); if(n && n!==cat) { alert("Use Excel para renombrar."); } };
+window.deleteCategoryMaster = async (cat) => { if(confirm("¿Borrar?")) { alert("Use Excel."); } };
+window.addSubcategory = async (cat) => { const n = prompt(`Sub para ${cat}:`); if(n) { await SheetsAPI.appendRow(CONFIG.SHEETS.CONFIG, [cat, n]); await BudgetLogic.loadConfig(); window.loadSettingsPage(); } };
+window.deleteSubcategory =
