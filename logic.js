@@ -60,15 +60,36 @@ const BudgetLogic = {
   async loadBudgetLines(year) {
     const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_LINES);
     if (!rows || rows.length <= 1) return [];
-    return rows.slice(1).filter(r => r[0] && r[2] == year && r[35] !== 'DELETED').map((r, i) => ({
-      id: r[0], bank: r[1], year: parseInt(r[2]), section: r[3],
-      concepto: r[4] || '', casa: r[5] || '', categoria: r[6] || '',
-      subcategoria: r[7] || '', cadence: r[8] || 'variable',
-      plan: [r[9],r[10],r[11],r[12],r[13],r[14],r[15],r[16],r[17],r[18],r[19],r[20]].map(v => parseFloat(v) || 0),
-      real: [r[21],r[22],r[23],r[24],r[25],r[26],r[27],r[28],r[29],r[30],r[31],r[32]].map(v => parseFloat(v) || 0),
-      isOverride: r[33] === 'TRUE', sortOrder: parseInt(r[34]) || 0,
-      sheetRow: i + 2 // 1-based row in sheet (header=1)
-    }));
+    const results = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] || r[2] != year || r[35] === 'DELETED') continue;
+      results.push({
+        id: r[0], bank: r[1], year: parseInt(r[2]), section: r[3],
+        concepto: r[4] || '', casa: r[5] || '', categoria: r[6] || '',
+        subcategoria: r[7] || '', cadence: r[8] || 'variable',
+        plan: [r[9],r[10],r[11],r[12],r[13],r[14],r[15],r[16],r[17],r[18],r[19],r[20]].map(v => this.toNum(v)),
+        real: [r[21],r[22],r[23],r[24],r[25],r[26],r[27],r[28],r[29],r[30],r[31],r[32]].map(v => this.toNum(v)),
+        isOverride: r[33] === 'TRUE' || r[33] === true,
+        sortOrder: parseInt(r[34]) || 0,
+        sheetRow: i + 1 // i is 0-based from rows array (row 0=header), sheet is 1-based, so data row i → sheet row i+1
+      });
+    }
+    return results;
+  },
+
+  toNum(v) {
+    if (v === null || v === undefined || v === '') return 0;
+    if (typeof v === 'number') return v;
+    // Handle formatted strings like "1,000.00" or "1.000,00"
+    const s = String(v).replace(/[^\d.,-]/g, '');
+    // If both comma and dot present, determine which is decimal
+    if (s.includes(',') && s.includes('.')) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+      return parseFloat(s.replace(/,/g, '')) || 0;
+    }
+    if (s.includes(',')) return parseFloat(s.replace(',', '.')) || 0;
+    return parseFloat(s) || 0;
   },
 
   async loadBankSummary(year) {
