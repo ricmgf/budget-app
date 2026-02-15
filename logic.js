@@ -10,11 +10,11 @@ const BudgetLogic = {
 
       rows.slice(1).forEach((row, index) => {
         const rowIdx = index + 2;
-        // Categorías (A y B)
+        // Categorías y Sub (A y B)
         if (row[0] && row[0].trim() !== "" && row[0] !== 'DELETED') {
           const cat = row[0].trim();
           if (!cfg.categorias[cat]) cfg.categorias[cat] = [];
-          if (row[1]) cfg.categorias[cat].push(row[1].trim());
+          if (row[1] && row[1].trim() !== "") cfg.categorias[cat].push(row[1].trim());
         }
         // Casas (Col D)
         if (row[3] && row[3].trim() !== "" && row[5] !== 'DELETED') {
@@ -46,8 +46,6 @@ const BudgetLogic = {
         }, 
         pendingCount: actG.filter(r => !r[3] || !r[4]).length 
       };
-    } catch (e) {
-      return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 };
-    }
+    } catch (e) { return { resumen: { totalGastos: 0, totalIngresos: 0 }, pendingCount: 0 }; }
   }
 };
