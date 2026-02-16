@@ -166,14 +166,17 @@ const BudgetGrid = {
       const autoTag = (!uc && line.cadence === 'one-off' && BudgetLogic.findRule(line.concepto, this.activeBank)) ? '<span class="auto-tag">⚡</span>' : '';
       const name = this._displayName(line);
       const noteTip = this._noteTriangle(line.notas, 'blue');
-      const breakdownTip = line.breakdown ? this._noteTriangle(line.breakdown, 'grey') : '';
+      // Parse per-month breakdowns
+      let bdMap = null;
+      if (line.breakdown) { try { bdMap = JSON.parse(line.breakdown); } catch(e) { bdMap = null; } }
       h += `<tr class="${uc?'uncat':''}" data-lid="${line.id}">`;
-      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')">${autoTag}${this._e(name)||'(vacío)'}${noteTip}${breakdownTip}</td>`;
+      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')">${autoTag}${this._e(name)||'(vacío)'}${noteTip}</td>`;
       for (let m = 0; m < 12; m++) {
         const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
         const pv = line.plan[m], rv = line.real[m];
+        const bdTip = (bdMap && bdMap[m] && bdMap[m].length > 1) ? this._noteTriangle(bdMap[m].map(b => `${b.d} · ${this._f(b.a,1)}`).join('\n'), 'grey') : '';
         h += `<td class="editable ${c}" data-lid="${line.id}" data-t="plan" data-m="${m}" onclick="BudgetGrid.editCell(this)">${this._f(pv)}</td>`;
-        h += `<td class="editable ${c}" data-lid="${line.id}" data-t="real" data-m="${m}" onclick="BudgetGrid.editCell(this)">${this._f(rv)}</td>`;
+        h += `<td class="editable ${c}" data-lid="${line.id}" data-t="real" data-m="${m}" onclick="BudgetGrid.editCell(this)">${this._f(rv)}${bdTip}</td>`;
       }
       h += '</tr>';
     });
@@ -594,7 +597,8 @@ const BudgetGrid = {
         <h3 style="margin:0;">Importar ${isTarjeta ? 'Extracto Tarjeta' : 'Extracto Banco'}</h3>
         <button onclick="this.closest('.budget-drawer-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);">✕</button>
       </div>
-      ${isTarjeta ? `<label>Tarjeta</label><select id="imp-card">${tarjetas.length ? tarjetas.map(t=>`<option value="${t.name}">${t.name}</option>`).join('') : '<option value="">— Sin tarjetas —</option>'}</select>` : ''}
+      ${isTarjeta ? `<label>Tarjeta</label><select id="imp-card">${tarjetas.length ? tarjetas.map(t=>`<option value="${t.name}">${t.name}</option>`).join('') : '<option value="">— Sin tarjetas —</option>'}</select>
+      <div style="margin-top:8px;"><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;"><input type="checkbox" id="imp-clean" checked> Limpiar datos anteriores de esta tarjeta</label></div>` : ''}
       <label>Mes <span style="font-weight:400;color:var(--text-tertiary);text-transform:none;">(si el archivo no tiene fechas)</span></label><select id="imp-month">${MONTHS_FULL.slice(1).map((m,i)=>`<option value="${i+1}" ${i+1===AppState.currentMonth?'selected':''}>${m} ${AppState.currentYear}</option>`).join('')}</select>
       <label style="margin-top:16px;">Archivo</label>
       <div class="import-dropzone" id="imp-dz" onclick="document.getElementById('imp-fi').click()" style="padding:24px 16px;margin-top:8px;">
@@ -699,20 +703,13 @@ const BudgetGrid = {
   },
 
   _parseIberia(rows) {
-    // Format: titular blocks with card number in col D, name in col E
-    // Data rows: col B=sequential number, C=date, D=comercio, F=importe euros
-    // Must skip: Total Comercios, Total Comisiones, TOTAL A CARGAR, Importe a pagar, etc.
-    const SKIP_WORDS = ['TOTAL','COMISION','IMPORTE','DEUDA','EXTRACTO','PUNTOS','INTERESES','DETALLE DE','TAE','FORMA DE PAGO'];
     const mvs = [];
     let currentTitular = '';
+    const SKIP_CONCEPTO = ['TOTAL','CARGAR','COMISION','IMPORTE','DEUDA','EXTRACTO','PUNTOS','INTERESES','TAE','FORMA DE PAGO','PAGO APLAZADO','CAJEROS'];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i]; if (!r) continue;
       const colB = String(r[1] || '').trim();
       const colBUp = colB.toUpperCase();
-
-      // Skip rows with summary keywords
-      const rowText = r.map(c => String(c||'').toUpperCase()).join(' ');
-      if (SKIP_WORDS.some(w => rowText.includes(w)) && !parseFloat(colB)) continue;
 
       // Detect titular row: col B contains "IBERIA" and col E has name
       if (colBUp.includes('IBERIA') && r[4]) {
@@ -720,19 +717,22 @@ const BudgetGrid = {
         continue;
       }
       // Skip header rows
-      if (colBUp.includes('Nº') || colBUp === 'NO' || String(r[2]||'').toUpperCase().includes('FECHA OPERACIÓN')) continue;
-      // Data row: col B must be a sequential number
+      if (colBUp.includes('Nº') || String(r[2]||'').toUpperCase().includes('FECHA OPERACIÓN')) continue;
+      // Data row: col B must be a sequential number (1, 2, 3...)
       const num = parseFloat(r[1]);
       if (isNaN(num) || num < 1 || num > 999) continue;
       const concepto = String(r[3] || '').trim();
       const amount = parseFloat(r[5]) || 0;
       if (!concepto || Math.abs(amount) < 0.01) continue;
-      if (!currentTitular) continue; // safety: only import under a titular
+      if (!currentTitular) continue;
+      // Skip concepto-level summary words
+      const cUp = concepto.toUpperCase();
+      if (SKIP_CONCEPTO.some(w => cUp.includes(w))) continue;
 
       mvs.push({
         concepto: concepto.substring(0, 80),
-        amount: Math.abs(amount),
-        originalSign: -1,
+        amount: amount,  // keep original sign (negative = refund/bonification)
+        originalSign: amount >= 0 ? -1 : 1,
         date: String(r[2] || ''),
         notes: '',
         titular: currentTitular
@@ -880,11 +880,22 @@ const BudgetGrid = {
     const TARJETA_PATTERNS = ['IBERIA CARDS','VISA ','MASTERCARD','AMEX','AMERICAN EXPRESS'];
     const now = new Date().toISOString();
     const year = AppState.currentYear;
+    let tarIdx = 0;
+
+    // Cleanup old tarjeta rows if requested
+    if (type === 'tarjeta' && document.getElementById('imp-clean')?.checked) {
+      const oldTarLines = this.lines.filter(l => l.bank === this.activeBank && l.section === 'TARJETAS');
+      for (const ol of oldTarLines) {
+        await BudgetLogic.deleteBudgetLine(ol.sheetRow);
+      }
+      // Refresh lines after cleanup
+      this.lines = await BudgetLogic.loadBudgetLines(AppState.currentYear);
+    }
 
     // Consolidate: for BANK imports, group same concepto+notes into one row per month
     // For TARJETA imports, do NOT consolidate — each movement stays as child of titular
     const consolidated = new Map();
-    const breakdowns = new Map(); // key → [{date, concepto, amount}]
+    const breakdowns = new Map(); // key → { monthIndex: [{d: date, a: amount}] }
 
     for (const mv of movements) {
       const rawC = String(mv.concepto || '').substring(0, 80);
@@ -901,26 +912,31 @@ const BudgetGrid = {
         section = isTar ? 'TARJETAS' : (mv.originalSign > 0 ? 'INGRESOS' : 'GASTOS');
       }
 
+      const dateStr = mv.date instanceof Date ? mv.date.toLocaleDateString('es') : String(mv.date || '').substring(0, 10);
+
       if (type === 'tarjeta') {
-        // No consolidation for tarjeta imports — each row is individual
-        const uid = `${rawC}|${mi}|${mv.date}|${Math.abs(mv.amount)}|${titular}|${Math.random()}`;
+        // No consolidation for tarjeta imports — each row is individual child of titular
+        // Keep original sign so refunds (BON. COMI.CAMBIO DIV) reduce the total
+        const uid = `tar_${tarIdx++}_${Math.random().toString(36).substring(2,6)}`;
         const amounts = new Array(12).fill(0);
-        amounts[mi] = Math.abs(mv.amount);
+        amounts[mi] = mv.amount; // keep sign
         const rule = BudgetLogic.findRuleWithNotes ? BudgetLogic.findRuleWithNotes(rawC, notes, this.activeBank) : BudgetLogic.findRule(rawC, this.activeBank);
         consolidated.set(uid, { concepto: rawC, section, notes, titular, amounts, rule });
       } else {
         // Bank imports: consolidate same concepto+notes
         const normKey = this._norm(rawC) + '|||' + this._norm(notes) + '|||' + section;
-        const dateStr = mv.date instanceof Date ? mv.date.toLocaleDateString('es') : String(mv.date || '');
         if (consolidated.has(normKey)) {
           consolidated.get(normKey).amounts[mi] = (consolidated.get(normKey).amounts[mi] || 0) + Math.abs(mv.amount);
-          breakdowns.get(normKey).push({ date: dateStr, concepto: rawC, amount: Math.abs(mv.amount) });
+          if (!breakdowns.get(normKey)[mi]) breakdowns.get(normKey)[mi] = [];
+          breakdowns.get(normKey)[mi].push({ d: dateStr, a: Math.abs(mv.amount) });
         } else {
           const amounts = new Array(12).fill(0);
           amounts[mi] = Math.abs(mv.amount);
           const rule = BudgetLogic.findRuleWithNotes ? BudgetLogic.findRuleWithNotes(rawC, notes, this.activeBank) : BudgetLogic.findRule(rawC, this.activeBank);
           consolidated.set(normKey, { concepto: rawC, section, notes, titular: '', amounts, rule });
-          breakdowns.set(normKey, [{ date: dateStr, concepto: rawC, amount: Math.abs(mv.amount) }]);
+          const bd = {};
+          bd[mi] = [{ d: dateStr, a: Math.abs(mv.amount) }];
+          breakdowns.set(normKey, bd);
         }
       }
     }
@@ -935,17 +951,23 @@ const BudgetGrid = {
     showProg();
 
     const titularParents = new Map();
+    // Check existing parent lines in BUDGET_LINES for this bank
+    existingLines.filter(l => l.section === 'TARJETAS' && !l.parentId).forEach(l => {
+      // If the concepto matches a known titular name exactly, use it as parent
+      titularParents.set(l.concepto.trim(), l.id);
+    });
 
     for (const [key, entry] of consolidated) {
       const { concepto, section, notes, amounts, rule, titular } = entry;
       const normLabel = this._norm(concepto);
       const existing = existingLines.find(l => this._norm(l.concepto) === normLabel && l.section === section);
 
-      // Build breakdown text for consolidated bank rows
+      // Build breakdown JSON for consolidated bank rows (only if multiple items in any month)
       const bd = breakdowns.get(key);
-      let breakdownText = '';
-      if (bd && bd.length > 1) {
-        breakdownText = bd.map(b => `${b.date} · ${b.concepto} · ${this._f(b.amount,1)}`).join('\n');
+      let breakdownJson = '';
+      if (bd) {
+        const hasMulti = Object.values(bd).some(arr => arr && arr.length > 1);
+        if (hasMulti) breakdownJson = JSON.stringify(bd);
       }
 
       if (existing) {
@@ -972,7 +994,7 @@ const BudgetGrid = {
         }
         const id = BudgetLogic.generateId('BL');
         const plan = new Array(12).fill(0);
-        await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, year, section, concepto, casa, cat, subcat, 'one-off', ...plan, ...amounts, 'FALSE', 999, 'ACTIVE', now, now, notes, parentId, '', breakdownText]);
+        await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, year, section, concepto, casa, cat, subcat, 'one-off', ...plan, ...amounts, 'FALSE', 999, 'ACTIVE', now, now, notes, parentId, '', breakdownJson]);
       }
       count++;
       if (count % 3 === 0) showProg();
