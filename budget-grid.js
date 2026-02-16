@@ -137,6 +137,27 @@ const BudgetGrid = {
     return line.alias ? line.alias : line.concepto;
   },
 
+  _noteTriangle(notes, color) {
+    if (!notes) return '';
+    const cls = color === 'grey' ? 'note-indicator grey' : 'note-indicator';
+    return `<span class="${cls}" onmouseenter="BudgetGrid._showTip(this)" onmouseleave="BudgetGrid._hideTip()" data-tip="${this._e(notes)}">◥</span>`;
+  },
+
+  _showTip(el) {
+    let tip = document.getElementById('bg-tip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'bg-tip'; tip.className = 'bg-tooltip'; document.body.appendChild(tip); }
+    tip.textContent = el.dataset.tip;
+    const r = el.getBoundingClientRect();
+    tip.style.display = 'block';
+    tip.style.left = Math.min(r.left, window.innerWidth - 320) + 'px';
+    tip.style.top = (r.bottom + 6) + 'px';
+  },
+
+  _hideTip() {
+    const tip = document.getElementById('bg-tip');
+    if (tip) tip.style.display = 'none';
+  },
+
   _rows(lines, cm) {
     const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
     let h = '';
@@ -144,10 +165,10 @@ const BudgetGrid = {
       const uc = !line.casa && !line.categoria;
       const autoTag = (!uc && line.cadence === 'one-off' && BudgetLogic.findRule(line.concepto, this.activeBank)) ? '<span class="auto-tag">⚡</span>' : '';
       const name = this._displayName(line);
-      const hasNotes = !!(line.notas);
-      const noteTriangle = hasNotes ? `<span class="note-indicator" data-notes="${this._e(line.notas)}">◥</span>` : '';
+      const noteTip = this._noteTriangle(line.notas, 'blue');
+      const breakdownTip = line.breakdown ? this._noteTriangle(line.breakdown, 'grey') : '';
       h += `<tr class="${uc?'uncat':''}" data-lid="${line.id}">`;
-      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')">${autoTag}${this._e(name)||'(vacío)'}${noteTriangle}</td>`;
+      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')">${autoTag}${this._e(name)||'(vacío)'}${noteTip}${breakdownTip}</td>`;
       for (let m = 0; m < 12; m++) {
         const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
         const pv = line.plan[m], rv = line.real[m];
@@ -182,7 +203,7 @@ const BudgetGrid = {
         if (!collapsed) {
           kids.forEach(kid => {
             const ucK = !kid.casa && !kid.categoria;
-            const noteT = kid.notas ? `<span class="note-indicator" data-notes="${this._e(kid.notas)}">◥</span>` : '';
+            const noteT = this._noteTriangle(kid.notas, 'blue');
             h += `<tr class="tarjeta-child ${ucK?'uncat':''}" data-lid="${kid.id}">`;
             h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${kid.id}')" style="padding-left:28px;font-size:11px;color:var(--text-secondary);">${this._e(this._displayName(kid))}${noteT}</td>`;
             for (let m = 0; m < 12; m++) {
@@ -274,42 +295,41 @@ const BudgetGrid = {
     }
     h += '</tr>';
 
-    // Envío Necesario — shown in PLAN column of month m+1
-    // For month m: envío = Gastos_Plan(m+1) + Tarjetas_Real(m) + Buffer(m+1) - Ingresos_Plan(m+1) - Saldo(m)
+    // Envío Necesario — shown in PLAN column of month m (the current month being closed)
+    // Envío for month m = Gastos_Plan(m+1) + Tarjetas_Real(m) + Buffer(m+1) - Ingresos_Plan(m+1) - Saldo(m)
     h += `<tr class="bg-envio"><td class="frozen">💰 ENVÍO NECESARIO</td>`;
     for (let m = 0; m < 12; m++) {
       const c = cm === m ? 'cur' : '';
-      // Display in plan column: envío calculated from previous month
       let envDisplay = '';
-      if (m > 0) {
-        const pm = m - 1; // previous month that generated this envío
-        const envRaw = d[m].gasP + d[pm].tarR + d[m].buf - d[m].iP - d[pm].sal;
+      if (m < 11) {
+        const nextM = m + 1;
+        const envRaw = d[nextM].gasP + d[m].tarR + d[nextM].buf - d[nextM].iP - d[m].sal;
         envDisplay = this._f(Math.max(0, envRaw), 1);
       }
-      h += `<td class="${c}" style="font-weight:800;${m > 0 ? 'cursor:pointer;' : ''}" ${m > 0 ? `onclick="BudgetGrid.showEnvioModal(${m})"` : ''}>${envDisplay}</td>`;
+      h += `<td class="${c}" style="font-weight:800;${m < 11 ? 'cursor:pointer;' : ''}" ${m < 11 ? `onclick="BudgetGrid.showEnvioModal(${m})"` : ''}>${envDisplay}</td>`;
       h += `<td class="${c}"></td>`;
     }
     h += '</tr>';
     return h;
   },
 
-  showEnvioModal(targetMonth) {
-    // targetMonth = the month whose PLAN column shows the envío
-    // Source month = targetMonth - 1 (the month that generates the need)
+  showEnvioModal(srcMonth) {
+    // srcMonth = the current month (where envío is displayed in PLAN column)
+    // target = srcMonth + 1 (the month we need to cover)
     const d = this._envioData;
     if (!d) return;
-    const srcM = targetMonth - 1; // month that generates envío
-    const tgtM = targetMonth;     // month that receives the envío in Plan
+    const tgtM = srcMonth + 1;
+    if (tgtM > 11) return;
 
     const gastosPlan = d[tgtM].gasP;
-    const tarjetasReal = d[srcM].tarR;
+    const tarjetasReal = d[srcMonth].tarR;
     const bufferPlan = d[tgtM].buf;
     const ingresosPlan = d[tgtM].iP;
-    const saldo = d[srcM].sal;
+    const saldo = d[srcMonth].sal;
     const raw = gastosPlan + tarjetasReal + bufferPlan - ingresosPlan - saldo;
     const isNeg = raw <= 0;
     const color = isNeg ? '#10b981' : '#0f172a';
-    const srcName = MONTHS_FULL[srcM + 1] || MONTHS[srcM];
+    const srcName = MONTHS_FULL[srcMonth + 1] || MONTHS[srcMonth];
     const tgtName = MONTHS_FULL[tgtM + 1] || MONTHS[tgtM];
 
     const row = (label, value, sign) => {
@@ -680,26 +700,43 @@ const BudgetGrid = {
 
   _parseIberia(rows) {
     // Format: titular blocks with card number in col D, name in col E
-    // Data rows: col B=number, C=date, D=comercio, F=importe euros
+    // Data rows: col B=sequential number, C=date, D=comercio, F=importe euros
+    // Must skip: Total Comercios, Total Comisiones, TOTAL A CARGAR, Importe a pagar, etc.
+    const SKIP_WORDS = ['TOTAL','COMISION','IMPORTE','DEUDA','EXTRACTO','PUNTOS','INTERESES','DETALLE DE','TAE','FORMA DE PAGO'];
     const mvs = [];
     let currentTitular = '';
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i]; if (!r) continue;
+      const colB = String(r[1] || '').trim();
+      const colBUp = colB.toUpperCase();
+
+      // Skip rows with summary keywords
+      const rowText = r.map(c => String(c||'').toUpperCase()).join(' ');
+      if (SKIP_WORDS.some(w => rowText.includes(w)) && !parseFloat(colB)) continue;
+
       // Detect titular row: col B contains "IBERIA" and col E has name
-      const colB = String(r[1] || '').trim().toUpperCase();
-      if (colB.includes('IBERIA') && r[4]) {
+      if (colBUp.includes('IBERIA') && r[4]) {
         currentTitular = String(r[4]).trim();
         continue;
       }
-      // Detect header row — skip
-      if (colB === 'Nº' || colB === 'NO' || String(r[2]||'').toUpperCase().includes('FECHA')) continue;
-      // Data row: col B is a number
+      // Skip header rows
+      if (colBUp.includes('Nº') || colBUp === 'NO' || String(r[2]||'').toUpperCase().includes('FECHA OPERACIÓN')) continue;
+      // Data row: col B must be a sequential number
       const num = parseFloat(r[1]);
       if (isNaN(num) || num < 1 || num > 999) continue;
       const concepto = String(r[3] || '').trim();
       const amount = parseFloat(r[5]) || 0;
       if (!concepto || Math.abs(amount) < 0.01) continue;
-      mvs.push({ concepto: concepto.substring(0, 80), amount: Math.abs(amount), originalSign: -1, date: String(r[2] || ''), notes: '', titular: currentTitular });
+      if (!currentTitular) continue; // safety: only import under a titular
+
+      mvs.push({
+        concepto: concepto.substring(0, 80),
+        amount: Math.abs(amount),
+        originalSign: -1,
+        date: String(r[2] || ''),
+        notes: '',
+        titular: currentTitular
+      });
     }
     return mvs;
   },
@@ -844,15 +881,17 @@ const BudgetGrid = {
     const now = new Date().toISOString();
     const year = AppState.currentYear;
 
-    // Consolidate by concepto + notes + section + titular
+    // Consolidate: for BANK imports, group same concepto+notes into one row per month
+    // For TARJETA imports, do NOT consolidate — each movement stays as child of titular
     const consolidated = new Map();
+    const breakdowns = new Map(); // key → [{date, concepto, amount}]
+
     for (const mv of movements) {
       const rawC = String(mv.concepto || '').substring(0, 80);
       const notes = mv.notes ? String(mv.notes).substring(0, 200) : '';
       const titular = mv.titular || '';
       const { month: mi, year: mvYear } = this._extractDate(mv.date, fallbackMonth - 1);
 
-      // Skip if not current year
       if (mvYear !== null && mvYear !== year) continue;
 
       let section;
@@ -862,14 +901,27 @@ const BudgetGrid = {
         section = isTar ? 'TARJETAS' : (mv.originalSign > 0 ? 'INGRESOS' : 'GASTOS');
       }
 
-      const normKey = this._norm(rawC) + '|||' + this._norm(notes) + '|||' + section + '|||' + titular;
-      if (consolidated.has(normKey)) {
-        consolidated.get(normKey).amounts[mi] = (consolidated.get(normKey).amounts[mi] || 0) + Math.abs(mv.amount);
-      } else {
+      if (type === 'tarjeta') {
+        // No consolidation for tarjeta imports — each row is individual
+        const uid = `${rawC}|${mi}|${mv.date}|${Math.abs(mv.amount)}|${titular}|${Math.random()}`;
         const amounts = new Array(12).fill(0);
         amounts[mi] = Math.abs(mv.amount);
         const rule = BudgetLogic.findRuleWithNotes ? BudgetLogic.findRuleWithNotes(rawC, notes, this.activeBank) : BudgetLogic.findRule(rawC, this.activeBank);
-        consolidated.set(normKey, { concepto: titular ? `${titular}: ${rawC}` : rawC, section, notes, titular, amounts, rule });
+        consolidated.set(uid, { concepto: rawC, section, notes, titular, amounts, rule });
+      } else {
+        // Bank imports: consolidate same concepto+notes
+        const normKey = this._norm(rawC) + '|||' + this._norm(notes) + '|||' + section;
+        const dateStr = mv.date instanceof Date ? mv.date.toLocaleDateString('es') : String(mv.date || '');
+        if (consolidated.has(normKey)) {
+          consolidated.get(normKey).amounts[mi] = (consolidated.get(normKey).amounts[mi] || 0) + Math.abs(mv.amount);
+          breakdowns.get(normKey).push({ date: dateStr, concepto: rawC, amount: Math.abs(mv.amount) });
+        } else {
+          const amounts = new Array(12).fill(0);
+          amounts[mi] = Math.abs(mv.amount);
+          const rule = BudgetLogic.findRuleWithNotes ? BudgetLogic.findRuleWithNotes(rawC, notes, this.activeBank) : BudgetLogic.findRule(rawC, this.activeBank);
+          consolidated.set(normKey, { concepto: rawC, section, notes, titular: '', amounts, rule });
+          breakdowns.set(normKey, [{ date: dateStr, concepto: rawC, amount: Math.abs(mv.amount) }]);
+        }
       }
     }
 
@@ -884,10 +936,17 @@ const BudgetGrid = {
 
     const titularParents = new Map();
 
-    for (const [, entry] of consolidated) {
+    for (const [key, entry] of consolidated) {
       const { concepto, section, notes, amounts, rule, titular } = entry;
       const normLabel = this._norm(concepto);
       const existing = existingLines.find(l => this._norm(l.concepto) === normLabel && l.section === section);
+
+      // Build breakdown text for consolidated bank rows
+      const bd = breakdowns.get(key);
+      let breakdownText = '';
+      if (bd && bd.length > 1) {
+        breakdownText = bd.map(b => `${b.date} · ${b.concepto} · ${this._f(b.amount,1)}`).join('\n');
+      }
 
       if (existing) {
         let updated = false;
@@ -907,13 +966,13 @@ const BudgetGrid = {
           if (!titularParents.has(titular)) {
             const pid = BudgetLogic.generateId('BL');
             titularParents.set(titular, pid);
-            await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [pid, this.activeBank, year, section, titular, '', '', '', 'variable', ...new Array(24).fill(0), 'FALSE', 0, 'ACTIVE', now, now, '', '']);
+            await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [pid, this.activeBank, year, section, titular, '', '', '', 'variable', ...new Array(24).fill(0), 'FALSE', 0, 'ACTIVE', now, now, '', '', '']);
           }
           parentId = titularParents.get(titular);
         }
         const id = BudgetLogic.generateId('BL');
         const plan = new Array(12).fill(0);
-        await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, year, section, concepto, casa, cat, subcat, 'one-off', ...plan, ...amounts, 'FALSE', 999, 'ACTIVE', now, now, notes, parentId, '']);
+        await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, year, section, concepto, casa, cat, subcat, 'one-off', ...plan, ...amounts, 'FALSE', 999, 'ACTIVE', now, now, notes, parentId, '', breakdownText]);
       }
       count++;
       if (count % 3 === 0) showProg();

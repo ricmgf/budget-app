@@ -75,6 +75,7 @@ const BudgetLogic = {
         notas: r[38] || '',
         parentId: r[39] || '',
         alias: r[40] || '',
+        breakdown: r[41] || '',
         sheetRow: i + 1 // i is 0-based from rows array (row 0=header), sheet is 1-based, so data row i → sheet row i+1
       });
     }

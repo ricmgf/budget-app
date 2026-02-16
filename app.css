@@ -164,16 +164,18 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 
 /* Note indicator — Excel-style triangle */
 .note-indicator {
-  position:relative; display:inline-block; font-size:8px; color:var(--accent);
-  margin-left:4px; cursor:help; line-height:1; vertical-align:top;
+  display:inline-block; font-size:7px; color:var(--accent); margin-left:3px;
+  cursor:help; line-height:1; vertical-align:top; opacity:0.6;
 }
-.note-indicator:hover::after {
-  content: attr(data-notes);
-  position:absolute; left:0; top:16px; z-index:100;
-  background:#1e293b; color:#e2e8f0; padding:8px 12px; border-radius:8px;
-  font-size:11px; font-weight:400; white-space:pre-wrap; max-width:260px; min-width:120px;
-  box-shadow:0 4px 12px rgba(0,0,0,.2); pointer-events:none;
-  line-height:1.4;
+.note-indicator:hover { opacity:1; }
+.note-indicator.grey { color:#94a3b8; }
+
+/* Global tooltip (positioned by JS) */
+.bg-tooltip {
+  position:fixed; z-index:9999; background:#1e293b; color:#e2e8f0;
+  padding:8px 12px; border-radius:8px; font-size:11px; font-weight:400;
+  max-width:300px; min-width:100px; white-space:pre-wrap; line-height:1.4;
+  box-shadow:0 4px 12px rgba(0,0,0,.3); pointer-events:none; display:none;
 }
 
 /* ── TOTALS — Clean Lines (no background) ── */
