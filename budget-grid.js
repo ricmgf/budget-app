@@ -601,18 +601,23 @@ const BudgetGrid = {
       <div style="margin-top:8px;"><label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;"><input type="checkbox" id="imp-clean" checked> Limpiar datos anteriores de esta tarjeta</label></div>` : ''}
       <label>Mes <span style="font-weight:400;color:var(--text-tertiary);text-transform:none;">(si el archivo no tiene fechas)</span></label><select id="imp-month">${MONTHS_FULL.slice(1).map((m,i)=>`<option value="${i+1}" ${i+1===AppState.currentMonth?'selected':''}>${m} ${AppState.currentYear}</option>`).join('')}</select>
       <label style="margin-top:16px;">Archivo</label>
-      <div class="import-dropzone" id="imp-dz" onclick="document.getElementById('imp-fi').click()" style="padding:24px 16px;margin-top:8px;">
+      <div class="import-dropzone" id="imp-dz" style="padding:24px 16px;margin-top:8px;cursor:pointer;">
         <div style="font-size:28px;margin-bottom:6px;">📁</div>
         <div style="font-size:13px;font-weight:600;">Arrastra o haz clic</div>
         <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">CSV · XLSX · XLS</div>
-        <input type="file" id="imp-fi" accept=".csv,.html,.htm,.xls,.xlsx" style="display:none" onchange="BudgetGrid._impFile(this,'${type}')">
+        <input type="file" id="imp-fi" accept=".csv,.html,.htm,.xls,.xlsx,.pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" onchange="BudgetGrid._impFile(this,'${type}')">
       </div>
       <div id="imp-pv" style="margin-top:16px;"></div>
       <div id="imp-act" style="display:none;margin-top:16px;"><button class="btn-save" onclick="BudgetGrid._impConfirm('${type}')" style="width:100%;">Importar movimientos</button></div>
     </div>`;
     document.body.appendChild(ov);
     const dz = document.getElementById('imp-dz');
-    if (dz) { dz.ondragover=e=>{e.preventDefault();dz.classList.add('dragover');}; dz.ondragleave=()=>dz.classList.remove('dragover'); dz.ondrop=e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files.length)this._impProcess(e.dataTransfer.files[0],type);}; }
+    if (dz) {
+      dz.onclick = (e) => { e.stopPropagation(); document.getElementById('imp-fi').click(); };
+      dz.ondragover = e => { e.preventDefault(); dz.classList.add('dragover'); };
+      dz.ondragleave = () => dz.classList.remove('dragover');
+      dz.ondrop = e => { e.preventDefault(); dz.classList.remove('dragover'); if(e.dataTransfer.files.length) this._impProcess(e.dataTransfer.files[0], type); };
+    }
   },
 
   _impMovements: [], _impSaldo: null,
