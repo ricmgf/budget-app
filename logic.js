@@ -147,23 +147,25 @@ const BudgetLogic = {
   _rules: [],
 
   async loadRules() {
-    const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
-    if (!rows || rows.length <= 1) { this._rules = []; return []; }
-    this._rules = [];
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r[0]) continue;
-      this._rules.push({
-        pattern: (r[0] || '').trim().toUpperCase(),
-        bank: (r[1] || '').trim(),
-        casa: (r[2] || '').trim(),
-        categoria: (r[3] || '').trim(),
-        subcategoria: (r[4] || '').trim(),
-        confidence: (r[5] || 'auto').trim(),
-        timesUsed: parseInt(r[6]) || 0,
-        sheetRow: i + 1
-      });
-    }
+    try {
+      const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
+      if (!rows || rows.length <= 1) { this._rules = []; return []; }
+      this._rules = [];
+      const str = (v) => v == null ? '' : String(v).trim();
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || !r[0]) continue;
+        this._rules.push({
+          pattern: str(r[0]).toUpperCase(),
+          bank: str(r[1]),
+          casa: str(r[2]),
+          categoria: str(r[3]),
+          subcategoria: str(r[4]),
+          confidence: str(r[5]) || 'auto',
+          timesUsed: parseInt(r[6]) || 0,
+          sheetRow: i + 1
+        });
+      }
     // Sort: manual first, then by times_used descending
     this._rules.sort((a, b) => {
       if (a.confidence === 'manual' && b.confidence !== 'manual') return -1;
@@ -171,6 +173,7 @@ const BudgetLogic = {
       return b.timesUsed - a.timesUsed;
     });
     return this._rules;
+    } catch(e) { console.error('loadRules error:', e); this._rules = []; return []; }
   },
 
   findRule(concepto, bankName) {
