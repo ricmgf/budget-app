@@ -156,6 +156,12 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 .formula-sign { display:inline-block; width:14px; text-align:center; color:#94a3b8; font-weight:700; font-size:11px; margin-right:2px; }
 .auto-tag { font-size:10px; margin-right:3px; opacity:0.6; }
 
+/* Tarjeta collapsible rows */
+.tarjeta-parent td.frozen { font-weight:600; }
+.tarjeta-child td { background:#fafbfc !important; }
+.tarjeta-child td.frozen { font-size:11px; color:var(--text-secondary); }
+.collapse-toggle { font-size:10px; color:var(--text-tertiary); display:inline-block; width:14px; }
+
 /* ── TOTALS ── */
 .bg-total td { font-weight:700; background:#f8fafc !important; border-top:2px solid var(--border-light); border-bottom:2px solid var(--border-light); font-size:12px; }
 .bg-total td.frozen { background:#f8fafc !important; position:sticky; left:0; z-index:2; border-right:1px solid var(--border-light); }

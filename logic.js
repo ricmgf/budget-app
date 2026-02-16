@@ -73,6 +73,7 @@ const BudgetLogic = {
         isOverride: r[33] === 'TRUE' || r[33] === true,
         sortOrder: parseInt(r[34]) || 0,
         notas: r[38] || '',
+        parentId: r[39] || '',
         sheetRow: i + 1 // i is 0-based from rows array (row 0=header), sheet is 1-based, so data row i → sheet row i+1
       });
     }
@@ -196,10 +197,51 @@ const BudgetLogic = {
     // 4. Word-level match: any word ≥4 chars from pattern found in concepto
     for (const rule of this._rules) {
       const words = rule.pattern.split(/\s+/).filter(w => w.length >= 4);
-      if (words.some(w => c.includes(w))) return rule;
+      if (words.length && words.some(w => c.includes(w))) return rule;
     }
 
     return null;
+  },
+
+  // Smart matching that also considers notes/details for disambiguation
+  findRuleWithNotes(concepto, notes, bankName) {
+    if (!concepto || !this._rules.length) return null;
+    const normC = this._normalize(concepto);
+    const normN = this._normalize(notes || '');
+    const combined = normC + ' ' + normN;
+
+    // Rules may have pattern stored as "concepto|||notes"
+    for (const rule of this._rules) {
+      const parts = rule.pattern.split('|||');
+      const ruleConcepto = this._normalize(parts[0] || '');
+      const ruleNotes = this._normalize(parts[1] || '');
+
+      if (!ruleConcepto) continue;
+      if (rule.bank && rule.bank !== bankName) continue;
+
+      // If rule has notes, both concepto AND notes must match
+      if (ruleNotes) {
+        const cMatch = normC.includes(ruleConcepto) || ruleConcepto.includes(normC) || this._wordMatch(ruleConcepto, normC);
+        const nMatch = normN.includes(ruleNotes) || this._wordMatch(ruleNotes, normN);
+        if (cMatch && nMatch) return rule;
+      } else {
+        // No notes in rule — match concepto only
+        if (normC.includes(ruleConcepto) || ruleConcepto.includes(normC)) return rule;
+        if (this._wordMatch(ruleConcepto, combined)) return rule;
+      }
+    }
+
+    // Fallback to basic findRule
+    return this.findRule(concepto, bankName);
+  },
+
+  _normalize(s) {
+    return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  },
+
+  _wordMatch(pattern, text) {
+    const words = pattern.split(/\s+/).filter(w => w.length >= 4);
+    return words.length > 0 && words.some(w => text.includes(w));
   },
 
   async autoCategorizeLine(lineId, concepto, bankName, sheetRow) {
