@@ -74,6 +74,7 @@ const BudgetLogic = {
         sortOrder: parseInt(r[34]) || 0,
         notas: r[38] || '',
         parentId: r[39] || '',
+        alias: r[40] || '',
         sheetRow: i + 1 // i is 0-based from rows array (row 0=header), sheet is 1-based, so data row i → sheet row i+1
       });
     }

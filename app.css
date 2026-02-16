@@ -162,9 +162,24 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 .tarjeta-child td.frozen { font-size:11px; color:var(--text-secondary); }
 .collapse-toggle { font-size:10px; color:var(--text-tertiary); display:inline-block; width:14px; }
 
-/* ── TOTALS ── */
-.bg-total td { font-weight:700; background:#f8fafc !important; border-top:2px solid var(--border-light); border-bottom:2px solid var(--border-light); font-size:12px; }
-.bg-total td.frozen { background:#f8fafc !important; position:sticky; left:0; z-index:2; border-right:1px solid var(--border-light); }
+/* Note indicator — Excel-style triangle */
+.note-indicator {
+  position:relative; display:inline-block; font-size:8px; color:var(--accent);
+  margin-left:4px; cursor:help; line-height:1; vertical-align:top;
+}
+.note-indicator:hover::after {
+  content: attr(data-notes);
+  position:absolute; left:0; top:16px; z-index:100;
+  background:#1e293b; color:#e2e8f0; padding:8px 12px; border-radius:8px;
+  font-size:11px; font-weight:400; white-space:pre-wrap; max-width:260px; min-width:120px;
+  box-shadow:0 4px 12px rgba(0,0,0,.2); pointer-events:none;
+  line-height:1.4;
+}
+
+/* ── TOTALS — Clean Lines (no background) ── */
+.bg-total td { font-weight:700; background:white !important; border-top:1px solid #cbd5e1; border-bottom:1px solid #cbd5e1; font-size:12px; }
+.bg-total td.frozen { background:white !important; position:sticky; left:0; z-index:2; border-right:1px solid var(--border-light); }
+.bg-total td.cur { background:#fef9c3 !important; }
 
 /* ── SUMMARY — Option B Subtle Band ── */
 .bg-summ td { font-weight:600; font-size:12px; background:#eff6ff !important; color:#1e40af; border-bottom:1px solid #dbeafe; }
