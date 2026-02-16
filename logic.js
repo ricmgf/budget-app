@@ -72,6 +72,7 @@ const BudgetLogic = {
         real: [r[21],r[22],r[23],r[24],r[25],r[26],r[27],r[28],r[29],r[30],r[31],r[32]].map(v => this.toNum(v)),
         isOverride: r[33] === 'TRUE' || r[33] === true,
         sortOrder: parseInt(r[34]) || 0,
+        notas: r[38] || '',
         sheetRow: i + 1 // i is 0-based from rows array (row 0=header), sheet is 1-based, so data row i → sheet row i+1
       });
     }

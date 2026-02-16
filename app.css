@@ -160,14 +160,24 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 .bg-total td { font-weight:700; background:#f8fafc !important; border-top:2px solid var(--border-light); border-bottom:2px solid var(--border-light); font-size:12px; }
 .bg-total td.frozen { background:#f8fafc !important; position:sticky; left:0; z-index:2; border-right:1px solid var(--border-light); }
 
-/* ── SUMMARY ── */
+/* ── SUMMARY — Option B Subtle Band ── */
 .bg-summ td { font-weight:600; font-size:12px; background:#eff6ff !important; color:#1e40af; border-bottom:1px solid #dbeafe; }
 .bg-summ td.frozen { background:#eff6ff !important; position:sticky; left:0; z-index:2; border-right:1px solid #dbeafe; }
+.bg-summ.row-total td { background:#dbeafe !important; font-weight:800; color:#1e3a8a; }
+.bg-summ.row-total td.frozen { background:#dbeafe !important; }
+.bg-summ.row-income td { color:#1e40af; }
+.bg-summ.row-cashflow td { font-weight:700; }
+.bg-summ.row-meta td { background:#f0f4ff !important; color:#475569; font-weight:500; }
+.bg-summ.row-meta td.frozen { background:#f0f4ff !important; }
 
 /* ── ENVÍO NECESARIO — premium dark band ── */
-.bg-envio td { background:#0f172a !important; color:#fbbf24 !important; font-weight:700; font-size:14px; letter-spacing:.02em; }
-.bg-envio td.frozen { background:#1e293b !important; color:#fbbf24 !important; position:sticky; left:0; z-index:2; }
-.bg-envio td.cur { background:#78350f !important; color:#fbbf24 !important; }
+.bg-envio td { background:#0f172a !important; color:#e2e8f0 !important; font-weight:700; font-size:13px; letter-spacing:.02em; }
+.bg-envio td.frozen { background:#0f172a !important; color:#fbbf24 !important; position:sticky; left:0; z-index:2; }
+.bg-envio td.cur { background:#1e293b !important; color:#fbbf24 !important; font-weight:800; }
+
+/* ── Sticky thead ── */
+.budget-grid-wrap { position:relative; max-height:calc(100vh - 160px); overflow:auto; }
+.budget-grid thead { position:sticky; top:0; z-index:5; }
 
 /* Value colors */
 .val-neg { color:var(--danger) !important; } .val-pos { color:var(--success) !important; }
