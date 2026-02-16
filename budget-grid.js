@@ -15,6 +15,7 @@ const BudgetGrid = {
     this.accounts = await BudgetLogic.loadAccounts();
     this.lines = await BudgetLogic.loadBudgetLines(AppState.currentYear);
     this.summaries = await BudgetLogic.loadBankSummary(AppState.currentYear);
+    await BudgetLogic.loadRules(); // Phase 2C: load auto-categorization rules
     this._buildMeta();
     if (this.accounts.length > 0 && !this.activeBank) this.activeBank = this.accounts[0].name;
     this.render();
@@ -30,12 +31,13 @@ const BudgetGrid = {
   _buildMeta() {
     this.bankMeta = {};
     this.accounts.forEach(a => {
-      const buf = new Array(12).fill(0), sal = new Array(12).fill(0);
+      const buf = new Array(12).fill(0), sal = new Array(12).fill(0), closed = new Array(12).fill(false);
       this.summaries.filter(s => s.bank === a.name).forEach(s => {
         buf[s.month - 1] = s.buffer || 0;
         sal[s.month - 1] = s.saldoCuenta || 0;
+        closed[s.month - 1] = !!s.mesCerrado;
       });
-      this.bankMeta[a.name] = { buffer: buf, saldo: sal };
+      this.bankMeta[a.name] = { buffer: buf, saldo: sal, closed };
     });
   },
 
@@ -86,12 +88,19 @@ const BudgetGrid = {
   },
 
   _thead(cm, sl) {
+    const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
     let r1 = '<thead><tr><th class="th-left"></th>';
     let r2 = '<tr class="sub-hdr"><th class="th-left"></th>';
     for (let m = 0; m < 12; m++) {
-      const cur = m === cm, cls = cur ? 'cur-hdr' : '';
-      r1 += `<th class="th-month ${cls}" colspan="2">${MONTHS[m]}</th>`;
-      r2 += `<th class="${cls}">Plan</th><th class="${cls}">Real</th>`;
+      const cur = m === cm;
+      const closed = meta.closed[m];
+      const past = m < cm;
+      let cls = cur ? 'cur-hdr' : (closed ? 'closed-hdr' : (past && !closed ? 'unclosed-hdr' : ''));
+      const lockIcon = closed ? ' 🔒' : (past && !closed ? ' ⚠' : '');
+      const click = past || m === cm ? ` onclick="BudgetGrid.toggleClose(${m+1})" style="cursor:pointer;"` : '';
+      r1 += `<th class="th-month ${cls}" colspan="2"${click}>${MONTHS[m]}${lockIcon}</th>`;
+      const subCls = cur ? 'cur-hdr' : (closed ? 'closed-hdr' : '');
+      r2 += `<th class="${subCls}">Plan</th><th class="${subCls}">Real</th>`;
     }
     return r1 + '</tr>' + r2 + '</tr></thead>';
   },
@@ -101,13 +110,18 @@ const BudgetGrid = {
   },
 
   _rows(lines, cm, sl) {
+    const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
     let h = '';
     lines.forEach(line => {
       const uc = !line.casa && !line.categoria;
+      // Check if auto-categorized via rule match (has category but was one-off import)
+      const autoTag = (!uc && line.cadence === 'one-off' && BudgetLogic.findRule(line.concepto, this.activeBank)) ? ' ⚡' : '';
       h += `<tr class="${uc?'uncat':''}" data-lid="${line.id}">`;
-      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')" title="${this._e(line.concepto)}${uc?'\n⚠ Sin categorizar':''}">${this._e(line.concepto)||'(vacío)'}</td>`;
+      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')" title="${this._e(line.concepto)}${uc?'\n⚠ Sin categorizar — doble clic para asignar':''}${autoTag?' (auto-categorizado)':''}">${this._e(line.concepto)||'(vacío)'}${autoTag}</td>`;
       for (let m = 0; m < 12; m++) {
-        const c = m === cm ? 'cur' : '';
+        const cur = m === cm;
+        const closed = meta.closed[m];
+        const c = cur ? 'cur' : (closed ? 'closed' : '');
         const pv = line.plan[m], rv = line.real[m];
         const rc = rv > 0 && pv > 0 ? (rv > pv ? 'val-neg' : (rv < pv ? 'val-pos' : '')) : '';
         h += `<td class="editable ${c}" data-lid="${line.id}" data-t="plan" data-m="${m}" onclick="BudgetGrid.editCell(this)">${this._f(pv)}</td>`;
@@ -375,14 +389,26 @@ const BudgetGrid = {
   async saveDrawer(lineId) {
     const line = this.lines.find(l => l.id === lineId);
     if (!line) return;
+    const con = document.getElementById('dw-con').value;
+    const cas = document.getElementById('dw-cas').value;
+    const cat = document.getElementById('dw-cat').value;
+    const sub = document.getElementById('dw-sub').value;
+    const cad = document.getElementById('dw-cad').value;
+
     await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, [
-      { row: line.sheetRow, col: 5, value: document.getElementById('dw-con').value },
-      { row: line.sheetRow, col: 6, value: document.getElementById('dw-cas').value },
-      { row: line.sheetRow, col: 7, value: document.getElementById('dw-cat').value },
-      { row: line.sheetRow, col: 8, value: document.getElementById('dw-sub').value },
-      { row: line.sheetRow, col: 9, value: document.getElementById('dw-cad').value },
+      { row: line.sheetRow, col: 5, value: con },
+      { row: line.sheetRow, col: 6, value: cas },
+      { row: line.sheetRow, col: 7, value: cat },
+      { row: line.sheetRow, col: 8, value: sub },
+      { row: line.sheetRow, col: 9, value: cad },
       { row: line.sheetRow, col: 38, value: new Date().toISOString() }
     ]);
+
+    // Phase 2C: Auto-learn — create/update rule if user set category
+    if (cat && con.trim()) {
+      await BudgetLogic.createRule(con, this.activeBank, cas, cat, sub);
+    }
+
     document.querySelector('.budget-drawer-overlay')?.remove();
     await this.refresh();
   },
@@ -446,23 +472,57 @@ const BudgetGrid = {
     const section = type === 'tarjeta' ? 'TARJETAS' : 'GASTOS';
     const pv = document.getElementById('imp-pv');
     if (type === 'tarjeta' && !card) { alert('Selecciona una tarjeta'); return; }
-    pv.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;">Importando...</div>';
+    pv.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;">Importando y categorizando...</div>';
     const now = new Date().toISOString(), mi = month - 1;
-    let count = 0;
+    let count = 0, autoCat = 0;
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i]; let concepto = '', amount = 0;
       if (r.length >= 3) { concepto = r[1]||r[0]||''; for(let j=r.length-1;j>=0;j--){const p=parseFloat(String(r[j]).replace(',','.').replace(/[^\d.-]/g,''));if(!isNaN(p)&&p!==0){amount=Math.abs(p);break;}} }
       else if (r.length===2) { concepto=r[0]||''; amount=Math.abs(parseFloat(String(r[1]).replace(',','.').replace(/[^\d.-]/g,''))||0); }
       if (!concepto && !amount) continue;
       const label = card ? `${card}: ${concepto}`.substring(0,80) : concepto.substring(0,80);
+
+      // Phase 2C: Auto-categorize using rules engine
+      const rule = BudgetLogic.findRule(label, this.activeBank) || BudgetLogic.findRule(concepto, this.activeBank);
+      const casa = rule ? rule.casa : '';
+      const cat = rule ? rule.categoria : '';
+      const subcat = rule ? rule.subcategoria : '';
+      if (rule) { autoCat++; rule.timesUsed++; }
+
       const id = BudgetLogic.generateId('BL'), plan = new Array(12).fill(0), real = new Array(12).fill(0);
       real[mi] = amount;
-      await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, AppState.currentYear, section, label, '','','','one-off', ...plan, ...real, 'FALSE', 999, 'ACTIVE', now, now]);
+      await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [
+        id, this.activeBank, AppState.currentYear, section, label,
+        casa, cat, subcat, 'one-off',
+        ...plan, ...real, 'FALSE', 999, 'ACTIVE', now, now
+      ]);
       count++;
     }
-    pv.innerHTML = `<div style="color:var(--success);font-weight:600;padding:8px;background:var(--success-light);border-radius:6px;">✅ ${count} movimientos importados</div>`;
+    const catMsg = autoCat > 0 ? `<br><span style="color:var(--accent);">⚡ ${autoCat} auto-categorizados</span>` : '';
+    pv.innerHTML = `<div style="font-weight:600;padding:8px;background:var(--success-light);border-radius:6px;color:var(--success);">✅ ${count} movimientos importados${catMsg}</div>`;
     document.getElementById('imp-act').style.display = 'none';
     this._impRows = [];
-    setTimeout(() => { document.querySelector('.budget-drawer-overlay')?.remove(); this.refresh(); }, 1200);
+    setTimeout(() => { document.querySelector('.budget-drawer-overlay')?.remove(); this.refresh(); }, 1500);
+  },
+
+  // ══════════ CLOSE MONTH (Phase 2D) ══════════
+
+  async toggleClose(month) {
+    const newVal = await BudgetLogic.toggleCloseMonth(this.activeBank, month);
+    // Reload summaries to get updated mesCerrado
+    this.summaries = await BudgetLogic.loadBankSummary(AppState.currentYear);
+    this._buildMeta();
+    this.render();
+    const mName = MONTHS_FULL[month];
+    const msg = newVal ? `${mName} cerrado 🔒` : `${mName} reabierto`;
+    this._toast(msg);
+  },
+
+  _toast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fbbf24;padding:10px 24px;border-radius:8px;font-weight:600;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
   }
 };

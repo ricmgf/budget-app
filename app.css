@@ -110,6 +110,13 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 .budget-grid thead th.cur-hdr { background:#facc15 !important; color:#1a1d23 !important; font-weight:800 !important; }
 .budget-grid thead .sub-hdr th.cur-hdr { background:#fbbf24 !important; color:#78350f !important; }
 
+/* Closed month header = grey */
+.budget-grid thead th.closed-hdr { background:#475569 !important; color:#94a3b8 !important; }
+.budget-grid thead .sub-hdr th.closed-hdr { background:#334155 !important; color:#64748b !important; }
+
+/* Unclosed past month header = amber warning */
+.budget-grid thead th.unclosed-hdr { background:#92400e !important; color:#fbbf24 !important; }
+
 /* ── DATA ROWS ── */
 .budget-grid tbody td {
   padding:6px 8px; text-align:right; border-bottom:1px solid #f1f3f5;
@@ -126,6 +133,10 @@ body { font-family: var(--font-sans); background: var(--bg-primary); color: var(
 /* Current month column = yellow */
 .budget-grid tbody td.cur { background:#fef9c3 !important; }
 .budget-grid tbody tr:hover td.cur { background:#fef08a !important; }
+
+/* Closed month column = grey */
+.budget-grid tbody td.closed { background:#f1f5f9 !important; color:#64748b !important; }
+.budget-grid tbody tr:hover td.closed { background:#e2e8f0 !important; }
 
 /* Uncategorized */
 .budget-grid tbody tr.uncat td.frozen { border-left:3px solid var(--danger); }

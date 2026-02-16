@@ -140,5 +140,141 @@ const BudgetLogic = {
 
   // Plan columns: J=10 to U=21, Real columns: V=22 to AG=33
   getPlanCol(monthIndex) { return 10 + monthIndex; }, // monthIndex 0-11 → col 10-21
-  getRealCol(monthIndex) { return 22 + monthIndex; }  // monthIndex 0-11 → col 22-33
+  getRealCol(monthIndex) { return 22 + monthIndex; }, // monthIndex 0-11 → col 22-33
+
+  // ══════════ RULES ENGINE (Phase 2C) ══════════
+
+  _rules: [],
+
+  async loadRules() {
+    const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.RULES);
+    if (!rows || rows.length <= 1) { this._rules = []; return []; }
+    this._rules = [];
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0]) continue;
+      this._rules.push({
+        pattern: (r[0] || '').trim().toUpperCase(),
+        bank: (r[1] || '').trim(),
+        casa: (r[2] || '').trim(),
+        categoria: (r[3] || '').trim(),
+        subcategoria: (r[4] || '').trim(),
+        confidence: (r[5] || 'auto').trim(),
+        timesUsed: parseInt(r[6]) || 0,
+        sheetRow: i + 1
+      });
+    }
+    // Sort: manual first, then by times_used descending
+    this._rules.sort((a, b) => {
+      if (a.confidence === 'manual' && b.confidence !== 'manual') return -1;
+      if (b.confidence === 'manual' && a.confidence !== 'manual') return 1;
+      return b.timesUsed - a.timesUsed;
+    });
+    return this._rules;
+  },
+
+  findRule(concepto, bankName) {
+    if (!concepto || !this._rules.length) return null;
+    const c = concepto.trim().toUpperCase();
+
+    // 1. Exact match with bank
+    let match = this._rules.find(r => r.pattern === c && r.bank === bankName);
+    if (match) return match;
+
+    // 2. Exact match any bank
+    match = this._rules.find(r => r.pattern === c && !r.bank);
+    if (match) return match;
+
+    // 3. Partial match: concepto contains pattern or pattern contains concepto
+    match = this._rules.find(r => c.includes(r.pattern) || r.pattern.includes(c));
+    if (match) return match;
+
+    // 4. Word-level match: any word ≥4 chars from pattern found in concepto
+    for (const rule of this._rules) {
+      const words = rule.pattern.split(/\s+/).filter(w => w.length >= 4);
+      if (words.some(w => c.includes(w))) return rule;
+    }
+
+    return null;
+  },
+
+  async autoCategorizeLine(lineId, concepto, bankName, sheetRow) {
+    const rule = this.findRule(concepto, bankName);
+    if (!rule) return null;
+
+    // Apply rule to the budget line
+    await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, [
+      { row: sheetRow, col: 6, value: rule.casa },
+      { row: sheetRow, col: 7, value: rule.categoria },
+      { row: sheetRow, col: 8, value: rule.subcategoria },
+      { row: sheetRow, col: 38, value: new Date().toISOString() }
+    ]);
+
+    // Increment times_used
+    rule.timesUsed++;
+    await SheetsAPI.updateCell(CONFIG.SHEETS.RULES, rule.sheetRow, 7, rule.timesUsed);
+
+    return { casa: rule.casa, categoria: rule.categoria, subcategoria: rule.subcategoria, auto: true };
+  },
+
+  async createRule(concepto, bankName, casa, categoria, subcategoria) {
+    // Check if rule already exists
+    const existing = this._rules.find(r => r.pattern === concepto.trim().toUpperCase());
+    if (existing) {
+      // Update existing
+      existing.casa = casa;
+      existing.categoria = categoria;
+      existing.subcategoria = subcategoria;
+      existing.confidence = 'manual';
+      await SheetsAPI.batchUpdate(CONFIG.SHEETS.RULES, [
+        { row: existing.sheetRow, col: 3, value: casa },
+        { row: existing.sheetRow, col: 4, value: categoria },
+        { row: existing.sheetRow, col: 5, value: subcategoria },
+        { row: existing.sheetRow, col: 6, value: 'manual' }
+      ]);
+      return;
+    }
+    // Create new
+    const now = new Date().toISOString();
+    const row = [concepto.trim(), bankName, casa, categoria, subcategoria, 'manual', 1, now];
+    await SheetsAPI.appendRow(CONFIG.SHEETS.RULES, row);
+    this._rules.push({
+      pattern: concepto.trim().toUpperCase(), bank: bankName,
+      casa, categoria, subcategoria, confidence: 'manual', timesUsed: 1,
+      sheetRow: -1 // Will be corrected on next load
+    });
+  },
+
+  // ══════════ CLOSE MONTH (Phase 2D) ══════════
+
+  async toggleCloseMonth(bank, month) {
+    const summ = await this._getOrCreateSummary(bank, month);
+    const newVal = !summ.mesCerrado;
+    await SheetsAPI.updateCell(CONFIG.SHEETS.BANK_SUMMARY, summ.sheetRow, 14, newVal ? 'TRUE' : 'FALSE');
+    return newVal;
+  },
+
+  async _getOrCreateSummary(bank, month) {
+    // Check loaded summaries first
+    let existing = null;
+    const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.BANK_SUMMARY);
+    if (rows) {
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][1] === bank && rows[i][2] == AppState.currentYear && rows[i][3] == month) {
+          existing = { sheetRow: i + 1, mesCerrado: rows[i][13] === 'TRUE' || rows[i][13] === true };
+          break;
+        }
+      }
+    }
+    if (existing) return existing;
+
+    // Create new row
+    const id = this.generateId('BMS');
+    const now = new Date().toISOString();
+    const row = [id, bank, AppState.currentYear, month, 0,0,0,0,0,0,0,0,0, 'FALSE', now, 0, 0];
+    await SheetsAPI.appendRow(CONFIG.SHEETS.BANK_SUMMARY, row);
+    // Approximate sheetRow
+    const reread = await SheetsAPI.readSheet(CONFIG.SHEETS.BANK_SUMMARY);
+    return { sheetRow: reread.length, mesCerrado: false };
+  }
 };
