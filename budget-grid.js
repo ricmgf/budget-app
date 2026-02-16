@@ -1,21 +1,19 @@
 /**
- * Budget Grid v3.0 — Option C Premium Dark + Yellow Column
- * All bugs fixed, Buffer + Saldo en Cuenta + Envío Necesario formula
- * ⚠ Does NOT touch bootstrap/auth
+ * Budget Grid v6.0 — All fixes applied
+ * Does NOT touch bootstrap/auth
  */
 const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const MONTHS_FULL = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 const BudgetGrid = {
   accounts: [], lines: [], summaries: [], activeBank: null,
-  // Buffer & Saldo stored per bank per month in BANK_MONTHLY_SUMMARY
-  bankMeta: {}, // { bankName: { buffer: [12], saldo: [12] } }
+  bankMeta: {},
 
   async init() {
     this.accounts = await BudgetLogic.loadAccounts();
     this.lines = await BudgetLogic.loadBudgetLines(AppState.currentYear);
     this.summaries = await BudgetLogic.loadBankSummary(AppState.currentYear);
-    await BudgetLogic.loadRules(); // Phase 2C: load auto-categorization rules
+    await BudgetLogic.loadRules();
     this._buildMeta();
     if (this.accounts.length > 0 && !this.activeBank) this.activeBank = this.accounts[0].name;
     this.render();
@@ -57,28 +55,21 @@ const BudgetGrid = {
 
     let h = this._tabs(unc);
     h += '<div class="budget-grid-wrap"><table class="budget-grid">';
-    h += this._thead(cm, sl);
+    h += this._thead(cm);
     h += '<tbody>';
-    h += this._secHdr('GASTOS');
-    h += this._rows(G, cm, sl);
-    h += this._addBtn('GASTOS', '+ Añadir gasto', '');
-    h += this._addBtn('_EXTRACT_BANK', '+ Importar extracto banco', 'purple');
+    h += this._secHdr('GASTOS', `<span class="sec-actions"><a onclick="BudgetGrid.addLine('GASTOS')">+ gasto</a> · <a onclick="BudgetGrid.openImportDrawer('banco')">+ extracto</a></span>`);
+    h += this._rows(G, cm);
     h += this._totRow('Total Gastos', G, cm);
-    h += this._secHdr('TARJETAS');
-    h += this._rows(T, cm, sl);
-    h += this._addBtn('TARJETAS', '+ Balance manual', '');
-    h += this._addBtn('_EXTRACT_CARD', '+ Importar extracto tarjeta', 'purple');
+    h += this._secHdr('TARJETAS', `<span class="sec-actions"><a onclick="BudgetGrid.addLine('TARJETAS')">+ manual</a> · <a onclick="BudgetGrid.openImportDrawer('tarjeta')">+ extracto</a></span>`);
+    h += this._rows(T, cm);
     h += this._totRow('Total Tarjetas', T, cm);
-    h += this._secHdr('INGRESOS');
-    h += this._rows(I, cm, sl);
-    h += this._addBtn('INGRESOS', '+ Añadir ingreso', '');
+    h += this._secHdr('INGRESOS', `<span class="sec-actions"><a onclick="BudgetGrid.addLine('INGRESOS')">+ ingreso</a></span>`);
+    h += this._rows(I, cm);
     h += this._totRow('Total Ingresos', I, cm);
-    h += this._summaryBlock(G, T, I, cm, acc, sl);
+    h += this._summaryBlock(G, T, I, cm, acc);
     h += '</tbody></table></div>';
     ct.innerHTML = h;
   },
-
-  // ══════════ RENDER PARTS ══════════
 
   _tabs(unc) {
     let h = '<div class="budget-bank-tabs">';
@@ -87,41 +78,36 @@ const BudgetGrid = {
     return h + '</div>';
   },
 
-  _thead(cm, sl) {
+  _thead(cm) {
     const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
     let r1 = '<thead><tr><th class="th-left"></th>';
     let r2 = '<tr class="sub-hdr"><th class="th-left"></th>';
     for (let m = 0; m < 12; m++) {
-      const cur = m === cm;
-      const closed = meta.closed[m];
-      const past = m < cm;
+      const cur = m === cm, closed = meta.closed[m], past = m < cm;
       let cls = cur ? 'cur-hdr' : (closed ? 'closed-hdr' : (past && !closed ? 'unclosed-hdr' : ''));
-      const lockIcon = closed ? ' 🔒' : (past && !closed ? ' ⚠' : '');
-      const click = past || m === cm ? ` onclick="BudgetGrid.toggleClose(${m+1})" style="cursor:pointer;"` : '';
-      r1 += `<th class="th-month ${cls}" colspan="2"${click}>${MONTHS[m]}${lockIcon}</th>`;
+      const icon = closed ? ' 🔒' : (past && !closed ? ' ⚠' : '');
+      const click = past || cur ? ` onclick="BudgetGrid.toggleClose(${m+1})" style="cursor:pointer;" title="${closed?'Reabrir mes':'Cerrar/conciliar mes'}"` : '';
+      r1 += `<th class="th-month ${cls}" colspan="2"${click}>${MONTHS[m]}${icon}</th>`;
       const subCls = cur ? 'cur-hdr' : (closed ? 'closed-hdr' : '');
       r2 += `<th class="${subCls}">Plan</th><th class="${subCls}">Real</th>`;
     }
     return r1 + '</tr>' + r2 + '</tr></thead>';
   },
 
-  _secHdr(name) {
-    return `<tr class="bg-section-hdr"><td class="frozen">${name}</td>${this._ec('sec-cell')}</tr>`;
+  _secHdr(name, actions) {
+    return `<tr class="bg-section-hdr"><td class="frozen"><span class="sec-name">${name}</span>${actions||''}</td>${this._ec('sec-cell')}</tr>`;
   },
 
-  _rows(lines, cm, sl) {
+  _rows(lines, cm) {
     const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
     let h = '';
     lines.forEach(line => {
       const uc = !line.casa && !line.categoria;
-      // Check if auto-categorized via rule match (has category but was one-off import)
-      const autoTag = (!uc && line.cadence === 'one-off' && BudgetLogic.findRule(line.concepto, this.activeBank)) ? ' ⚡' : '';
+      const autoTag = (!uc && line.cadence === 'one-off' && BudgetLogic.findRule(line.concepto, this.activeBank)) ? '<span class="auto-tag">⚡</span>' : '';
       h += `<tr class="${uc?'uncat':''}" data-lid="${line.id}">`;
-      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')" title="${this._e(line.concepto)}${uc?'\n⚠ Sin categorizar — doble clic para asignar':''}${autoTag?' (auto-categorizado)':''}">${this._e(line.concepto)||'(vacío)'}${autoTag}</td>`;
+      h += `<td class="frozen" ondblclick="BudgetGrid.openDrawer('${line.id}')" title="${this._e(line.concepto)}${uc?'\n⚠ Sin categorizar — doble clic para asignar':''}">${autoTag}${this._e(line.concepto)||'(vacío)'}</td>`;
       for (let m = 0; m < 12; m++) {
-        const cur = m === cm;
-        const closed = meta.closed[m];
-        const c = cur ? 'cur' : (closed ? 'closed' : '');
+        const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
         const pv = line.plan[m], rv = line.real[m];
         const rc = rv > 0 && pv > 0 ? (rv > pv ? 'val-neg' : (rv < pv ? 'val-pos' : '')) : '';
         h += `<td class="editable ${c}" data-lid="${line.id}" data-t="plan" data-m="${m}" onclick="BudgetGrid.editCell(this)">${this._f(pv)}</td>`;
@@ -132,112 +118,101 @@ const BudgetGrid = {
     return h;
   },
 
-  _addBtn(action, label, cls) {
-    let fn = '';
-    if (action === '_EXTRACT_BANK') fn = 'BudgetGrid.openImportDrawer(&quot;banco&quot;)';
-    else if (action === '_EXTRACT_CARD') fn = 'BudgetGrid.openImportDrawer(&quot;tarjeta&quot;)';
-    else fn = `BudgetGrid.addLine(&quot;${action}&quot;)`;
-    return `<tr class="bg-add-row"><td class="frozen" onclick="${fn}" style="cursor:pointer;"><span class="add-lbl ${cls}">${label}</span></td>${this._ec('')}</tr>`;
-  },
-
   _totRow(label, lines, cm) {
-    let h = `<tr class="bg-total"><td class="frozen">${label}</td>`;
+    const meta = this.bankMeta[this.activeBank] || { closed: new Array(12).fill(false) };
+    let h = `<tr class="bg-total"><td class="frozen"><strong>${label}</strong></td>`;
     for (let m = 0; m < 12; m++) {
-      const c = m === cm ? 'cur' : '';
+      const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
       h += `<td class="${c}">${this._f(lines.reduce((s,l)=>s+(l.plan[m]||0),0),1)}</td>`;
       h += `<td class="${c}">${this._f(lines.reduce((s,l)=>s+(l.real[m]||0),0),1)}</td>`;
     }
     return h + '</tr>';
   },
 
-  _summaryBlock(G, T, I, cm, acc, sl) {
+  _summaryBlock(G, T, I, cm, acc) {
     const meta = this.bankMeta[this.activeBank] || { buffer: new Array(12).fill(0), saldo: new Array(12).fill(0), closed: new Array(12).fill(false) };
-
     let h = `<tr class="bg-section-hdr"><td class="frozen" style="border-left-color:#0ea5e9;">RESUMEN</td>${this._ec('sec-cell')}</tr>`;
 
-    // Precompute per month
     const d = [];
     for (let m = 0; m < 12; m++) {
-      const gastosPlan = G.reduce((s,l)=>s+(l.plan[m]||0),0);
-      const tarjetasPlan = T.reduce((s,l)=>s+(l.plan[m]||0),0);
-      const gastosReal = G.reduce((s,l)=>s+(l.real[m]||0),0);
-      const tarjetasReal = T.reduce((s,l)=>s+(l.real[m]||0),0);
-      const gP = gastosPlan + tarjetasPlan;
-      const gR = gastosReal + tarjetasReal;
+      const gasP = G.reduce((s,l)=>s+(l.plan[m]||0),0);
+      const gasR = G.reduce((s,l)=>s+(l.real[m]||0),0);
+      const tarP = T.reduce((s,l)=>s+(l.plan[m]||0),0);
+      const tarR = T.reduce((s,l)=>s+(l.real[m]||0),0);
+      const totP = gasP + tarP, totR = gasR + tarR;
       const iP = I.reduce((s,l)=>s+(l.plan[m]||0),0);
       const iR = I.reduce((s,l)=>s+(l.real[m]||0),0);
-      const buf = meta.buffer[m] || 0;
-      const sal = meta.saldo[m] || 0;
-
-      // Envío Necesario for month m:
-      // = Gastos Plan mes SIGUIENTE (m+1) + Tarjetas Real mes actual (m) + Buffer(m) - Saldo en Cuenta(m)
-      // Si < 0 → 0
-      const nextGastosPlan = m < 11 ? (G.reduce((s,l)=>s+(l.plan[m+1]||0),0) + T.reduce((s,l)=>s+(l.plan[m+1]||0),0)) : 0;
-      const envio = Math.max(0, nextGastosPlan + tarjetasReal + buf - sal);
-
-      d.push({ gP, gR, iP, iR, cf: iP - gP, cfR: iR - gR, buf, sal, envio });
+      const cf = iP - totP, cfR = iR - totR;
+      const buf = meta.buffer[m] || 0, sal = meta.saldo[m] || 0;
+      const nextTotP = m < 11 ? (G.reduce((s,l)=>s+(l.plan[m+1]||0),0) + T.reduce((s,l)=>s+(l.plan[m+1]||0),0)) : 0;
+      const envio = Math.max(0, nextTotP + tarR + buf - sal);
+      d.push({ gasP, gasR, tarP, tarR, totP, totR, iP, iR, cf, cfR, buf, sal, envio });
     }
 
-    // Summary rows
-    const sumRows = [
-      { label: 'Total Gastos+Tarjetas', k: 'gP', kr: 'gR' },
-      { label: 'Total Ingresos', k: 'iP', kr: 'iR' },
-      { label: 'Cashflow', k: 'cf', kr: 'cfR', color: true },
-    ];
-    sumRows.forEach(r => {
-      h += `<tr class="bg-summ"><td class="frozen">${r.label}</td>`;
+    const sRow = (label, kP, kR, opts={}) => {
+      const { sign, bold, color, cls } = opts;
+      let r = `<tr class="bg-summ ${cls||''}"><td class="frozen">${sign?`<span class="formula-sign">${sign}</span>`:''}${bold?`<strong>${label}</strong>`:label}</td>`;
       for (let m = 0; m < 12; m++) {
-        const c = m === cm ? 'cur' : '';
-        const p = d[m][r.k], rv = d[m][r.kr];
-        let st = ''; if (r.color) st = p < 0 ? 'val-neg' : 'val-pos';
-        let stR = ''; if (r.color) stR = rv < 0 ? 'val-neg' : (rv > 0 ? 'val-pos' : '');
-        h += `<td class="${c} ${st}">${this._f(p,1)}</td>`;
-        h += `<td class="${c} ${stR}">${this._f(rv,1)}</td>`;
+        const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
+        const pv = d[m][kP], rv = d[m][kR];
+        let sP = '', sR = '';
+        if (color) { sP = pv < 0 ? 'val-neg' : (pv > 0 ? 'val-pos' : ''); sR = rv < 0 ? 'val-neg' : (rv > 0 ? 'val-pos' : ''); }
+        r += `<td class="${c} ${sP}">${this._f(pv,1)}</td><td class="${c} ${sR}">${this._f(rv,1)}</td>`;
       }
-      h += '</tr>';
-    });
+      return r + '</tr>';
+    };
 
-    // Buffer (manual input — one editable cell per month, spans both Plan+Real visually)
-    h += `<tr class="bg-summ"><td class="frozen">Buffer</td>`;
+    h += sRow('Gastos', 'gasP', 'gasR', { sign: '−' });
+    h += sRow('Tarjetas', 'tarP', 'tarR', { sign: '+' });
+    h += sRow('Total Gastos', 'totP', 'totR', { bold: true, sign: '=' });
+    h += sRow('Ingresos', 'iP', 'iR');
+    h += sRow('Cashflow', 'cf', 'cfR', { bold: true, sign: '=', color: true });
+
+    // Buffer (editable in Plan col, mirrored in Real)
+    h += `<tr class="bg-summ"><td class="frozen"><span class="formula-sign">+</span>Buffer</td>`;
     for (let m = 0; m < 12; m++) {
-      const c = m === cm ? 'cur' : '';
-      const v = d[m].buf;
-      // Buffer in Plan column (editable), Real column shows dash
-      h += `<td class="editable ${c}" data-meta="buffer" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="text-align:center;font-weight:600;color:#7c3aed;">${v ? this._f(v,1) : '—'}</td>`;
-      h += `<td class="${c}" style="color:var(--text-tertiary);text-align:center;">—</td>`;
+      const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
+      const v = d[m].buf, disp = v ? this._f(v,1) : '—';
+      h += `<td class="editable ${c}" data-meta="buffer" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="color:#7c3aed;">${disp}</td>`;
+      h += `<td class="${c}" style="color:#7c3aed;">${disp}</td>`;
     }
     h += '</tr>';
 
-    // Saldo en Cuenta (manual input — in Real column)
-    h += `<tr class="bg-summ"><td class="frozen">Saldo en Cuenta</td>`;
+    // Saldo en Cuenta (editable in Real col, mirrored in Plan)
+    h += `<tr class="bg-summ"><td class="frozen"><span class="formula-sign">−</span>Saldo en Cuenta</td>`;
     for (let m = 0; m < 12; m++) {
-      const c = m === cm ? 'cur' : '';
-      const v = d[m].sal;
-      // Plan column shows dash, Real column (editable)
-      h += `<td class="${c}" style="color:var(--text-tertiary);text-align:center;">—</td>`;
-      h += `<td class="editable ${c}" data-meta="saldo" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="text-align:center;font-weight:600;color:#0ea5e9;">${v ? this._f(v,1) : '—'}</td>`;
+      const c = cm === m ? 'cur' : (meta.closed[m] ? 'closed' : '');
+      const v = d[m].sal, disp = v ? this._f(v,1) : '—';
+      h += `<td class="${c}" style="color:#0ea5e9;">${disp}</td>`;
+      h += `<td class="editable ${c}" data-meta="saldo" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="color:#0ea5e9;">${disp}</td>`;
     }
     h += '</tr>';
 
-    // Envío Necesario (dark band)
+    // Envío Necesario — dark band, value in REAL column only
     h += `<tr class="bg-envio"><td class="frozen">💰 ENVÍO NECESARIO</td>`;
     for (let m = 0; m < 12; m++) {
-      const c = m === cm ? 'cur' : '';
-      const v = d[m].envio;
-      h += `<td class="${c}" style="font-weight:800;">${this._f(v,1)}</td><td class="${c}">—</td>`;
+      const c = cm === m ? 'cur' : '';
+      h += `<td class="${c}"></td><td class="${c}" style="font-weight:800;">${this._f(d[m].envio,1)}</td>`;
     }
     h += '</tr>';
-
     return h;
   },
 
   // ══════════ FORMAT / UTIL ══════════
 
-  _f(v, force) { if (!v && v !== 0) return ''; if (v === 0 && !force) return ''; return v.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+  _f(v, force) {
+    if (v == null || v === '') return '';
+    const n = typeof v === 'number' ? v : parseFloat(v);
+    if (isNaN(n)) return '';
+    if (n === 0 && !force) return '';
+    const parts = Math.abs(n).toFixed(2).split('.');
+    const int = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (n < 0 ? '-' : '') + int + ',' + parts[1];
+  },
   _e(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;') : ''; },
   _ec(cls) { let h=''; for(let i=0;i<24;i++) h+=`<td class="${cls}"></td>`; return h; },
 
-  // ══════════ CELL EDITING (bug-free) ══════════
+  // ══════════ CELL EDITING ══════════
 
   editCell(td) {
     if (td.classList.contains('editing')) return;
@@ -245,12 +220,10 @@ const BudgetGrid = {
     const line = this.lines.find(l => l.id === lid);
     if (!line) return;
     const val = type === 'plan' ? line.plan[m] : line.real[m];
-
     td.classList.add('editing');
     td.innerHTML = `<input type="number" step="0.01" value="${val || ''}">`;
     const inp = td.querySelector('input');
     inp.focus(); inp.select();
-
     let committed = false;
     const doCommit = async () => {
       if (committed) return; committed = true;
@@ -260,7 +233,6 @@ const BudgetGrid = {
       else { line.real[m] = nv; await BudgetLogic.updateBudgetCell(line.sheetRow, BudgetLogic.getRealCol(m), nv); }
       this.render();
     };
-
     inp.addEventListener('blur', doCommit);
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); doCommit().then(() => this._nav(td, 'down')); }
@@ -271,27 +243,22 @@ const BudgetGrid = {
 
   editMeta(td) {
     if (td.classList.contains('editing')) return;
-    const field = td.dataset.meta; // 'buffer' or 'saldo'
-    const m = parseInt(td.dataset.m);
+    const field = td.dataset.meta, m = parseInt(td.dataset.m);
     const meta = this.bankMeta[this.activeBank];
     const val = field === 'buffer' ? meta.buffer[m] : meta.saldo[m];
-
     td.classList.add('editing');
     td.innerHTML = `<input type="number" step="0.01" value="${val || ''}">`;
     const inp = td.querySelector('input');
     inp.focus(); inp.select();
-
     let committed = false;
     const doCommit = async () => {
       if (committed) return; committed = true;
       if (inp.dataset.cancel === '1') { this.render(); return; }
       const nv = parseFloat(inp.value) || 0;
-      if (field === 'buffer') meta.buffer[m] = nv;
-      else meta.saldo[m] = nv;
+      if (field === 'buffer') meta.buffer[m] = nv; else meta.saldo[m] = nv;
       await this._saveBankMeta(m, field, nv);
       this.render();
     };
-
     inp.addEventListener('blur', doCommit);
     inp.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); doCommit(); }
@@ -300,22 +267,14 @@ const BudgetGrid = {
   },
 
   async _saveBankMeta(month, field, value) {
-    // Find or create BANK_MONTHLY_SUMMARY row for this bank+month
     const summ = this.summaries.find(s => s.bank === this.activeBank && s.month === month + 1);
     if (summ) {
-      // buffer = col P (16), saldoCuenta = col Q (17)
       const col = field === 'buffer' ? 16 : 17;
       await SheetsAPI.updateCell(CONFIG.SHEETS.BANK_SUMMARY, summ.sheetRow, col, value);
     } else {
-      // Create new row
       const id = BudgetLogic.generateId('BMS');
       const now = new Date().toISOString();
-      // Cols: id, bank, year, month, saldo_inicio, F-M (totals), mes_cerrado, updated_at, buffer, saldoCuenta
-      const row = [id, this.activeBank, AppState.currentYear, month + 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 'FALSE', now,
-        field === 'buffer' ? value : 0,
-        field === 'saldo' ? value : 0
-      ];
+      const row = [id, this.activeBank, AppState.currentYear, month + 1, 0,0,0,0,0,0,0,0,0, 'FALSE', now, field==='buffer'?value:0, field==='saldo'?value:0];
       await SheetsAPI.appendRow(CONFIG.SHEETS.BANK_SUMMARY, row);
       await this.refresh();
     }
@@ -323,20 +282,10 @@ const BudgetGrid = {
 
   _nav(td, dir) {
     setTimeout(() => {
-      const lid = td.dataset.lid || td.dataset.meta;
-      const type = td.dataset.t || td.dataset.meta;
-      const m = parseInt(td.dataset.m);
       let sel = null;
-      if (dir === 'down') {
-        const tr = td.closest('tr'), next = tr?.nextElementSibling;
-        if (next) { const ci = Array.from(tr.children).indexOf(td); sel = next.children[ci]; }
-      } else if (dir === 'right') {
-        sel = td.nextElementSibling;
-        if (sel && !sel.classList.contains('editable')) sel = sel.nextElementSibling;
-      } else if (dir === 'left') {
-        sel = td.previousElementSibling;
-        if (sel && !sel.classList.contains('editable')) sel = sel.previousElementSibling;
-      }
+      if (dir === 'down') { const tr = td.closest('tr'), next = tr?.nextElementSibling; if (next) { sel = next.children[Array.from(tr.children).indexOf(td)]; } }
+      else if (dir === 'right') { sel = td.nextElementSibling; if (sel && !sel.classList.contains('editable')) sel = sel.nextElementSibling; }
+      else if (dir === 'left') { sel = td.previousElementSibling; if (sel && !sel.classList.contains('editable')) sel = sel.previousElementSibling; }
       if (sel && sel.classList.contains('editable')) sel.click();
     }, 80);
   },
@@ -362,27 +311,35 @@ const BudgetGrid = {
 
   _scrollUncat() {
     const row = document.querySelector('tr.uncat');
-    if (row) { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); row.style.outline = '2px solid var(--danger)'; setTimeout(() => row.style.outline = '', 2000); }
+    if (row) { row.scrollIntoView({ behavior:'smooth', block:'center' }); row.style.outline = '2px solid var(--danger)'; setTimeout(() => row.style.outline = '', 2000); }
   },
 
-  // ══════════ DRAWER: Edit line ══════════
+  async toggleClose(month) {
+    const newVal = await BudgetLogic.toggleCloseMonth(this.activeBank, month);
+    this.summaries = await BudgetLogic.loadBankSummary(AppState.currentYear);
+    this._buildMeta(); this.render();
+    this._toast(newVal ? `${MONTHS_FULL[month]} cerrado 🔒` : `${MONTHS_FULL[month]} reabierto`);
+  },
+
+  _toast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fbbf24;padding:10px 24px;border-radius:8px;font-weight:600;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
+    t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2000);
+  },
+
+  // ══════════ DRAWER: Edit ══════════
 
   openDrawer(lineId) {
     const line = this.lines.find(l => l.id === lineId);
     if (!line) return;
-    const cats = AppState.config?.categorias || {};
-    const casas = AppState.config?.casas || [];
+    const cats = AppState.config?.categorias || {}, casas = AppState.config?.casas || [];
     const catKeys = Object.keys(cats);
     const subcats = line.categoria && cats[line.categoria] ? cats[line.categoria] : [];
-
     const ov = document.createElement('div');
     ov.className = 'budget-drawer-overlay';
     ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
     ov.innerHTML = `<div class="budget-drawer">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3 style="margin:0;">Editar Línea</h3>
-        <button onclick="this.closest('.budget-drawer-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);">✕</button>
-      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;"><h3 style="margin:0;">Editar Línea</h3><button onclick="this.closest('.budget-drawer-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);">✕</button></div>
       <label>Concepto</label><input id="dw-con" value="${this._e(line.concepto)}">
       <label>Casa</label><select id="dw-cas"><option value="">— Sin asignar —</option>${casas.map(c=>`<option value="${c.name}" ${line.casa===c.name?'selected':''}>${c.name}</option>`).join('')}</select>
       <label>Categoría</label><select id="dw-cat" onchange="BudgetGrid._updSub()"><option value="">— Sin asignar —</option>${catKeys.map(c=>`<option value="${c}" ${line.categoria===c?'selected':''}>${c}</option>`).join('')}</select>
@@ -397,38 +354,26 @@ const BudgetGrid = {
   _updSub() {
     const c = document.getElementById('dw-cat'), s = document.getElementById('dw-sub');
     if (!c||!s) return;
-    const subs = (AppState.config?.categorias || {})[c.value] || [];
-    s.innerHTML = '<option value="">— Sin asignar —</option>' + subs.map(o=>`<option value="${o}">${o}</option>`).join('');
+    s.innerHTML = '<option value="">— Sin asignar —</option>' + ((AppState.config?.categorias||{})[c.value]||[]).map(o=>`<option value="${o}">${o}</option>`).join('');
   },
 
   async saveDrawer(lineId) {
     const line = this.lines.find(l => l.id === lineId);
     if (!line) return;
-    const con = document.getElementById('dw-con').value;
-    const cas = document.getElementById('dw-cas').value;
-    const cat = document.getElementById('dw-cat').value;
-    const sub = document.getElementById('dw-sub').value;
+    const con = document.getElementById('dw-con').value, cas = document.getElementById('dw-cas').value;
+    const cat = document.getElementById('dw-cat').value, sub = document.getElementById('dw-sub').value;
     const cad = document.getElementById('dw-cad').value;
-
     await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, [
-      { row: line.sheetRow, col: 5, value: con },
-      { row: line.sheetRow, col: 6, value: cas },
-      { row: line.sheetRow, col: 7, value: cat },
-      { row: line.sheetRow, col: 8, value: sub },
-      { row: line.sheetRow, col: 9, value: cad },
-      { row: line.sheetRow, col: 38, value: new Date().toISOString() }
+      { row: line.sheetRow, col: 5, value: con }, { row: line.sheetRow, col: 6, value: cas },
+      { row: line.sheetRow, col: 7, value: cat }, { row: line.sheetRow, col: 8, value: sub },
+      { row: line.sheetRow, col: 9, value: cad }, { row: line.sheetRow, col: 38, value: new Date().toISOString() }
     ]);
-
-    // Phase 2C: Auto-learn — create/update rule if user set category
-    if (cat && con.trim()) {
-      await BudgetLogic.createRule(con, this.activeBank, cas, cat, sub);
-    }
-
+    if (cat && con.trim()) await BudgetLogic.createRule(con, this.activeBank, cas, cat, sub);
     document.querySelector('.budget-drawer-overlay')?.remove();
     await this.refresh();
   },
 
-  // ══════════ DRAWER: Import extract (banco or tarjeta) ══════════
+  // ══════════ IMPORT DRAWER ══════════
 
   openImportDrawer(type) {
     const tarjetas = AppState.config?.tarjetas || [];
@@ -438,14 +383,14 @@ const BudgetGrid = {
     ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
     ov.innerHTML = `<div class="budget-drawer">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h3 style="margin:0;">Importar Extracto ${isTarjeta ? 'Tarjeta' : 'Banco'}</h3>
+        <h3 style="margin:0;">Importar ${isTarjeta ? 'Extracto Tarjeta' : 'Extracto Banco'}</h3>
         <button onclick="this.closest('.budget-drawer-overlay').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-secondary);">✕</button>
       </div>
       ${isTarjeta ? `<label>Tarjeta</label><select id="imp-card">${tarjetas.length ? tarjetas.map(t=>`<option value="${t.name}">${t.name}</option>`).join('') : '<option value="">— Sin tarjetas —</option>'}</select>` : ''}
       <label>Mes</label><select id="imp-month">${MONTHS_FULL.slice(1).map((m,i)=>`<option value="${i+1}" ${i+1===AppState.currentMonth?'selected':''}>${m} ${AppState.currentYear}</option>`).join('')}</select>
-      <label style="margin-top:20px;">Archivo</label>
+      <label style="margin-top:16px;">Archivo</label>
       <div class="import-dropzone" id="imp-dz" onclick="document.getElementById('imp-fi').click()" style="padding:24px 16px;margin-top:8px;">
-        <div style="font-size:32px;margin-bottom:8px;">📁</div>
+        <div style="font-size:28px;margin-bottom:6px;">📁</div>
         <div style="font-size:13px;font-weight:600;">Arrastra o haz clic</div>
         <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">CSV · HTML · XLSX</div>
         <input type="file" id="imp-fi" accept=".csv,.html,.htm,.xls,.xlsx" style="display:none" onchange="BudgetGrid._impFile(this,'${type}')">
@@ -455,89 +400,167 @@ const BudgetGrid = {
     </div>`;
     document.body.appendChild(ov);
     const dz = document.getElementById('imp-dz');
-    if (dz) { dz.ondragover=(e)=>{e.preventDefault();dz.classList.add('dragover');}; dz.ondragleave=()=>dz.classList.remove('dragover'); dz.ondrop=(e)=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files.length)this._impProcess(e.dataTransfer.files[0],type);}; }
+    if (dz) { dz.ondragover=e=>{e.preventDefault();dz.classList.add('dragover');}; dz.ondragleave=()=>dz.classList.remove('dragover'); dz.ondrop=e=>{e.preventDefault();dz.classList.remove('dragover');if(e.dataTransfer.files.length)this._impProcess(e.dataTransfer.files[0],type);}; }
   },
 
-  _impRows: [],
+  _impMovements: [],
   _impFile(input, type) { if (input.files.length) this._impProcess(input.files[0], type); },
+
+  // ══════════ SMART PARSERS ══════════
 
   async _impProcess(file, type) {
     const ext = file.name.split('.').pop().toLowerCase();
     const pv = document.getElementById('imp-pv'), act = document.getElementById('imp-act');
-    pv.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;">Procesando...</div>';
+    pv.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;">Procesando archivo...</div>';
     try {
-      let rows = [];
-      if (ext === 'csv') rows = await parseCSV(file);
-      else if (ext === 'html' || ext === 'htm') rows = await parseHTML(file);
-      else if (ext === 'xlsx' || ext === 'xls') rows = await parseXLSX(file);
-      else { pv.innerHTML = '<div style="color:var(--danger);">Formato no soportado</div>'; return; }
-      this._impRows = rows;
-      if (rows.length <= 1) { pv.innerHTML = '<div style="color:var(--text-secondary);">Sin datos</div>'; return; }
-      const hdr = rows[0], data = rows.slice(1, 8);
-      pv.innerHTML = `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">${rows.length-1} movimientos</div><div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;max-height:200px;overflow-y:auto;"><table class="import-preview-table"><thead><tr>${hdr.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(r=>`<tr>${r.map(c=>`<td>${c||''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      let movements = [];
+      if (ext === 'xlsx' || ext === 'xls') movements = await this._parseSmartXLSX(file);
+      else if (ext === 'csv') movements = await this._parseGenericCSV(file);
+      else if (ext === 'html' || ext === 'htm') movements = await this._parseGenericHTML(file);
+      else { pv.innerHTML = '<div style="color:var(--danger);">Formato no soportado.</div>'; return; }
+
+      this._impMovements = movements;
+      if (!movements.length) { pv.innerHTML = '<div style="color:var(--text-secondary);">No se encontraron movimientos.</div>'; return; }
+
+      const preview = movements.slice(0, 10);
+      let tbl = `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;">${movements.length} movimientos</div>`;
+      tbl += `<div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:6px;max-height:200px;overflow-y:auto;"><table class="import-preview-table"><thead><tr><th>Concepto</th><th style="text-align:right;">Importe</th></tr></thead><tbody>`;
+      preview.forEach(mv => { tbl += `<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this._e(mv.concepto)}</td><td style="text-align:right;white-space:nowrap;">${this._f(mv.amount,1)}</td></tr>`; });
+      if (movements.length > 10) tbl += `<tr><td colspan="2" style="text-align:center;color:var(--text-secondary);font-size:11px;">... y ${movements.length-10} más</td></tr>`;
+      tbl += '</tbody></table></div>';
+      pv.innerHTML = tbl;
       if (act) act.style.display = 'block';
-    } catch (e) { pv.innerHTML = `<div style="color:var(--danger);">Error: ${e.message}</div>`; }
+    } catch (e) {
+      console.error('Import error:', e);
+      pv.innerHTML = `<div style="color:var(--danger);padding:8px;background:#fef2f2;border-radius:6px;">❌ Error: ${e.message}</div>`;
+    }
+  },
+
+  async _parseSmartXLSX(file) {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+
+    let format = 'generic';
+    for (let i = 0; i < Math.min(rows.length, 35); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const joined = row.map(c => String(c||'').toUpperCase()).join('|');
+      if (joined.includes('OPERAZIONE') && joined.includes('IMPORTO')) { format = 'intessa'; break; }
+      if (joined.includes('COMERCIO') && joined.includes('IMPORTE EUROS')) { format = 'iberia'; break; }
+      if (joined.includes('FECHA OPERACIÓN')) { format = 'iberia'; break; }
+    }
+
+    if (format === 'intessa') return this._parseIntessa(rows);
+    if (format === 'iberia') return this._parseIberia(rows);
+    return this._parseGenericRows(rows);
+  },
+
+  _parseIntessa(rows) {
+    let hdr = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i] && rows[i].some(c => String(c||'').toUpperCase().includes('OPERAZIONE'))) { hdr = i; break; }
+    }
+    if (hdr < 0) return [];
+    const mvs = [];
+    for (let i = hdr + 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 8) continue;
+      const concepto = String(r[1] || '').trim();
+      const amount = parseFloat(r[7]) || 0;
+      if (!concepto || amount === 0) continue;
+      mvs.push({ concepto: concepto.substring(0, 80), amount: Math.abs(amount), date: r[0] || '' });
+    }
+    return mvs;
+  },
+
+  _parseIberia(rows) {
+    const mvs = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 6) continue;
+      const num = r[1];
+      if (typeof num !== 'number' || num < 1 || num > 999) continue;
+      const concepto = String(r[3] || '').trim();
+      const amount = parseFloat(r[5]) || 0;
+      if (!concepto || Math.abs(amount) < 0.01) continue;
+      mvs.push({ concepto: concepto.substring(0, 80), amount: Math.abs(amount), date: String(r[2] || '') });
+    }
+    return mvs;
+  },
+
+  _parseGenericRows(rows) {
+    const mvs = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r) continue;
+      let concepto = '', amount = 0;
+      for (let j = 0; j < r.length; j++) {
+        const v = r[j];
+        if (v && typeof v === 'string' && v.trim().length > 2 && !concepto) concepto = v.trim();
+        if (typeof v === 'number' && Math.abs(v) > 0.01 && !amount) amount = Math.abs(v);
+      }
+      if (concepto && amount) mvs.push({ concepto: String(concepto).substring(0, 80), amount, date: '' });
+    }
+    return mvs;
+  },
+
+  async _parseGenericCSV(file) {
+    const text = await file.text();
+    const lines = text.split('\n').map(l => l.split(/[,;\t]/).map(c => c.trim().replace(/^"(.*)"$/, '$1')));
+    return this._parseGenericRows(lines.map(l => l.map(c => { const n = parseFloat(String(c).replace(',', '.')); return isNaN(n) ? c : n; })));
+  },
+
+  async _parseGenericHTML(file) {
+    const text = await file.text();
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const rows = [];
+    doc.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('td,th').forEach(td => { const t = td.textContent.trim(); const n = parseFloat(t.replace(/\./g,'').replace(',','.')); cells.push(isNaN(n) ? t : n); });
+      if (cells.length) rows.push(cells);
+    });
+    return this._parseGenericRows(rows);
   },
 
   async _impConfirm(type) {
-    const rows = this._impRows;
-    if (!rows || rows.length <= 1) return;
+    const movements = this._impMovements;
+    if (!movements || !movements.length) return;
     const month = parseInt(document.getElementById('imp-month').value);
     const card = type === 'tarjeta' ? (document.getElementById('imp-card')?.value || '') : '';
     const section = type === 'tarjeta' ? 'TARJETAS' : 'GASTOS';
     const pv = document.getElementById('imp-pv');
     if (type === 'tarjeta' && !card) { alert('Selecciona una tarjeta'); return; }
-    pv.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;">Importando y categorizando...</div>';
-    const now = new Date().toISOString(), mi = month - 1;
-    let count = 0, autoCat = 0;
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i]; let concepto = '', amount = 0;
-      if (r.length >= 3) { concepto = r[1]||r[0]||''; for(let j=r.length-1;j>=0;j--){const p=parseFloat(String(r[j]).replace(',','.').replace(/[^\d.-]/g,''));if(!isNaN(p)&&p!==0){amount=Math.abs(p);break;}} }
-      else if (r.length===2) { concepto=r[0]||''; amount=Math.abs(parseFloat(String(r[1]).replace(',','.').replace(/[^\d.-]/g,''))||0); }
-      if (!concepto && !amount) continue;
-      const label = card ? `${card}: ${concepto}`.substring(0,80) : concepto.substring(0,80);
 
-      // Phase 2C: Auto-categorize using rules engine
-      const rule = BudgetLogic.findRule(label, this.activeBank) || BudgetLogic.findRule(concepto, this.activeBank);
-      const casa = rule ? rule.casa : '';
-      const cat = rule ? rule.categoria : '';
-      const subcat = rule ? rule.subcategoria : '';
+    const total = movements.length;
+    let count = 0, autoCat = 0;
+    const mi = month - 1, now = new Date().toISOString();
+
+    const showProg = () => {
+      pv.innerHTML = `<div style="padding:8px;"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Importando ${count}/${total}...</div><div style="background:#e2e8f0;border-radius:4px;height:6px;"><div style="background:var(--accent);height:100%;width:${Math.round(count/total*100)}%;transition:width .2s;border-radius:4px;"></div></div></div>`;
+    };
+    showProg();
+
+    for (let i = 0; i < movements.length; i++) {
+      const mv = movements[i];
+      const label = card ? `${card}: ${String(mv.concepto).substring(0,70)}` : String(mv.concepto).substring(0,80);
+      const rule = BudgetLogic.findRule(label, this.activeBank) || BudgetLogic.findRule(String(mv.concepto), this.activeBank);
+      const casa = rule ? rule.casa : '', cat = rule ? rule.categoria : '', subcat = rule ? rule.subcategoria : '';
       if (rule) { autoCat++; rule.timesUsed++; }
 
-      const id = BudgetLogic.generateId('BL'), plan = new Array(12).fill(0), real = new Array(12).fill(0);
-      real[mi] = amount;
-      await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [
-        id, this.activeBank, AppState.currentYear, section, label,
-        casa, cat, subcat, 'one-off',
-        ...plan, ...real, 'FALSE', 999, 'ACTIVE', now, now
-      ]);
+      const id = BudgetLogic.generateId('BL');
+      const plan = new Array(12).fill(0), real = new Array(12).fill(0);
+      real[mi] = mv.amount;
+      await SheetsAPI.appendRow(CONFIG.SHEETS.BUDGET_LINES, [id, this.activeBank, AppState.currentYear, section, label, casa, cat, subcat, 'one-off', ...plan, ...real, 'FALSE', 999, 'ACTIVE', now, now]);
       count++;
+      if (count % 3 === 0) showProg();
     }
+
     const catMsg = autoCat > 0 ? `<br><span style="color:var(--accent);">⚡ ${autoCat} auto-categorizados</span>` : '';
-    pv.innerHTML = `<div style="font-weight:600;padding:8px;background:var(--success-light);border-radius:6px;color:var(--success);">✅ ${count} movimientos importados${catMsg}</div>`;
+    pv.innerHTML = `<div style="font-weight:600;padding:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;color:#065f46;">✅ ${count} movimientos importados${catMsg}</div>`;
     document.getElementById('imp-act').style.display = 'none';
-    this._impRows = [];
+    this._impMovements = [];
     setTimeout(() => { document.querySelector('.budget-drawer-overlay')?.remove(); this.refresh(); }, 1500);
-  },
-
-  // ══════════ CLOSE MONTH (Phase 2D) ══════════
-
-  async toggleClose(month) {
-    const newVal = await BudgetLogic.toggleCloseMonth(this.activeBank, month);
-    // Reload summaries to get updated mesCerrado
-    this.summaries = await BudgetLogic.loadBankSummary(AppState.currentYear);
-    this._buildMeta();
-    this.render();
-    const mName = MONTHS_FULL[month];
-    const msg = newVal ? `${mName} cerrado 🔒` : `${mName} reabierto`;
-    this._toast(msg);
-  },
-
-  _toast(msg) {
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fbbf24;padding:10px 24px;border-radius:8px;font-weight:600;font-size:13px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.2);';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2000);
   }
 };
