@@ -133,11 +133,11 @@ const BudgetGrid = {
   },
 
   _addBtn(action, label, cls) {
-    let onclick = '';
-    if (action === '_EXTRACT_BANK') onclick = 'BudgetGrid.openImportDrawer("banco")';
-    else if (action === '_EXTRACT_CARD') onclick = 'BudgetGrid.openImportDrawer("tarjeta")';
-    else onclick = `BudgetGrid.addLine('${action}')`;
-    return `<tr class="bg-add-row"><td class="frozen" onclick="${onclick}"><span class="add-lbl ${cls}">${label}</span></td>${this._ec('')}</tr>`;
+    let fn = '';
+    if (action === '_EXTRACT_BANK') fn = 'BudgetGrid.openImportDrawer(&quot;banco&quot;)';
+    else if (action === '_EXTRACT_CARD') fn = 'BudgetGrid.openImportDrawer(&quot;tarjeta&quot;)';
+    else fn = `BudgetGrid.addLine(&quot;${action}&quot;)`;
+    return `<tr class="bg-add-row"><td class="frozen" onclick="${fn}" style="cursor:pointer;"><span class="add-lbl ${cls}">${label}</span></td>${this._ec('')}</tr>`;
   },
 
   _totRow(label, lines, cm) {
@@ -151,23 +151,30 @@ const BudgetGrid = {
   },
 
   _summaryBlock(G, T, I, cm, acc, sl) {
-    const meta = this.bankMeta[this.activeBank] || { buffer: new Array(12).fill(0), saldo: new Array(12).fill(0) };
+    const meta = this.bankMeta[this.activeBank] || { buffer: new Array(12).fill(0), saldo: new Array(12).fill(0), closed: new Array(12).fill(false) };
 
     let h = `<tr class="bg-section-hdr"><td class="frozen" style="border-left-color:#0ea5e9;">RESUMEN</td>${this._ec('sec-cell')}</tr>`;
 
-    // Precompute
+    // Precompute per month
     const d = [];
     for (let m = 0; m < 12; m++) {
-      const gP = G.reduce((s,l)=>s+(l.plan[m]||0),0) + T.reduce((s,l)=>s+(l.plan[m]||0),0);
-      const gR = G.reduce((s,l)=>s+(l.real[m]||0),0) + T.reduce((s,l)=>s+(l.real[m]||0),0);
+      const gastosPlan = G.reduce((s,l)=>s+(l.plan[m]||0),0);
+      const tarjetasPlan = T.reduce((s,l)=>s+(l.plan[m]||0),0);
+      const gastosReal = G.reduce((s,l)=>s+(l.real[m]||0),0);
+      const tarjetasReal = T.reduce((s,l)=>s+(l.real[m]||0),0);
+      const gP = gastosPlan + tarjetasPlan;
+      const gR = gastosReal + tarjetasReal;
       const iP = I.reduce((s,l)=>s+(l.plan[m]||0),0);
       const iR = I.reduce((s,l)=>s+(l.real[m]||0),0);
       const buf = meta.buffer[m] || 0;
       const sal = meta.saldo[m] || 0;
-      // Envío = Gastos plan mes SIGUIENTE + Tarjetas real mes actual + Buffer - Saldo Cuenta
-      const nextGP = m < 11 ? (G.reduce((s,l)=>s+(l.plan[m+1]||0),0) + T.reduce((s,l)=>s+(l.plan[m+1]||0),0)) : 0;
-      const tarjetasReal = T.reduce((s,l)=>s+(l.real[m]||0),0);
-      const envio = Math.max(0, nextGP + tarjetasReal + buf - sal);
+
+      // Envío Necesario for month m:
+      // = Gastos Plan mes SIGUIENTE (m+1) + Tarjetas Real mes actual (m) + Buffer(m) - Saldo en Cuenta(m)
+      // Si < 0 → 0
+      const nextGastosPlan = m < 11 ? (G.reduce((s,l)=>s+(l.plan[m+1]||0),0) + T.reduce((s,l)=>s+(l.plan[m+1]||0),0)) : 0;
+      const envio = Math.max(0, nextGastosPlan + tarjetasReal + buf - sal);
+
       d.push({ gP, gR, iP, iR, cf: iP - gP, cfR: iR - gR, buf, sal, envio });
     }
 
@@ -183,25 +190,32 @@ const BudgetGrid = {
         const c = m === cm ? 'cur' : '';
         const p = d[m][r.k], rv = d[m][r.kr];
         let st = ''; if (r.color) st = p < 0 ? 'val-neg' : 'val-pos';
+        let stR = ''; if (r.color) stR = rv < 0 ? 'val-neg' : (rv > 0 ? 'val-pos' : '');
         h += `<td class="${c} ${st}">${this._f(p,1)}</td>`;
-        h += `<td class="${c}">${this._f(rv,1)}</td>`;
+        h += `<td class="${c} ${stR}">${this._f(rv,1)}</td>`;
       }
       h += '</tr>';
     });
 
-    // Buffer (editable)
+    // Buffer (manual input — one editable cell per month, spans both Plan+Real visually)
     h += `<tr class="bg-summ"><td class="frozen">Buffer</td>`;
     for (let m = 0; m < 12; m++) {
       const c = m === cm ? 'cur' : '';
-      h += `<td class="editable ${c}" data-meta="buffer" data-m="${m}" onclick="BudgetGrid.editMeta(this)">${this._f(d[m].buf,1)}</td><td class="${c}"></td>`;
+      const v = d[m].buf;
+      // Buffer in Plan column (editable), Real column shows dash
+      h += `<td class="editable ${c}" data-meta="buffer" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="text-align:center;font-weight:600;color:#7c3aed;">${v ? this._f(v,1) : '—'}</td>`;
+      h += `<td class="${c}" style="color:var(--text-tertiary);text-align:center;">—</td>`;
     }
     h += '</tr>';
 
-    // Saldo en Cuenta (editable)
+    // Saldo en Cuenta (manual input — in Real column)
     h += `<tr class="bg-summ"><td class="frozen">Saldo en Cuenta</td>`;
     for (let m = 0; m < 12; m++) {
       const c = m === cm ? 'cur' : '';
-      h += `<td class="${c}"></td><td class="editable ${c}" data-meta="saldo" data-m="${m}" onclick="BudgetGrid.editMeta(this)">${this._f(d[m].sal,1)}</td>`;
+      const v = d[m].sal;
+      // Plan column shows dash, Real column (editable)
+      h += `<td class="${c}" style="color:var(--text-tertiary);text-align:center;">—</td>`;
+      h += `<td class="editable ${c}" data-meta="saldo" data-m="${m}" onclick="BudgetGrid.editMeta(this)" style="text-align:center;font-weight:600;color:#0ea5e9;">${v ? this._f(v,1) : '—'}</td>`;
     }
     h += '</tr>';
 
@@ -209,7 +223,8 @@ const BudgetGrid = {
     h += `<tr class="bg-envio"><td class="frozen">💰 ENVÍO NECESARIO</td>`;
     for (let m = 0; m < 12; m++) {
       const c = m === cm ? 'cur' : '';
-      h += `<td class="${c}">${this._f(d[m].envio,1)}</td><td class="${c}">-</td>`;
+      const v = d[m].envio;
+      h += `<td class="${c}" style="font-weight:800;">${this._f(v,1)}</td><td class="${c}">—</td>`;
     }
     h += '</tr>';
 
