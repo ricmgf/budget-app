@@ -630,12 +630,14 @@ const BudgetGrid = {
       else if (ext === 'html' || ext === 'htm') movements = await this._parseGenericHTML(file);
       else { pv.innerHTML = '<div style="color:var(--danger);">Formato no soportado.</div>'; return; }
 
-      // Apply exclusion patterns
-      const excl = EXCLUSION_PATTERNS[this.activeBank] || [];
-      if (excl.length) {
-        const before = movements.length;
-        movements = movements.filter(mv => !excl.some(p => String(mv.concepto).toUpperCase().includes(p)));
-        if (before !== movements.length) console.log(`Excluded ${before - movements.length} movements by bank rules`);
+      // Apply exclusion patterns (only for bank imports — not for tarjeta extracts)
+      if (type !== 'tarjeta') {
+        const excl = EXCLUSION_PATTERNS[this.activeBank] || [];
+        if (excl.length) {
+          const before = movements.length;
+          movements = movements.filter(mv => !excl.some(p => String(mv.concepto).toUpperCase().includes(p)));
+          if (before !== movements.length) console.log(`Excluded ${before - movements.length} movements by bank rules`);
+        }
       }
 
       this._impMovements = movements;
@@ -672,10 +674,13 @@ const BudgetGrid = {
       for (let i = 0; i < Math.min(rows.length, 40); i++) {
         const row = rows[i]; if (!row) continue;
         const joined = row.map(c => String(c||'').toUpperCase()).join('|');
-        if (joined.includes('OPERAZIONE') && joined.includes('IMPORTO')) return this._parseIntessa(rows);
-        if (joined.includes('FECHA OPERACIÓN') || (joined.includes('COMERCIO') && joined.includes('IMPORTE EUROS'))) return this._parseIberia(rows);
-        if (joined.includes('MOVIMIENTO') && (joined.includes('MÁS DATOS') || joined.includes('MAS DATOS') || joined.includes('IMPORTE'))) return this._parseCaixa(rows);
-        if (joined.includes('MESSAGE') && (joined.includes('DEBIT') || joined.includes('CREDIT'))) return this._parseCIC(rows);
+        // Check each cell individually — avoid false matches from long text paragraphs
+        const cells = row.map(c => String(c||'').toUpperCase().trim()).filter(c => c.length > 0 && c.length < 50);
+        const cellJoined = cells.join('|');
+        if (cellJoined.includes('OPERAZIONE') && cellJoined.includes('IMPORTO')) return this._parseIntessa(rows);
+        if (cellJoined.includes('FECHA OPERACIÓN') || (cellJoined.includes('COMERCIO') && cellJoined.includes('IMPORTE EUROS'))) return this._parseIberia(rows);
+        if (cellJoined.includes('MOVIMIENTO') && (cellJoined.includes('MÁS DATOS') || cellJoined.includes('MAS DATOS') || cellJoined.includes('IMPORTE'))) return this._parseCaixa(rows);
+        if (cellJoined.includes('MESSAGE') && (cellJoined.includes('DEBIT') || cellJoined.includes('CREDIT'))) return this._parseCIC(rows);
       }
     }
     const ws = wb.Sheets[wb.SheetNames[0]];
