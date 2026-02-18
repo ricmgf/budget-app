@@ -1,0 +1,226 @@
+/* ═══════════════════════════════════════════════════════
+   DASHBOARD — Fase 2
+   Añadir al final de app.css
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Cabecera del dashboard ─────────────────────────── */
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+.dash-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.dash-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+}
+
+/* ── Navegador de mes ───────────────────────────────── */
+.dash-header .month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: 10px;
+  padding: 8px 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.dash-header .month-nav button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-secondary, #64748b);
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.1s;
+}
+.dash-header .month-nav button:hover { color: var(--text-primary, #0f172a); }
+#month-display-dash {
+  font-weight: 700;
+  font-size: 15px;
+  min-width: 140px;
+  text-align: center;
+  color: var(--text-primary, #0f172a);
+}
+
+/* ── Grid de tarjetas ───────────────────────────────── */
+.dash-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ── Tarjeta de banco ───────────────────────────────── */
+.dash-bank-card {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-left: 4px solid var(--border-light, #e2e8f0);
+  padding: 18px 20px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.dash-bank-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  transform: translateY(-2px);
+}
+
+/* Estados de tarjeta */
+.dash-bank-card.sufficient {
+  border-left-color: #10b981;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.dash-bank-card.needs-transfer {
+  border-left-color: #2563eb;
+}
+.dash-bank-card.alert-missing {
+  border-left-color: #ef4444;
+  background: #fff8f8;
+  border-color: #fecaca;
+}
+
+/* Header de la tarjeta */
+.dash-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.dash-bank-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
+}
+.dash-bank-iban {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+.dash-card-arrow {
+  font-size: 16px;
+  color: #cbd5e1;
+  transition: color 0.15s;
+}
+.dash-bank-card:hover .dash-card-arrow { color: var(--accent, #2563eb); }
+
+/* Bloque de alertas de extractos */
+.dash-stmt-alert {
+  list-style: none;
+  padding: 8px 12px;
+  margin: 0 0 12px 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+.dash-alert-item {
+  font-size: 12px;
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+.dash-alert-item:last-child { margin-bottom: 0; }
+.dash-alert-item.red   { color: #991b1b; }
+.dash-alert-item.amber { color: #92400e; }
+
+/* Importe principal */
+.dash-card-amount {
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 3px;
+  line-height: 1.1;
+}
+
+/* Texto de estado */
+.dash-card-status {
+  font-size: 12px;
+  font-weight: 500;
+}
+.dash-card-status.green { color: #10b981; }
+.dash-card-status.muted { color: var(--text-secondary, #64748b); }
+
+/* Fecha límite */
+.dash-card-deadline {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ── Barra de total ─────────────────────────────────── */
+.dash-total-bar {
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.dash-total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dash-alert-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(251,191,36,0.12);
+  border: 1px solid rgba(251,191,36,0.3);
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+.dash-total-amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton loader ────────────────────────────────── */
+.dash-skeleton {
+  min-height: 130px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8edf2 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: dashShimmer 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes dashShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Error state ────────────────────────────────────── */
+.dash-error {
+  padding: 24px;
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border-radius: 14px;
+  border: 1px solid var(--border-light, #e2e8f0);
+}
