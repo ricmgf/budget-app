@@ -1,0 +1,330 @@
+/* ============================================================
+   reporting.css — Módulo de Informes v1.0
+   Compatible con app.css — mismas variables CSS
+   ============================================================ */
+
+/* ── LOADING ── */
+.rpt-load-text { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.spin { width: 26px; height: 26px; border: 2px solid var(--border-medium); border-top-color: var(--accent); border-radius: 50%; animation: rpt-spin 0.7s linear infinite; }
+@keyframes rpt-spin { to { transform: rotate(360deg); } }
+
+/* ── STICKY HEADER ── */
+.rpt-sticky {
+  position: sticky;
+  top: 52px; /* height of app-topnav */
+  z-index: 50;
+  background: var(--bg-canvas, var(--bg-primary, #f7f8fa));
+  padding-top: 20px;
+}
+
+/* ── CONTROLS ROW ── */
+.rpt-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  flex-wrap: wrap;
+}
+.rpt-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.rpt-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rpt-view-btns { display: flex; gap: 4px; }
+
+/* reuse app btn styles */
+.date-range-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-medium, #ccd0d8);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.date-range-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+.date-range-btn .dv { color: var(--text-primary); font-weight: 600; }
+
+/* ── DATE PICKER ROW ── */
+.rpt-datepicker {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.rpt-dp-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.rpt-dp-input {
+  border: 1px solid var(--border-medium);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-card, #fff);
+  outline: none;
+}
+.rpt-dp-input:focus { border-color: var(--accent); }
+
+/* ── TABS — use exact settings-tab from app.css ── */
+/* settings-tabs already in app.css; just need background match */
+.rpt-sticky .settings-tabs {
+  background: var(--bg-canvas, var(--bg-primary, #f7f8fa));
+}
+
+/* ── GAP below sticky ── */
+.rpt-content-gap { height: 18px; }
+
+/* ── CATEGORY SELECTOR ── */
+.rpt-cat-sel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.rpt-sel-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rpt-select { min-width: 180px; }
+
+/* ── TABLE WRAP ── */
+.rpt-table-wrap {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+/* ── TOOLBAR ── */
+.rpt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-tertiary, #eef0f4);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rpt-toolbar-title { font-weight: 700; font-size: 13px; color: var(--text-primary); }
+.rpt-toolbar-sub   { font-size: 11px; color: var(--text-tertiary, #8890a0); margin-top: 2px; }
+.rpt-toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── TABLE OVERFLOW ── */
+.rpt-table-overflow { overflow-x: auto; }
+
+/* ── TABLE ── */
+.rpt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Header — dark, same as budget-grid */
+.rpt-table thead th {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  text-align: right;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  border-right: 1px solid #1e293b;
+  white-space: nowrap;
+}
+.rpt-table thead th.rpt-th-first {
+  text-align: left;
+  min-width: 200px;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #0f172a;
+  border-right: 1px solid #1e293b;
+}
+.rpt-table thead th.rpt-th { /* regular col header */ }
+.rpt-table thead th.rpt-th-total { color: #94a3b8; border-right: none; }
+
+/* Column color bar inside header */
+.rpt-th-inner { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.rpt-th-bar   { width: 20px; height: 3px; border-radius: 2px; }
+
+/* ── BODY ROWS ── */
+.rpt-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.08s;
+}
+.rpt-table tbody tr:last-child { border-bottom: none; }
+.rpt-table tbody tr:hover { background: #f7f8fa; }
+
+/* Category rows */
+.rpt-table tbody tr.rpt-cat-row {
+  background: var(--bg-tertiary, #eef0f4);
+  cursor: pointer;
+}
+.rpt-table tbody tr.rpt-cat-row:hover { background: var(--bg-hover, #e8eaf0); }
+.rpt-table tbody tr.rpt-cat-row td { font-weight: 700; font-size: 12px; }
+
+/* Sub rows */
+.rpt-table tbody tr.rpt-sub-row td { color: var(--text-secondary); }
+.rpt-table tbody tr.rpt-sub-row td.rpt-td-first,
+.rpt-table tbody tr.rpt-sub-row td.rpt-td-sub { color: var(--text-primary); }
+
+/* Sticky first column */
+.rpt-table tbody td.rpt-td-first,
+.rpt-table tbody td.rpt-td-sub {
+  position: sticky;
+  left: 0;
+  background: inherit;
+  z-index: 1;
+}
+.rpt-table tbody tr.rpt-cat-row td.rpt-td-first { background: var(--bg-tertiary, #eef0f4); }
+.rpt-table tbody tr.rpt-cat-row:hover td.rpt-td-first { background: var(--bg-hover, #e8eaf0); }
+.rpt-table tbody tr.rpt-sub-row:hover td.rpt-td-first,
+.rpt-table tbody tr.rpt-sub-row:hover td.rpt-td-sub { background: #f7f8fa; }
+
+/* Sub-row indent */
+.rpt-table tbody td.rpt-td-sub { padding-left: 36px; }
+
+/* Total row — dark, same as budget-grid */
+.rpt-table tbody tr.rpt-tot-row { background: #0f172a !important; border-top: 2px solid var(--accent) !important; }
+.rpt-table tbody tr.rpt-tot-row td {
+  color: #e2e8f0 !important;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 12px 14px;
+  font-variant-numeric: tabular-nums;
+  background: #0f172a !important;
+}
+.rpt-table tbody tr.rpt-tot-row td.rpt-tot-label {
+  position: sticky;
+  left: 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b !important;
+  font-weight: 700;
+  background: #0f172a !important;
+}
+.rpt-table tbody tr.rpt-tot-row td.rpt-tot-num { text-align: right; }
+
+/* ── CELLS ── */
+.rpt-td {
+  padding: 10px 14px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rpt-td.rpt-td-first { text-align: left; }
+.rpt-td.rpt-td-sub   { text-align: left; }
+
+.rpt-nil { color: var(--text-tertiary, #8890a0); }
+.rpt-hi  { color: var(--accent); font-weight: 700; }
+.rpt-gn  { color: var(--success, #16a34a); font-weight: 600; }
+.rpt-am  { color: var(--warning, #d97706); font-weight: 600; }
+
+/* ── +/- BUTTON ── */
+.rpt-xb {
+  background: none;
+  border: 1px solid var(--border-medium, #ccd0d8);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  margin-right: 7px;
+  width: 17px;
+  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.rpt-xb:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-subtle, #eff6ff);
+}
+.rpt-xph {
+  display: inline-block;
+  width: 17px;
+  margin-right: 7px;
+}
+
+/* ── DETAIL ROWS ── */
+.rpt-drow { display: none; }
+.rpt-drow.open { display: table-row; }
+.rpt-dc {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+.rpt-di {
+  padding: 10px 14px 10px 44px;
+  background: var(--accent-subtle, #eff6ff);
+  border-top: 1px solid var(--accent-light, #dbeafe);
+}
+.rpt-di-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.rpt-dtxns { display: flex; flex-direction: column; gap: 3px; }
+.rpt-dtx {
+  display: grid;
+  grid-template-columns: 52px 1fr 140px 90px;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 12px;
+  align-items: center;
+}
+.rpt-dtx:hover { background: var(--bg-tertiary, #eef0f4); }
+.rpt-dtx-d { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; }
+.rpt-dtx-c { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rpt-dtx-a { color: var(--text-tertiary); font-size: 11px; text-align: right; }
+.rpt-dtx-m { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; text-align: right; }
+.rpt-dtx-m.rpt-gn { color: var(--success, #16a34a); }
+
+/* ── EMPTY STATE ── */
+.rpt-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+/* ── SCROLLBAR ── */
+.rpt-table-overflow::-webkit-scrollbar { height: 5px; }
+.rpt-table-overflow::-webkit-scrollbar-track { background: transparent; }
+.rpt-table-overflow::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
