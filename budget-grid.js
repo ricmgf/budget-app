@@ -2347,12 +2347,14 @@ const BudgetGrid = {
       alert('No hay import reciente para deshacer.');
       return;
     }
-    const { bank, ts, ids } = this._lastImportMeta;
+    const { bank, ts, ids, undoCells } = this._lastImportMeta;
+    const newCount   = ids ? ids.length : '?';
+    const mergeCount = undoCells ? undoCells.length : 0;
     const dt = new Date(ts).toLocaleString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-    if (!confirm(`¿Deshacer el import de ${bank} del ${dt}?\n\nEsto marcará como eliminadas las ${ids ? ids.length : '?'} líneas creadas en ese import.`)) return;
+    if (!confirm(`¿Deshacer el import de ${bank} del ${dt}?\n\nEsto eliminará ${newCount} filas nuevas y revertirá ${mergeCount} celdas fusionadas.`)) return;
 
     const rows = await SheetsAPI.readSheet(CONFIG.SHEETS.BUDGET_LINES);
-    const updates = [];
+    const deleteUpdates = [];
     const deletedIds = new Set();
 
     if (ids && ids.length > 0) {
@@ -2361,7 +2363,7 @@ const BudgetGrid = {
       (rows || []).forEach((r, i) => {
         if (!r[0] || r[35] === 'DELETED') return;
         if (idSet.has(r[0])) {
-          updates.push({ row: i + 1, col: 36, value: 'DELETED' });
+          deleteUpdates.push({ row: i + 1, col: 36, value: 'DELETED' });
           deletedIds.add(r[0]);
         }
       });
@@ -2373,28 +2375,48 @@ const BudgetGrid = {
         if (r[1] !== bank) return;
         const created = String(r[36] || '').substring(0, 16);
         if (created === tsPrefix) {
-          updates.push({ row: i + 1, col: 36, value: 'DELETED' });
+          deleteUpdates.push({ row: i + 1, col: 36, value: 'DELETED' });
           deletedIds.add(r[0]);
         }
       });
     }
 
-    if (!updates.length) {
+    if (!deleteUpdates.length && !mergeCount) {
       alert('No se encontraron líneas de ese import (puede que ya se hayan eliminado).');
       return;
     }
-    // Batch delete in chunks
-    for (let i = 0; i < updates.length; i += 20) {
-      await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, updates.slice(i, i + 20));
+
+    // 1. Delete new rows in the sheet
+    for (let i = 0; i < deleteUpdates.length; i += 20) {
+      await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, deleteUpdates.slice(i, i + 20));
     }
-    // Remove from memory
-    this.lines = this.lines.filter(l => !deletedIds.has(l.id));
+
+    // Fix D+E: 2. Revert merged cells back to their pre-import values (always 0)
+    // in the sheet AND in this.lines memory so a same-session reimport sees clean state.
+    if (undoCells && undoCells.length) {
+      const revertUpdates = undoCells.map(c => ({ row: c.row, col: c.col, value: c.oldValue }));
+      for (let i = 0; i < revertUpdates.length; i += 20) {
+        await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, revertUpdates.slice(i, i + 20));
+      }
+      // Zero out the same slots in this.lines so _matchExisting sees free slots on reimport.
+      // getRealCol(m) = 22 + m (1-indexed), so m = col - 22 (0-indexed month).
+      undoCells.forEach(c => {
+        const m = c.col - 22;
+        if (m < 0 || m > 11) return;
+        const line = this.lines.find(l => l.sheetRow === c.row);
+        if (line && line.real) line.real[m] = 0;
+      });
+    }
+
+    // Fix E: 3. Remove deleted rows from memory (check both id and rawId)
+    this.lines = this.lines.filter(l => !deletedIds.has(l.id) && !deletedIds.has(l.rawId));
+
     this._lastImportMeta = null;
     try { localStorage.removeItem('budgetLastImport'); } catch(e) {}
     this._renderUndoSection();
     BudgetLogic.invalidateGastosCache(bank);
     const pv = document.getElementById('imp-pv');
-    if (pv) pv.innerHTML = `<div style="padding:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;color:#065f46;font-weight:600;">✅ ${updates.length} líneas eliminadas. Import deshecho.</div>`;
+    if (pv) pv.innerHTML = `<div style="padding:12px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;color:#065f46;font-weight:600;">✅ ${deleteUpdates.length} filas eliminadas, ${mergeCount} celdas revertidas. Import deshecho.</div>`;
     setTimeout(() => { document.querySelector('.budget-drawer-overlay')?.remove(); this.refresh(); }, 1500);
   },
   _impFile(input, type) { if (input.files.length) this._impProcess(input.files[0], type); },
@@ -3838,9 +3860,18 @@ const BudgetGrid = {
     }
     // Batch update existing rows (in chunks of 20 to avoid API limits)
     console.log(`[Import] updateCells=${updateCells.length}`);
-    for (let i = 0; i < updateCells.length; i += 20) {
-      const chunk = updateCells.slice(i, i + 20);
-      await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, chunk);
+    if (updateCells.length) {
+      // Fix D: save undoCells BEFORE writing so _undoLastImport can revert merges.
+      // oldValue is always 0 — _matchExisting only fills empty slots, so whatever
+      // was there before this import is guaranteed to have been 0.
+      if (this._lastImportMeta) {
+        this._lastImportMeta.undoCells = updateCells.map(c => ({ row: c.row, col: c.col, oldValue: 0 }));
+        try { localStorage.setItem('budgetLastImport', JSON.stringify(this._lastImportMeta)); } catch(e) {}
+      }
+      for (let i = 0; i < updateCells.length; i += 20) {
+        const chunk = updateCells.slice(i, i + 20);
+        await SheetsAPI.batchUpdate(CONFIG.SHEETS.BUDGET_LINES, chunk);
+      }
     }
 
     // Post-import hooks — bank-specific enrichment
